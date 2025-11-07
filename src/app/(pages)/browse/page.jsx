@@ -63,7 +63,7 @@ export default function BrowsePage() {
     <div className="h-screen w-screen overflow-hidden flex flex-col">
       <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
       
-      <div className="flex-1 overflow-y-auto scrollbar-none bg-gradient-to-b from-[#121212] to-black px-6 py-6 pb-32">
+      <div className="flex-1 overflow-y-auto scrollbar-none bg-gradient-to-b from-[#121212] to-black px-6 py-6 my-3 rounded-sm pb-32">
         {/* Page Title */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Browse All</h1>

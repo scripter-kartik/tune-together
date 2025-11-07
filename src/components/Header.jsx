@@ -14,7 +14,7 @@ export default function Header({ query, setQuery, handleSearch }) {
     <div className="flex items-center justify-between gap-4 mt-3 px-5">
       {/* Logo */}
       <div>
-        <img src="/icon.png" alt="Logo" className="w-10 h-10" />
+        <img src="/icon2.png" alt="Logo" className="w-10 h-10" />
       </div>
 
       <div className="flex items-center justify-between w-[calc(100vw)]">

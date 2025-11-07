@@ -1,4 +1,5 @@
 import React from "react";
+import { SignInButton } from "@clerk/nextjs";
 
 const InviteFriend = () => {
   return (
@@ -40,9 +41,11 @@ const InviteFriend = () => {
           <p className="text-xs text-gray-400">
             Login to discover what music your friends are enjoying right now
           </p>
-          <div className="flex items-center justify-center gap-1"> 
-            <a className="text-green-400 text-[13px] hover:underline" href="">login</a>
-          </div>
+          <SignInButton mode="modal">
+            <div className="flex items-center justify-center gap-1">
+              <p className="text-green-400 text-[13px] hover:underline cursor-pointer">login</p>
+            </div>
+          </SignInButton>
         </div>
       </div>
     </div>
