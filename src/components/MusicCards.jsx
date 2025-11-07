@@ -1,3 +1,5 @@
+// src/components/MusicCards.jsx
+
 export default function MusicCards({ songs, onPlay }) {
   return (
     <div className="flex flex-wrap gap-2 p-2">

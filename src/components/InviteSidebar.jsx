@@ -1,3 +1,5 @@
+// src/components/InviteSidebar.jsx
+
 "use client";
 import { useState, useEffect } from "react";
 import QRCode from "react-qr-code";
@@ -39,12 +41,7 @@ export default function InviteSidebar({ inviteLink: initialInviteLink }) {
       </div>
       <div className="my-4 bg-white p-2 rounded">
         {inviteLink && (
-          <QRCode
-            value={inviteLink}
-            size={100}
-            bgColor="#181818"
-            fgColor="#22c55e"
-          />
+          <QRCode value={inviteLink} size={100} bgColor="#181818" fgColor="#22c55e" />
         )}
       </div>
       <div className="mt-4 flex flex-col items-center">
