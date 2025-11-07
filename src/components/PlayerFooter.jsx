@@ -10,11 +10,12 @@ const DRIFT_TOLERANCE = 0.25; // seconds
 export default function PlayerFooter({
   song,
   isPlaying,
-  onPlayPause, // keeps your UI toggle state in page.jsx
+  onPlayPause,
   onNext,
   onPrev,
   roomId,
   socketRef,
+  hasSongs,
 }) {
   const audioRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -36,7 +37,7 @@ export default function PlayerFooter({
   // Apply socket sync events (play/pause/song/seek) with timestamp
   useEffect(() => {
     const socket = socketRef.current;
-    if (!socket) return;
+    if (!socket || !song) return;
 
     const onPlay = ({ isPlaying, position, at }) => {
       const a = audioRef.current;
@@ -141,9 +142,6 @@ export default function PlayerFooter({
     const id = setInterval(() => {
       const a = audioRef.current;
       if (!a) return;
-      // nothing to compute here unless we tracked last at/position;
-      // we rely on remote sync events frequently enough. (Server updates on every control)
-      // We still clamp NaNs
       if (Number.isNaN(a.currentTime)) setTime(0);
     }, 1000);
     return () => clearInterval(id);
@@ -153,15 +151,15 @@ export default function PlayerFooter({
   useEffect(() => {
     const a = audioRef.current;
     const socket = socketRef.current;
-    if (!a || !socket || !roomId) return;
+    if (!a || !socket || !roomId || !song) return;
 
-    // page.jsx toggles isPlaying prop; we act on it here with accurate position
     const position = a.currentTime || 0;
     socket.emit("toggle-play", { roomId, isPlaying, position });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, roomId, socketRef]);
 
   const handleSeek = (e) => {
+    if (!song) return;
     const newTime = parseFloat(e.target.value);
     isSeeking.current = true;
 
@@ -205,29 +203,50 @@ export default function PlayerFooter({
     return `${minutes}:${seconds}`;
   };
 
-  if (!song) return null;
-
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-[#181818] text-white px-4 py-3 flex flex-col md:flex-row items-center justify-between z-50 border-t border-neutral-800 gap-2">
       {/* Song Info */}
       <div className="flex items-center gap-4 w-full md:w-[30%]">
-        <img src={song.album.cover_small} alt={song.title} className="w-14 h-14 rounded shadow-lg" />
-        <div className="flex flex-col overflow-hidden flex-1">
-          <span className="text-sm font-medium truncate">{song.title}</span>
-          <span className="text-xs text-gray-400 truncate">{song.artist.name}</span>
-        </div>
+        {song ? (
+          <>
+            <img src={song.album.cover_small} alt={song.title} className="w-14 h-14 rounded shadow-lg" />
+            <div className="flex flex-col overflow-hidden flex-1">
+              <span className="text-sm font-medium truncate">{song.title}</span>
+              <span className="text-xs text-gray-400 truncate">{song.artist.name}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="w-14 h-14 rounded bg-neutral-700 flex items-center justify-center">
+              <svg className="w-8 h-8 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+              </svg>
+            </div>
+            <div className="flex flex-col overflow-hidden flex-1">
+              <span className="text-sm font-medium text-gray-400">
+                {hasSongs ? "Select a song to play" : "Loading music..."}
+              </span>
+              <span className="text-xs text-gray-500">Start listening now</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Player Controls */}
       <div className="flex flex-col items-center w-full md:w-[40%]">
         <div className="flex gap-6 items-center justify-center mb-1">
-          <button onClick={onPrev} className="text-gray-300 hover:text-white transition" aria-label="Previous">
+          <button 
+            onClick={onPrev} 
+            className={`text-gray-300 hover:text-white transition ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            aria-label="Previous"
+            disabled={!song}
+          >
             <FaBackward size={16} />
           </button>
           <button
             onClick={onPlayPause}
-            className="bg-white text-black p-2 rounded-full hover:scale-105 transition disabled:opacity-50"
-            disabled={isLoading}
+            className={`bg-white text-black p-2 rounded-full hover:scale-105 transition ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!song || isLoading}
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {isLoading ? (
@@ -238,7 +257,12 @@ export default function PlayerFooter({
               <FaPlay size={16} />
             )}
           </button>
-          <button onClick={onNext} className="text-gray-300 hover:text-white transition" aria-label="Next">
+          <button 
+            onClick={onNext} 
+            className={`text-gray-300 hover:text-white transition ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            aria-label="Next"
+            disabled={!song}
+          >
             <FaForward size={16} />
           </button>
         </div>
@@ -251,8 +275,9 @@ export default function PlayerFooter({
             step="0.1"
             value={currentTime}
             onChange={handleSeek}
-            className="w-full h-1 accent-green-500 cursor-pointer"
+            className={`w-full h-1 accent-green-500 ${!song ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             aria-label="Seek"
+            disabled={!song}
           />
           <span className="text-xs text-gray-400 w-10 text-left">{formatTime(Math.max(duration - currentTime, 0))}</span>
         </div>

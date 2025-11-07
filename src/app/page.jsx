@@ -22,9 +22,36 @@ export default function Page() {
   const socketRef = useRef(null);
 
   const terms = [
-    "sad","chill","lofi","funny","happy","romantic","energetic","dark","pop","rap",
-    "jazz","classical","study","party","workout","sleep","summer","night","driving","focus",
+    // Original
+    "sad", "chill", "lofi", "funny", "happy", "romantic", "energetic", "dark", "pop", "rap",
+    "jazz", "classical", "study", "party", "workout", "sleep", "summer", "night", "driving", "focus",
+
+    // More moods
+    "calm", "uplifting", "dreamy", "moody", "melancholic", "relax", "deep", "groovy", "warm", "bright",
+    "spacey", "ambient", "emotional", "nostalgic", "smooth", "aggressive", "soft", "serene", "fresh", "funky",
+    "powerful", "peaceful", "psychedelic", "mysterious", "epic", "sadboi", "cute", "chillwave", "hopeful", "angsty",
+
+    // Genres
+    "rnb", "edm", "house", "techno", "trance", "dubstep", "kpop", "indie", "folk", "metal",
+    "punk", "blues", "soul", "reggae", "country", "disco", "gospel", "afrobeat", "synthwave", "phonk",
+    "hyperpop", "trap", "grunge", "garage", "bossa nova", "latin", "salsa", "tango", "flamenco", "minimal",
+
+    // Activities
+    "gaming", "coding", "meditation", "yoga", "gym", "running", "cooking", "travel", "sports", "cleaning",
+    "reading", "drinking", "camping", "dating", "driving_fast", "roadtrip", "picnic", "celebration", "festive", "shopping",
+
+    // Time-based
+    "morning", "evening", "midnight", "rainy", "sunset", "sunrise", "winter", "spring", "autumn", "monsoon",
+
+    // Themes
+    "breakup", "motivation", "healing", "heartbreak", "focus_deep", "chill_beach", "urban", "city_lights", "club", "festival",
+    "retro", "vintage", "cinematic", "anime", "vibes", "aesthetic", "future", "fantasy", "sci-fi", "loverboy",
+
+    // More variations
+    "relaxation", "intense", "high_energy", "sad_love", "despair", "minimalist", "slow", "fast", "twilight", "neon",
+    "racing", "study_beats", "late_night", "snow", "rain", "storm", "cozy", "soft_piano", "guitar", "strings"
   ];
+
 
   const random = useMemo(
     () => terms[Math.floor(Math.random() * terms.length)],
@@ -117,6 +144,10 @@ export default function Page() {
       } else {
         setSongs(data.data);
         setVisibleCount(20);
+        // Auto-load first song into footer
+        if (currentSongIndex === null) {
+          setCurrentSongIndex(0);
+        }
       }
     } catch (err) {
       console.error("Error fetching songs:", err);
@@ -133,7 +164,17 @@ export default function Page() {
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 20);
 
-  useEffect(() => { fetchSongs(random); }, [random]);
+  // Check for browse query from sessionStorage on mount
+  useEffect(() => {
+    const browseQuery = sessionStorage.getItem('browseQuery');
+    if (browseQuery) {
+      setQuery(browseQuery);
+      fetchSongs(browseQuery);
+      sessionStorage.removeItem('browseQuery'); // Clear after use
+    } else {
+      fetchSongs(random);
+    }
+  }, [random]);
 
   // Song selection — emit change with position=0
   const handlePlay = (song) => {
@@ -177,7 +218,7 @@ export default function Page() {
   const getVisibleSongs = () => songs.slice(0, visibleCount);
 
   return (
-    <div className="h-screen overflow-auto scrollbar-none pb-32">
+    <div className="h-screen w-screen overflow-auto scrollbar-none">
       <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
       <Home
         songs={getVisibleSongs()}
@@ -189,17 +230,17 @@ export default function Page() {
         roomId={roomId}
         socketRef={socketRef}
       />
-      {currentSongIndex !== null && songs[currentSongIndex] && (
-        <PlayerFooter
-          song={songs[currentSongIndex]}
-          isPlaying={isPlaying}
-          onPlayPause={handleTogglePlayPause}
-          onNext={handleNext}
-          onPrev={handlePrev}
-          roomId={roomId}
-          socketRef={socketRef}
-        />
-      )}
+      {/* Always show footer - with or without a song */}
+      <PlayerFooter
+        song={currentSongIndex !== null && songs[currentSongIndex] ? songs[currentSongIndex] : null}
+        isPlaying={isPlaying}
+        onPlayPause={handleTogglePlayPause}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        roomId={roomId}
+        socketRef={socketRef}
+        hasSongs={songs.length > 0}
+      />
     </div>
   );
 }
