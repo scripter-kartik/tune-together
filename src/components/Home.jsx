@@ -16,7 +16,7 @@ export default function Home({
   selectedChatUser,
 }) {
   return (
-    <div className="px-2 py-2 flex flex-col lg:flex-row gap-2">
+    <div className="px-2 py-2 flex flex-col lg:flex-row gap-2 ">
       {/* Playlist Sidebar - Left side */}
       <div className="hidden lg:block lg:w-80 h-[calc(100vh-160px)] rounded-md">
         <PlaylistSidebar onOpenChat={onOpenChat} />
