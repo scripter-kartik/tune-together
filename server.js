@@ -1,4 +1,6 @@
-// server.js
+// ============================================
+// FILE 3: server.js (UPDATED with Chat Events)
+// ============================================
 
 const { createServer } = require("http");
 const { parse } = require("url");
@@ -13,6 +15,7 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 const rooms = new Map();
+const userSockets = new Map(); // Map of clerkId -> socketId
 const now = () => Date.now();
 
 app.prepare().then(() => {
@@ -36,8 +39,8 @@ app.prepare().then(() => {
       rooms.set(roomId, {
         currentSong: null,
         isPlaying: false,
-        position: 0,     // seconds at time `at`
-        at: now(),       // ms server clock corresponding to `position`
+        position: 0,
+        at: now(),
         playlist: [],
         users: new Set(),
       });
@@ -46,13 +49,21 @@ app.prepare().then(() => {
   };
 
   io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
+
+    // Register user for direct messaging
+    socket.on("register-user", (clerkId) => {
+      userSockets.set(clerkId, socket.id);
+      socket.clerkId = clerkId;
+      console.log(`User ${clerkId} registered with socket ${socket.id}`);
+    });
+
     // Join a room
     socket.on("join-room", (roomId) => {
       socket.join(roomId);
       const room = getRoom(roomId);
       room.users.add(socket.id);
 
-      // Send canonical room state to the joiner
       socket.emit("room-state", {
         currentSong: room.currentSong,
         isPlaying: room.isPlaying,
@@ -62,14 +73,67 @@ app.prepare().then(() => {
         userCount: room.users.size,
       });
 
-      // Notify everyone of user count
       io.to(roomId).emit("user-count", room.users.size);
     });
 
-    // Chat
+    // Chat in room (broadcast)
     socket.on("chat message", ({ roomId, msg }) => {
       socket.to(roomId).emit("chat message", msg);
     });
+
+    // ========== NEW: DIRECT MESSAGING ==========
+    
+    // Send direct message
+    socket.on("send-dm", ({ recipientId, message, senderName, senderImage }) => {
+      const recipientSocketId = userSockets.get(recipientId);
+      
+      if (recipientSocketId) {
+        // Send to recipient
+        io.to(recipientSocketId).emit("receive-dm", {
+          senderId: socket.clerkId,
+          senderName,
+          senderImage,
+          message,
+          timestamp: new Date(),
+        });
+        
+        // Send confirmation to sender
+        socket.emit("dm-sent", {
+          recipientId,
+          message,
+          timestamp: new Date(),
+        });
+      } else {
+        // User is offline, send error
+        socket.emit("dm-error", {
+          recipientId,
+          error: "User is offline",
+        });
+      }
+    });
+
+    // Mark messages as read
+    socket.on("mark-read", ({ senderId }) => {
+      const senderSocketId = userSockets.get(senderId);
+      if (senderSocketId) {
+        io.to(senderSocketId).emit("messages-read", {
+          readerId: socket.clerkId,
+        });
+      }
+    });
+
+    // Typing indicator
+    socket.on("typing", ({ recipientId, isTyping }) => {
+      const recipientSocketId = userSockets.get(recipientId);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("user-typing", {
+          senderId: socket.clerkId,
+          isTyping,
+        });
+      }
+    });
+
+    // ========== END DIRECT MESSAGING ==========
 
     // Play/Pause (authoritative)
     socket.on("toggle-play", ({ roomId, isPlaying, position }) => {
@@ -85,7 +149,7 @@ app.prepare().then(() => {
       });
     });
 
-    // Change song (sets position 0 unless provided)
+    // Change song
     socket.on("change-song", ({ roomId, song, position = 0 }) => {
       const room = getRoom(roomId);
       room.currentSong = song || null;
@@ -146,6 +210,14 @@ app.prepare().then(() => {
 
     // Disconnect cleanup
     socket.on("disconnect", () => {
+      console.log("User disconnected:", socket.id);
+      
+      // Remove from user sockets map
+      if (socket.clerkId) {
+        userSockets.delete(socket.clerkId);
+      }
+      
+      // Remove from rooms
       rooms.forEach((room, roomId) => {
         if (room.users.has(socket.id)) {
           room.users.delete(socket.id);

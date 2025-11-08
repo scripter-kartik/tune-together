@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
+import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
 
 const DRIFT_TOLERANCE = 0.25; // seconds
 
@@ -24,6 +25,9 @@ export default function PlayerFooter({
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isSeeking = useRef(false);
+  
+  // Hook to update what's currently playing
+  const { updateNowPlaying } = useUpdateNowPlaying();
 
   // helper to set audio time safely
   const setTime = (t) => {
@@ -33,6 +37,23 @@ export default function PlayerFooter({
       a.currentTime = Math.max(0, t || 0);
     } catch {}
   };
+
+  // Update "now playing" when song changes or playback starts
+  useEffect(() => {
+    if (!song || !isPlaying) {
+      // Clear now playing when paused or no song
+      updateNowPlaying(null);
+      return;
+    }
+
+    // Update what's currently playing
+    updateNowPlaying({
+      songId: song.id,
+      songTitle: song.title,
+      artist: song.artist.name,
+      albumArt: song.album.cover_small,
+    });
+  }, [song, isPlaying, updateNowPlaying]);
 
   // Apply socket sync events (play/pause/song/seek) with timestamp
   useEffect(() => {

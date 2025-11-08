@@ -6,7 +6,7 @@ export default function MusicCards({ songs, onPlay }) {
       {songs.map((song) => (
         <div
           key={song._uniqueKey || song.id + "-" + song.title_short}
-          className="relative group p-1 w-60 h-72 hover:bg-[#1e1e1e] flex flex-col items-start px-2 py-5 rounded-md truncate"
+          className="relative group p-1 w-60 h-72 hover:bg-[#1e1e1e] bg-[#1c1b1b] flex flex-col items-start px-2 py-5 rounded-md truncate"
         >
           <img
             src={song.album.cover_medium}

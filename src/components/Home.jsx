@@ -2,7 +2,7 @@
 
 import PlaylistSidebar from "./PlaylistSidebar";
 import MusicCards from "./MusicCards";
-import InviteFriend from "./InviteFriend";
+import ListeningUsers from "./ListeningUsers";
 
 export default function Home({
   songs,
@@ -56,9 +56,9 @@ export default function Home({
         )}
       </div>
 
-      {/* Invite Sidebar - Always visible */}
-      <div className="hidden lg:block lg:w-80 rounded-md">
-        <InviteFriend />
+      {/* Listening Users Sidebar - Always visible, auto-switches on login */}
+      <div className="hidden lg:block lg:w-80 rounded-md h-[calc(100vh-160px)] overflow-hidden">
+        <ListeningUsers />
       </div>
     </div>
   );

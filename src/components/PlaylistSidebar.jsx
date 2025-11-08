@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { MessageCircle, X } from "lucide-react";
 
-export default function PlaylistSidebar() {
+export default function PlaylistSidebar({ onOpenChat }) {
+  const [showChatList, setShowChatList] = useState(false);
+
   const playlists = [
     {
       id: 1,
@@ -62,8 +66,21 @@ export default function PlaylistSidebar() {
     },
   ];
 
+  // Mock chat users - replace with real data from your API
+  const chatUsers = [
+    { id: 1, clerkId: "user_1", name: "Alex Morgan", imageUrl: "/api/placeholder/40/40", isOnline: true },
+    { id: 2, clerkId: "user_2", name: "Sarah Chen", imageUrl: "/api/placeholder/40/40", isOnline: true },
+    { id: 3, clerkId: "user_3", name: "Mike Johnson", imageUrl: "/api/placeholder/40/40", isOnline: false },
+    { id: 4, clerkId: "user_4", name: "Emma Davis", imageUrl: "/api/placeholder/40/40", isOnline: true },
+  ];
+
+  const handleChatClick = (user) => {
+    onOpenChat(user);
+    setShowChatList(false);
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#121212] rounded-md overflow-hidden">
+    <div className="flex flex-col h-full bg-[#121212] rounded-md overflow-hidden relative">
       {/* Header */}
       <div className="flex items-center px-4 py-4 gap-3 border-b border-gray-800">
         <svg
@@ -122,6 +139,113 @@ export default function PlaylistSidebar() {
           </Link>
         ))}
       </div>
+
+      {/* Chat Button - Fixed at Bottom */}
+      <div className="p-4 border-t border-gray-800 bg-[#121212]">
+        <button
+          onClick={() => setShowChatList(!showChatList)}
+          className="w-full relative group"
+        >
+          {/* Glowing Background Effect */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-300 animate-pulse"></div>
+          
+          {/* Button Content */}
+          <div className="relative bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:from-green-500 hover:to-emerald-500 transition-all duration-300 shadow-lg">
+            <MessageCircle className="w-5 h-5" />
+            <span>Messages</span>
+            {showChatList && <X className="w-4 h-4 ml-1" />}
+          </div>
+        </button>
+      </div>
+
+      {/* Chat List Popup */}
+      {showChatList && (
+        <div className="absolute bottom-20 left-0 right-0 mx-4 bg-[#1a1a1a] rounded-lg shadow-2xl border border-gray-700 max-h-80 overflow-hidden z-50 animate-slideUp">
+          {/* Chat List Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-[#0f0f0f]">
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-green-400" />
+              Active Chats
+            </h3>
+            <button
+              onClick={() => setShowChatList(false)}
+              className="text-gray-400 hover:text-white transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Chat Users List */}
+          <div className="overflow-y-auto max-h-64 scrollbar-thin scrollbar-thumb-gray-700">
+            {chatUsers.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No active chats</p>
+              </div>
+            ) : (
+              chatUsers.map((user) => (
+                <button
+                  key={user.id}
+                  onClick={() => handleChatClick(user)}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#252525] transition-colors border-b border-gray-800/50"
+                >
+                  {/* User Avatar */}
+                  <div className="relative">
+                    <img
+                      src={user.imageUrl}
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    {user.isOnline && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1a1a1a]"></div>
+                    )}
+                  </div>
+
+                  {/* User Info */}
+                  <div className="flex-1 text-left">
+                    <p className="text-white text-sm font-medium">{user.name}</p>
+                    <p className="text-gray-400 text-xs">
+                      {user.isOnline ? "Online" : "Offline"}
+                    </p>
+                  </div>
+
+                  {/* Arrow Icon */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-gray-400"
+                  >
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

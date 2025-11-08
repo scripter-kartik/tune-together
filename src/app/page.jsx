@@ -1,15 +1,18 @@
-// src/app/page.jsx
-
 "use client";
 
 import Header from "../components/Header";
 import Home from "../components/Home";
 import PlayerFooter from "../components/PlayerFooter";
+import ActiveUsersSidebar from "../components/ActiveUsersSidebar";
+import ChatView from "../components/ChatView";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "../lib/socket";
+import { useChat } from "../hooks/useChat";
+import { useUser } from "@clerk/nextjs";
 
 export default function Page() {
+  const { user } = useUser();
   const [query, setQuery] = useState("");
   const [songs, setSongs] = useState([]);
   const [visibleCount, setVisibleCount] = useState(20);
@@ -19,46 +22,44 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [roomId, setRoomId] = useState("");
   const [isRoomHost, setIsRoomHost] = useState(false);
+  const [selectedChatUser, setSelectedChatUser] = useState(null);
   const socketRef = useRef(null);
+  
+  useChat();
 
   const terms = [
-    // Original
     "sad", "chill", "lofi", "funny", "happy", "romantic", "energetic", "dark", "pop", "rap",
     "jazz", "classical", "study", "party", "workout", "sleep", "summer", "night", "driving", "focus",
-
-    // More moods
     "calm", "uplifting", "dreamy", "moody", "melancholic", "relax", "deep", "groovy", "warm", "bright",
     "spacey", "ambient", "emotional", "nostalgic", "smooth", "aggressive", "soft", "serene", "fresh", "funky",
     "powerful", "peaceful", "psychedelic", "mysterious", "epic", "sadboi", "cute", "chillwave", "hopeful", "angsty",
-
-    // Genres
     "rnb", "edm", "house", "techno", "trance", "dubstep", "kpop", "indie", "folk", "metal",
     "punk", "blues", "soul", "reggae", "country", "disco", "gospel", "afrobeat", "synthwave", "phonk",
     "hyperpop", "trap", "grunge", "garage", "bossa nova", "latin", "salsa", "tango", "flamenco", "minimal",
-
-    // Activities
     "gaming", "coding", "meditation", "yoga", "gym", "running", "cooking", "travel", "sports", "cleaning",
     "reading", "drinking", "camping", "dating", "driving_fast", "roadtrip", "picnic", "celebration", "festive", "shopping",
-
-    // Time-based
     "morning", "evening", "midnight", "rainy", "sunset", "sunrise", "winter", "spring", "autumn", "monsoon",
-
-    // Themes
     "breakup", "motivation", "healing", "heartbreak", "focus_deep", "chill_beach", "urban", "city_lights", "club", "festival",
     "retro", "vintage", "cinematic", "anime", "vibes", "aesthetic", "future", "fantasy", "sci-fi", "loverboy",
-
-    // More variations
     "relaxation", "intense", "high_energy", "sad_love", "despair", "minimalist", "slow", "fast", "twilight", "neon",
     "racing", "study_beats", "late_night", "snow", "rain", "storm", "cozy", "soft_piano", "guitar", "strings"
   ];
-
 
   const random = useMemo(
     () => terms[Math.floor(Math.random() * terms.length)],
     []
   );
 
-  // Initialize room from URL or create new one
+  // Listen for chat open events from ActiveUsersSidebar
+  useEffect(() => {
+    const handleOpenChat = (event) => {
+      setSelectedChatUser(event.detail);
+    };
+
+    window.addEventListener('openChat', handleOpenChat);
+    return () => window.removeEventListener('openChat', handleOpenChat);
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     let room = params.get("room");
@@ -70,7 +71,6 @@ export default function Page() {
     setRoomId(room);
   }, []);
 
-  // Socket connection (single instance)
   useEffect(() => {
     if (!roomId) return;
     const socket = getSocket();
@@ -81,7 +81,6 @@ export default function Page() {
     };
     socket.on("connect", onConnect);
 
-    // Late join state
     socket.on("room-state", (state) => {
       const { currentSong, isPlaying } = state;
       if (currentSong) {
@@ -89,13 +88,11 @@ export default function Page() {
         if (idx !== -1) setCurrentSongIndex(idx);
       }
       setIsPlaying(!!isPlaying);
-      // PlayerFooter will also sync the audio clock via events with {position, at}
       window.dispatchEvent(
         new CustomEvent("tt-sync", { detail: { type: "state", ...state } })
       );
     });
 
-    // Sync updates for UI state (audio handling is in PlayerFooter)
     socket.on("sync-song", (data) => {
       const idx = songs.findIndex((s) => s.id === data.song?.id);
       if (idx !== -1) setCurrentSongIndex(idx);
@@ -144,7 +141,6 @@ export default function Page() {
       } else {
         setSongs(data.data);
         setVisibleCount(20);
-        // Auto-load first song into footer
         if (currentSongIndex === null) {
           setCurrentSongIndex(0);
         }
@@ -164,19 +160,17 @@ export default function Page() {
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 20);
 
-  // Check for browse query from sessionStorage on mount
   useEffect(() => {
     const browseQuery = sessionStorage.getItem('browseQuery');
     if (browseQuery) {
       setQuery(browseQuery);
       fetchSongs(browseQuery);
-      sessionStorage.removeItem('browseQuery'); // Clear after use
+      sessionStorage.removeItem('browseQuery');
     } else {
       fetchSongs(random);
     }
   }, [random]);
 
-  // Song selection — emit change with position=0
   const handlePlay = (song) => {
     const idx = songs.findIndex((s) => s.id === song.id);
     if (idx !== -1) {
@@ -190,7 +184,6 @@ export default function Page() {
     }
   };
 
-  // UI-only toggle; real emit happens inside PlayerFooter with accurate position
   const handleTogglePlayPause = () => {
     setIsPlaying((p) => !p);
   };
@@ -218,19 +211,35 @@ export default function Page() {
   const getVisibleSongs = () => songs.slice(0, visibleCount);
 
   return (
-    <div className="h-screen w-screen overflow-auto scrollbar-none">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-black">
       <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
-      <Home
-        songs={getVisibleSongs()}
-        onLoadMore={handleLoadMore}
-        showLoadMore={songs.length > visibleCount}
-        onPlay={handlePlay}
-        isLoading={isLoading}
-        error={error}
-        roomId={roomId}
-        socketRef={socketRef}
-      />
-      {/* Always show footer - with or without a song */}
+      
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar with active users */}
+        <ActiveUsersSidebar onUserClick={setSelectedChatUser} />
+        
+        {/* Main content area */}
+        <div className="flex-1 overflow-auto scrollbar-none">
+          {selectedChatUser ? (
+            <ChatView 
+              user={selectedChatUser} 
+              onClose={() => setSelectedChatUser(null)} 
+            />
+          ) : (
+            <Home
+              songs={getVisibleSongs()}
+              onLoadMore={handleLoadMore}
+              showLoadMore={songs.length > visibleCount}
+              onPlay={handlePlay}
+              isLoading={isLoading}
+              error={error}
+              roomId={roomId}
+              socketRef={socketRef}
+            />
+          )}
+        </div>
+      </div>
+      
       <PlayerFooter
         song={currentSongIndex !== null && songs[currentSongIndex] ? songs[currentSongIndex] : null}
         isPlaying={isPlaying}
