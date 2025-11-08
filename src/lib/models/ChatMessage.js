@@ -1,14 +1,13 @@
-// ============================================
-// FILE 2: src/lib/models/ChatMessage.js (NEW)
-// ============================================
+// src/lib/models/ChatMessage.js
 
 import mongoose from "mongoose";
 
 const chatMessageSchema = new mongoose.Schema(
   {
     senderId: {
-      type: String, // Clerk user ID
+      type: String,
       required: true,
+      index: true,
     },
     senderName: {
       type: String,
@@ -16,17 +15,28 @@ const chatMessageSchema = new mongoose.Schema(
     },
     senderImage: {
       type: String,
+      default: null,
     },
     recipientId: {
-      type: String, // Clerk user ID
+      type: String,
       required: true,
+      index: true,
     },
     message: {
       type: String,
       required: true,
-      maxlength: 1000,
+      trim: true,
+      maxlength: 2000,
     },
     read: {
+      type: Boolean,
+      default: false,
+    },
+    deletedBySender: {
+      type: Boolean,
+      default: false,
+    },
+    deletedByRecipient: {
       type: Boolean,
       default: false,
     },
@@ -36,8 +46,12 @@ const chatMessageSchema = new mongoose.Schema(
   }
 );
 
-// Index for faster queries
+// Compound index for efficient querying of conversations
 chatMessageSchema.index({ senderId: 1, recipientId: 1, createdAt: -1 });
+chatMessageSchema.index({ recipientId: 1, senderId: 1, createdAt: -1 });
+
+// Index for unread messages
+chatMessageSchema.index({ recipientId: 1, read: 1 });
 
 const ChatMessage = mongoose.models.ChatMessage || mongoose.model("ChatMessage", chatMessageSchema);
 

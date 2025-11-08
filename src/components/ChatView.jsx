@@ -1,7 +1,3 @@
-// ============================================
-// FILE 2: src/components/ChatView.jsx (NEW)
-// ============================================
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -14,52 +10,70 @@ export default function ChatView({ user, onClose }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
+  // Early return if user is not provided
+  if (!user) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-transparent">
+        <p className="text-gray-400">No user selected</p>
+      </div>
+    );
+  }
+
   useEffect(() => {
+    if (!user?.clerkId) return;
+
     fetchChatHistory();
 
     const socket = getSocket();
     socketRef.current = socket;
 
-    socket.on('receive-dm', (data) => {
+    const handleReceiveDM = (data) => {
       if (data.senderId === user.clerkId) {
         const newMessage = {
           id: Date.now(),
           text: data.message,
           sender: 'them',
-          timestamp: new Date(data.timestamp),
+          timestamp: new Date(data.timestamp || new Date()),
           senderName: data.senderName,
           senderImage: data.senderImage,
         };
         setMessages(prev => [...prev, newMessage]);
         scrollToBottom();
       }
-    });
+    };
 
-    socket.on('user-typing', (data) => {
+    const handleUserTyping = (data) => {
       if (data.senderId === user.clerkId) {
         setIsTyping(data.isTyping);
         if (data.isTyping) {
           setTimeout(() => setIsTyping(false), 3000);
         }
       }
-    });
+    };
+
+    socket.on('receive-dm', handleReceiveDM);
+    socket.on('user-typing', handleUserTyping);
 
     return () => {
-      socket.off('receive-dm');
-      socket.off('user-typing');
+      socket.off('receive-dm', handleReceiveDM);
+      socket.off('user-typing', handleUserTyping);
     };
-  }, [user.clerkId]);
+  }, [user?.clerkId]);
 
   const fetchChatHistory = async () => {
+    if (!user?.clerkId) return;
+    
+    setIsLoading(true);
     try {
       const response = await fetch(`/api/chat/history?userId=${user.clerkId}`);
       if (response.ok) {
         const data = await response.json();
-        const formattedMessages = data.messages.map(msg => ({
+        const formattedMessages = (data.messages || []).map(msg => ({
           id: msg._id,
           text: msg.message,
           sender: msg.senderId === currentUser?.id ? 'me' : 'them',
@@ -72,6 +86,9 @@ export default function ChatView({ user, onClose }) {
       }
     } catch (error) {
       console.error('Error fetching chat history:', error);
+      setMessages([]); // Set empty array on error
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -83,7 +100,7 @@ export default function ChatView({ user, onClose }) {
 
   const sendMessage = async () => {
     const message = inputValue.trim();
-    if (!message) return;
+    if (!message || !user?.clerkId) return;
 
     const tempMessage = {
       id: Date.now(),
@@ -131,7 +148,9 @@ export default function ChatView({ user, onClose }) {
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
 
-    socketRef.current?.emit('typing', {
+    if (!user?.clerkId || !socketRef.current) return;
+
+    socketRef.current.emit('typing', {
       recipientId: user.clerkId,
       isTyping: true,
     });
@@ -149,25 +168,33 @@ export default function ChatView({ user, onClose }) {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col bg-gradient-to-br from-gray-900 via-purple-900/20 to-black">
+    <div className="w-full h-full flex flex-col bg-transparent overflow-hidden">
       {/* Header */}
-      <div className="bg-black/60 backdrop-blur-lg border-b border-white/10 p-4">
+      <div className="bg-[#1a1a1a] border-b border-gray-800 p-4 rounded-t-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="text-white/70 hover:text-white transition p-2 hover:bg-white/10 rounded-lg"
+              className="text-gray-400 hover:text-white transition p-2 hover:bg-white/10 rounded-lg"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             
             <div className="relative">
-              <img
-                src={user.imageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
-                alt={user.name}
-                className="w-12 h-12 rounded-full border-2 border-white/20"
-              />
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-black"></div>
+              {user.imageUrl ? (
+                <img
+                  src={user.imageUrl}
+                  alt={user.name}
+                  className="w-12 h-12 rounded-full border-2 border-gray-700"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-white font-semibold text-lg">
+                  {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              )}
+              <div className={`absolute bottom-0 right-0 w-3 h-3 ${
+                user.status === 'online' ? 'bg-green-500' : 'bg-gray-500'
+              } rounded-full border-2 border-[#1a1a1a]`}></div>
             </div>
             
             <div>
@@ -175,29 +202,28 @@ export default function ChatView({ user, onClose }) {
               {isTyping ? (
                 <p className="text-green-400 text-sm italic">typing...</p>
               ) : (
-                <p className="text-white/60 text-sm">Online</p>
+                <p className="text-gray-400 text-sm">
+                  {user.status === 'online' ? 'Online' : 'Offline'}
+                </p>
               )}
             </div>
           </div>
-          
-          <button
-            onClick={onClose}
-            className="text-white/70 hover:text-white transition p-2 hover:bg-white/10 rounded-lg"
-          >
-            <X className="w-6 h-6" />
-          </button>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.length === 0 ? (
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
+          </div>
+        ) : !messages || messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-20 h-20 bg-purple-600/20 rounded-full flex items-center justify-center mb-4">
-              <MessageCircle className="w-10 h-10 text-purple-400" />
+            <div className="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mb-4">
+              <MessageCircle className="w-10 h-10 text-green-400" />
             </div>
-            <p className="text-white/60 text-lg">Start a conversation with {user.name}</p>
-            <p className="text-white/40 text-sm mt-2">Send a message to get started</p>
+            <p className="text-gray-400 text-lg">No messages yet</p>
+            <p className="text-gray-500 text-sm mt-2">Send a message to start the conversation</p>
           </div>
         ) : (
           messages.map((msg) => (
@@ -208,14 +234,14 @@ export default function ChatView({ user, onClose }) {
               <div
                 className={`max-w-md rounded-2xl px-4 py-3 ${
                   msg.sender === 'me'
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
-                    : 'bg-white/10 backdrop-blur-lg text-white border border-white/10'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-[#2a2a2a] text-white border border-gray-700'
                 }`}
               >
                 <p className="break-words">{msg.text}</p>
                 <p
                   className={`text-xs mt-1 ${
-                    msg.sender === 'me' ? 'text-white/70' : 'text-white/50'
+                    msg.sender === 'me' ? 'text-green-200' : 'text-gray-400'
                   }`}
                 >
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -228,7 +254,7 @@ export default function ChatView({ user, onClose }) {
       </div>
 
       {/* Input Area */}
-      <div className="bg-black/60 backdrop-blur-lg border-t border-white/10 p-4">
+      <div className="bg-[#1a1a1a] border-t border-gray-800 px-2 py-1 rounded-b-md">
         <div className="flex gap-3">
           <input
             type="text"
@@ -236,15 +262,14 @@ export default function ChatView({ user, onClose }) {
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            className="flex-1 px-4 py-3 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
           />
           <button
             onClick={sendMessage}
             disabled={!inputValue.trim()}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-full hover:from-purple-700 hover:to-pink-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600 flex items-center gap-2"
           >
             <Send className="w-5 h-5" />
-            Send
           </button>
         </div>
       </div>

@@ -3,8 +3,6 @@
 import Header from "../components/Header";
 import Home from "../components/Home";
 import PlayerFooter from "../components/PlayerFooter";
-import ActiveUsersSidebar from "../components/ActiveUsersSidebar";
-import ChatView from "../components/ChatView";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "../lib/socket";
@@ -49,16 +47,6 @@ export default function Page() {
     () => terms[Math.floor(Math.random() * terms.length)],
     []
   );
-
-  // Listen for chat open events from ActiveUsersSidebar
-  useEffect(() => {
-    const handleOpenChat = (event) => {
-      setSelectedChatUser(event.detail);
-    };
-
-    window.addEventListener('openChat', handleOpenChat);
-    return () => window.removeEventListener('openChat', handleOpenChat);
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -214,30 +202,19 @@ export default function Page() {
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-black">
       <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
       
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar with active users */}
-        <ActiveUsersSidebar onUserClick={setSelectedChatUser} />
-        
-        {/* Main content area */}
-        <div className="flex-1 overflow-auto scrollbar-none">
-          {selectedChatUser ? (
-            <ChatView 
-              user={selectedChatUser} 
-              onClose={() => setSelectedChatUser(null)} 
-            />
-          ) : (
-            <Home
-              songs={getVisibleSongs()}
-              onLoadMore={handleLoadMore}
-              showLoadMore={songs.length > visibleCount}
-              onPlay={handlePlay}
-              isLoading={isLoading}
-              error={error}
-              roomId={roomId}
-              socketRef={socketRef}
-            />
-          )}
-        </div>
+      <div className="flex-1 overflow-hidden">
+        <Home
+          songs={getVisibleSongs()}
+          onLoadMore={handleLoadMore}
+          showLoadMore={songs.length > visibleCount}
+          onPlay={handlePlay}
+          isLoading={isLoading}
+          error={error}
+          roomId={roomId}
+          socketRef={socketRef}
+          onOpenChat={setSelectedChatUser}
+          selectedChatUser={selectedChatUser}
+        />
       </div>
       
       <PlayerFooter
