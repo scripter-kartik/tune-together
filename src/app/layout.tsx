@@ -1,29 +1,11 @@
-// src/app/layout.tsx
-
-"use client";
-
-import { ClerkProvider } from "@clerk/nextjs";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata } from "next";
 import "./globals.css";
-import { useActivityTracker } from "@/hooks/useActivityTracker";
+import { ClerkProvider } from "@clerk/nextjs";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// Wrapper component to use the hook
-function ActivityWrapper({ children }: { children: React.ReactNode }) {
-  // Track user activity automatically
-  useActivityTracker();
-  
-  return <>{children}</>;
-}
+export const metadata: Metadata = {
+  title: "Tune Together",
+  description: "Listen to music together",
+};
 
 export default function RootLayout({
   children,
@@ -33,12 +15,8 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <ActivityWrapper>
-            {children}
-          </ActivityWrapper>
+        <body className="font-sans antialiased">
+          {children}
         </body>
       </html>
     </ClerkProvider>

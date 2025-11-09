@@ -70,7 +70,7 @@ export async function POST(req) {
 
 
 // Helper function to clear currently playing
-export async function DELETE(req) {
+export async function DELETE() {
   try {
     const clerkUser = await currentUser();
     
