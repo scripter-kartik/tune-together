@@ -1,7 +1,3 @@
-// ============================================
-// FILE 9: src/hooks/useChat.js (NEW)
-// ============================================
-
 "use client";
 
 import { useEffect, useRef } from 'react';
@@ -18,11 +14,9 @@ export function useChat() {
     const socket = getSocket();
     socketRef.current = socket;
 
-    // Register user with socket
     socket.emit('register-user', user.id);
 
     return () => {
-      // Cleanup handled by socket singleton
     };
   }, [user]);
 

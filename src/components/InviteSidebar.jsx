@@ -1,5 +1,3 @@
-// src/components/InviteSidebar.jsx
-
 "use client";
 import { useState, useEffect } from "react";
 import QRCode from "react-qr-code";

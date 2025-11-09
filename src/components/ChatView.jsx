@@ -15,7 +15,6 @@ export default function ChatView({ user, onClose }) {
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Early return if user is not provided
   if (!user) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-transparent">
@@ -24,9 +23,7 @@ export default function ChatView({ user, onClose }) {
     );
   }
 
-  // Get user status display
   const getUserStatusDisplay = () => {
-    // If currently playing music
     if (user.currentlyPlaying?.songTitle) {
       return {
         text: `Playing: ${user.currentlyPlaying.songTitle}`,
@@ -36,7 +33,6 @@ export default function ChatView({ user, onClose }) {
       };
     }
     
-    // Based on onlineStatus
     if (user.onlineStatus === 'online') {
       return {
         text: 'Online',
@@ -125,7 +121,7 @@ export default function ChatView({ user, onClose }) {
       }
     } catch (error) {
       console.error('Error fetching chat history:', error);
-      setMessages([]); // Set empty array on error
+      setMessages([]); 
     } finally {
       setIsLoading(false);
     }
@@ -208,7 +204,6 @@ export default function ChatView({ user, onClose }) {
 
   return (
     <div className="w-full h-full flex flex-col bg-transparent overflow-hidden">
-      {/* Header */}
       <div className="bg-[#1a1a1a] border-b border-gray-800 p-4 rounded-t-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -231,7 +226,6 @@ export default function ChatView({ user, onClose }) {
                   {user.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               )}
-              {/* Status dot with correct color */}
               <div className={`absolute bottom-0 right-0 w-3 h-3 ${status.dotColor} rounded-full border-2 border-[#1a1a1a]`}></div>
             </div>
             
@@ -252,7 +246,6 @@ export default function ChatView({ user, onClose }) {
         </div>
       </div>
 
-      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
@@ -294,7 +287,6 @@ export default function ChatView({ user, onClose }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
       <div className="bg-[#1a1a1a] border-t border-gray-800 px-2 py-1 rounded-b-md">
         <div className="flex gap-3">
           <input

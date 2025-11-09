@@ -18,7 +18,6 @@ export default function MusicCards({ songs, onPlay }) {
             2xl:w-[245px] 2xl:h-72        
           "
         >
-          {/* Image */}
           <img
             src={song.album.cover_medium}
             alt={song.title}
@@ -31,7 +30,6 @@ export default function MusicCards({ songs, onPlay }) {
             "
           />
 
-          {/* Play button hover */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
             <button
               className="bg-green-500 p-2 rounded-full"
@@ -41,7 +39,6 @@ export default function MusicCards({ songs, onPlay }) {
             </button>
           </div>
 
-          {/* Title + Artist */}
           <div className="mt-2 w-full px-1">
             <p className="text-white text-sm font-medium truncate">
               {song.title}

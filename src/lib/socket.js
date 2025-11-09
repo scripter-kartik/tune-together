@@ -1,4 +1,3 @@
-// src/lib/socket.js
 import { io } from "socket.io-client";
 
 const SOCKET_URL =

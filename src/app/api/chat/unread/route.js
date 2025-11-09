@@ -1,5 +1,3 @@
-// src/app/api/chat/unread/route.js
-
 import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import ChatMessage from "@/lib/models/ChatMessage";

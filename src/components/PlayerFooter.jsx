@@ -1,5 +1,3 @@
-// src/components/PlayerFooter.jsx
-
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
@@ -36,7 +34,6 @@ export default function PlayerFooter({
     } catch {}
   };
 
-  // Update now playing status when song or play state changes
   useEffect(() => {
     if (!song || !isPlaying) {
       updateNowPlaying(null);
@@ -220,7 +217,6 @@ export default function PlayerFooter({
   return (
     <div className="w-full bg-gradient-to-r from-[#181818] to-[#1e1e1e] text-white px-2 sm:px-3 md:px-4 py-5 sm:py-3 flex flex-col gap-2 sm:gap-3 border-t border-neutral-800 z-50">
       
-      {/* Progress Bar */}
       <div className="flex items-center gap-1 sm:gap-2 w-full">
         <span className="text-xs text-gray-400 flex-shrink-0 mr-2 w-7 sm:w-8 text-right">{formatTime(currentTime)}</span>
         <input
@@ -237,10 +233,8 @@ export default function PlayerFooter({
         <span className="text-xs ml-2 text-gray-400 flex-shrink-0 w-7 sm:w-8 text-left">{formatTime(Math.max(duration - currentTime, 0))}</span>
       </div>
 
-      {/* Main Row - Song Info | Controls | Volume */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-between">
         
-        {/* Song Info - Left */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-[0.3]">
           {song ? (
             <>
@@ -271,7 +265,6 @@ export default function PlayerFooter({
           )}
         </div>
 
-        {/* Player Controls - Center */}
         <div className="flex gap-3 sm:gap-4 md:gap-5 items-center justify-center flex-1 md:flex-[0.4]">
           <button 
             onClick={onPrev} 
@@ -307,7 +300,6 @@ export default function PlayerFooter({
           </button>
         </div>
 
-        {/* Volume Controls - Right */}
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0 flex-1 md:flex-[0.3] justify-end">
           <button 
             onClick={toggleMute} 

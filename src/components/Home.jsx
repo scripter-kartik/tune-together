@@ -25,7 +25,6 @@ export default function Home({
   return (
     <div className="w-full h-full flex flex-col md:flex-row gap-0 md:gap-2 p-0 md:p-2 bg-black overflow-hidden">
 
-      {/* ✅ MOBILE Buttons */}
       <div className="flex md:hidden gap-2 p-2 bg-black border-b border-neutral-800 flex-shrink-0">
         <button
           onClick={() => setShowLeft(!showLeft)}
@@ -43,12 +42,10 @@ export default function Home({
         </button>
       </div>
 
-      {/* ✅ Playlist Sidebar - Desktop */}
       <div className="hidden md:flex md:w-72 lg:w-80 flex-shrink-0 bg-[#1e1e1e] rounded-lg overflow-hidden flex-col h-full">
         <PlaylistSidebar onOpenChat={onOpenChat} />
       </div>
 
-      {/* ✅ Playlist Sidebar Drawer */}
       {showLeft && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div
@@ -72,7 +69,6 @@ export default function Home({
         </div>
       )}
 
-      {/* ✅ Main Content - KEY FIX: Remove py-2, add proper height */}
       <div className="flex-1 bg-[#121212] rounded-lg flex flex-col min-w-0 overflow-y-auto scrollbar  h-full">
 
         {selectedChatUser ? (
@@ -103,12 +99,10 @@ export default function Home({
               </div>
             ) : (
               <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                {/* Songs Grid - Scrollable */}
                 <div className="flex-1 overflow-y-auto">
                   <MusicCards songs={songs} onPlay={onPlay} />
                 </div>
 
-                {/* Load More Button */}
                 {showLoadMore && (
                   <div className="flex-shrink-0 p-3 md:p-4 flex justify-center border-t border-neutral-800 bg-[#121212]">
                     <button
@@ -126,12 +120,10 @@ export default function Home({
 
       </div>
 
-      {/* ✅ Listening Users Sidebar - Desktop */}
       <div className="hidden md:flex md:w-72 lg:w-80 flex-shrink-0 bg-[#1e1e1e] rounded-lg overflow-hidden flex-col h-full">
         <ListeningUsers />
       </div>
 
-      {/* ✅ Listening Users Drawer */}
       {showRight && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div

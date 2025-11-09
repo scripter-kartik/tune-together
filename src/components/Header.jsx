@@ -19,25 +19,21 @@ export default function Header({ query, setQuery, handleSearch }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 md:px-5 px-3 py-2">
 
-      {/* ✅ Desktop Title */}
       <div className="md:flex hidden items-center gap-1">
         <img src="/icon2.png" alt="Logo" className="md:w-10 md:h-10" />
         <h1 className="font-bold text-green-400">tune-together</h1>
       </div>
 
-      {/* ✅ Desktop Full Section */}
       <div className="md:flex hidden items-center justify-between w-[calc(100vw-240px)]">
 
         <div className="flex flex-wrap justify-center items-center gap-3 flex-1">
 
-          {/* Home */}
           <Link href="/">
             <div className="bg-[#1e1e1e] w-10 h-10 rounded-full flex justify-center items-center p-2 hover:bg-[#2a2a2a] transition cursor-pointer">
               <img className="w-5 h-5" src="/home.png" alt="Home" />
             </div>
           </Link>
 
-          {/* Search + Browse */}
           <div className="bg-[#1e1e1e] flex items-center rounded-full px-3 py-2 h-10 flex-1 max-w-2xl mr-2">
             <img className="w-5 h-5 mr-3" src="/search.png" alt="Search" />
 
@@ -60,7 +56,6 @@ export default function Header({ query, setQuery, handleSearch }) {
           </div>
         </div>
 
-        {/* Auth */}
         <div className="flex justify-center items-center gap-4">
           <SignedOut>
             <div className="flex justify-center items-center gap-1">
@@ -84,10 +79,8 @@ export default function Header({ query, setQuery, handleSearch }) {
         </div>
       </div>
 
-      {/* ✅ MOBILE */}
       <div className="flex flex-col w-full h-full md:hidden">
 
-        {/* Row 1 → Logo + Auth */}
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-1">
             <img src="/icon2.png" alt="Logo" className="w-6 h-6" />
@@ -117,17 +110,14 @@ export default function Header({ query, setQuery, handleSearch }) {
           </div>
         </div>
 
-        {/* Row 2 → Home + Search + Browse */}
         <div className="flex items-center gap-2 mt-3 w-full">
 
-          {/* Home */}
           <Link href="/">
             <div className="bg-[#1e1e1e] w-10 h-10 rounded-full flex justify-center items-center p-2 hover:bg-[#2a2a2a] transition cursor-pointer">
               <img className="w-5 h-5" src="/home.png" alt="Home" />
             </div>
           </Link>
 
-          {/* Search */}
           <div className="bg-[#1e1e1e] flex items-center rounded-full px-3 py-2 h-10 flex-1">
             <img className="w-5 h-5 mr-3" src="/search.png" alt="Search" />
 

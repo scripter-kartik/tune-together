@@ -12,7 +12,6 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useActivityTracker } from "../../../../hooks/useActivityTracker"; // ADD THIS IMPORT
 
-/* Playlist Sidebar Content */
 function PlaylistSidebarContent({ currentId }) {
   const playlists = [
     { id: "1", name: "Old is <3", type: "Album", artist: "Ram :)", image: "/playlist1.png", gradient: "from-purple-600 to-blue-600" },
@@ -65,7 +64,6 @@ export default function PlaylistPage() {
   const artist = searchParams.get("artist") || "Various Artists";
   const gradient = searchParams.get("gradient") || "from-purple-600 to-blue-600";
 
-  // ADD THIS LINE - Track user activity with current song
   useActivityTracker(songs[currentSongIndex]);
 
   useEffect(() => {
@@ -147,14 +145,11 @@ export default function PlaylistPage() {
 
   const handleMainPlayPause = () => {
     if (isPlaying) {
-      // If playing, pause it
       handleTogglePlayPause();
     } else {
-      // If paused and we have a current song, resume it
       if (currentSongIndex !== null) {
         handleTogglePlayPause();
       } else {
-        // If no song selected, play the first one
         handlePlayAll();
       }
     }
@@ -174,7 +169,6 @@ export default function PlaylistPage() {
     <div className="h-screen w-screen flex flex-col bg-black overflow-hidden">
       <Header query={query} setQuery={setQuery} handleSearch={() => {}} />
 
-      {/* MOBILE TOP BUTTON */}
       <div className="flex lg:hidden p-2 bg-black border-b border-neutral-800 flex-shrink-0">
         <button
           onClick={() => setShowLeft(true)}
@@ -186,7 +180,6 @@ export default function PlaylistPage() {
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row gap-2 min-h-0 overflow-hidden">
-        {/* LEFT SIDEBAR — Desktop */}
         <div className="hidden lg:flex lg:w-80 flex-shrink-0 overflow-hidden rounded-md">
           <div className="flex flex-col h-full w-full bg-[#121212] rounded-md overflow-hidden">
             <div className="flex items-center px-4 py-4 gap-3 border-b border-gray-800 flex-shrink-0">
@@ -198,7 +191,6 @@ export default function PlaylistPage() {
           </div>
         </div>
 
-        {/* MOBILE SIDEBAR */}
         {showLeft && (
           <div className="fixed inset-0 bg-black/60 z-40 lg:hidden">
             <div className="absolute inset-0" onClick={() => setShowLeft(false)} />
@@ -216,11 +208,8 @@ export default function PlaylistPage() {
           </div>
         )}
 
-        {/* MAIN CONTENT */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-md">
-          {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto">
-            {/* HERO */}
             <div className={`bg-gradient-to-b ${gradient} to-black px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 flex-shrink-0`}>
               <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6">
                 <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 bg-black/20 rounded shadow-xl overflow-hidden flex-shrink-0">
@@ -242,10 +231,8 @@ export default function PlaylistPage() {
               </div>
             </div>
 
-            {/* SONGS */}
             <div className="bg-black px-3 sm:px-6 py-4 sm:py-6">
               <div className="max-w-6xl mx-auto">
-                {/* ACTIONS */}
                 <div className="flex items-center gap-4 sm:gap-6 pb-6 flex-shrink-0">
                   <button
                     onClick={handleMainPlayPause}
@@ -262,7 +249,6 @@ export default function PlaylistPage() {
                   </button>
                 </div>
 
-                {/* HEADER — HIDDEN ON MOBILE */}
                 <div className="hidden md:grid grid-cols-[16px_4fr_2fr_1fr] gap-4 px-4 py-2 border-b border-gray-800 text-gray-400 text-sm flex-shrink-0">
                   <div className="text-center">#</div>
                   <div>Title</div>
@@ -272,7 +258,6 @@ export default function PlaylistPage() {
                   </div>
                 </div>
 
-                {/* LIST */}
                 {isLoading ? (
                   <div className="text-center py-20 text-gray-400">Loading...</div>
                 ) : (
@@ -294,7 +279,6 @@ export default function PlaylistPage() {
                           ${currentSongIndex === index ? "bg-white/10" : ""}
                         `}
                       >
-                        {/* INDEX / PLAY */}
                         <div className="flex items-center justify-center">
                           {hoveredIndex === index || currentSongIndex === index ? (
                             <FaPlay className="text-white text-xs" />
@@ -305,7 +289,6 @@ export default function PlaylistPage() {
                           )}
                         </div>
 
-                        {/* TITLE */}
                         <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
                           <img src={song.album.cover_small} className="w-8 h-8 sm:w-10 sm:h-10 rounded flex-shrink-0" />
                           <div className="overflow-hidden min-w-0">
@@ -316,10 +299,8 @@ export default function PlaylistPage() {
                           </div>
                         </div>
 
-                        {/* Released (only desktop) */}
                         <div className="hidden md:flex items-center text-sm text-gray-400">2024</div>
 
-                        {/* Duration */}
                         <div className="flex items-center justify-end text-xs sm:text-sm text-gray-400">
                           {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, "0")}
                         </div>
@@ -333,7 +314,6 @@ export default function PlaylistPage() {
         </div>
       </div>
 
-      {/* PLAYER FOOTER - Fixed at bottom */}
       <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-neutral-800">
         <PlayerFooter
           song={songs[currentSongIndex] ?? null}

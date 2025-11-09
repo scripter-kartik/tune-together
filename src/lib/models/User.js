@@ -1,7 +1,3 @@
-// ============================================
-// FILE 1: src/lib/models/User.js (UPDATED)
-// ============================================
-
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -23,12 +19,10 @@ const userSchema = new mongoose.Schema(
     imageUrl: {
       type: String,
     },
-    // Track user activity
     lastActive: {
       type: Date,
       default: Date.now,
     },
-    // Track what they're currently playing
     currentlyPlaying: {
       songId: String,
       songTitle: String,
@@ -36,13 +30,11 @@ const userSchema = new mongoose.Schema(
       albumArt: String,
       startedAt: Date,
     },
-    // User status
     status: {
       type: String,
       enum: ['online', 'idle', 'offline'],
       default: 'online',
     },
-    // NEW: Socket ID for real-time chat
     socketId: {
       type: String,
       default: null,
@@ -53,7 +45,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Update lastActive whenever user does something
 userSchema.methods.updateActivity = function() {
   this.lastActive = new Date();
   return this.save();

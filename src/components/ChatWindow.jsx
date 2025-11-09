@@ -1,5 +1,3 @@
-// src/components/ChatWindow.jsx
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -18,10 +16,8 @@ export default function ChatWindow({ user, onClose }) {
   const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
-    // Fetch chat history
     fetchChatHistory();
 
-    // Setup socket listeners
     const socket = getSocket();
     socketRef.current = socket;
 
@@ -42,7 +38,6 @@ export default function ChatWindow({ user, onClose }) {
 
     socket.on('dm-sent', (data) => {
       if (data.recipientId === user.clerkId) {
-        // Message confirmed sent
       }
     });
 
@@ -104,7 +99,6 @@ export default function ChatWindow({ user, onClose }) {
     setInputValue('');
     scrollToBottom();
 
-    // Save to database
     try {
       await fetch('/api/chat/send', {
         method: 'POST',
@@ -115,7 +109,6 @@ export default function ChatWindow({ user, onClose }) {
         }),
       });
 
-      // Send via socket for real-time delivery
       const fullName = [currentUser?.firstName, currentUser?.lastName]
         .filter(Boolean)
         .join(' ') || 'User';
@@ -141,18 +134,15 @@ export default function ChatWindow({ user, onClose }) {
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
 
-    // Send typing indicator
     socketRef.current?.emit('typing', {
       recipientId: user.clerkId,
       isTyping: true,
     });
 
-    // Clear previous timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Stop typing indicator after 2s
     typingTimeoutRef.current = setTimeout(() => {
       socketRef.current?.emit('typing', {
         recipientId: user.clerkId,
@@ -163,7 +153,6 @@ export default function ChatWindow({ user, onClose }) {
 
   return (
     <div className="w-80 bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col">
-      {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -201,7 +190,6 @@ export default function ChatWindow({ user, onClose }) {
 
       {!isMinimized && (
         <>
-          {/* Messages */}
           <div className="flex-1 p-4 bg-gray-50 overflow-y-auto h-96">
             {messages.length === 0 ? (
               <div className="text-center text-gray-400 mt-8">
@@ -236,7 +224,6 @@ export default function ChatWindow({ user, onClose }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <div className="p-4 bg-white border-t">
             <div className="flex gap-2">
               <input

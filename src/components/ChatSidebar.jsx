@@ -1,4 +1,3 @@
-// src/components/ChatSidebar.jsx
 
 "use client";
 import { useEffect, useRef, useState } from "react";
@@ -26,7 +25,6 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
   const localSocketRef = useRef(null);
   const socketRef = externalSocketRef || localSocketRef;
 
-  // Load username
   useEffect(() => {
     const stored = localStorage.getItem("chatUsername");
     if (stored) setUsername(stored);
@@ -37,7 +35,6 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
     }
   }, []);
 
-  // Socket setup
   useEffect(() => {
     if (!roomId || !username) return;
 
@@ -88,7 +85,6 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    // Broadcast (others will receive); also append locally
     socketRef.current.emit("chat message", { roomId, msg });
     setMessages((prev) => [...prev, msg]);
     setInput("");

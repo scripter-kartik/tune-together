@@ -1,12 +1,9 @@
-// src/app/api/users/update-activity/route.js
-
 import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import User from "@/lib/models/User";
 
 export async function POST(req) {
   try {
-    // Get authenticated user
     const clerkUser = await currentUser();
     
     if (!clerkUser) {
@@ -16,14 +13,11 @@ export async function POST(req) {
       );
     }
 
-    // Parse request body
     const body = await req.json();
     const { currentlyPlaying, status } = body;
 
-    // Connect to database
     await connectDB();
 
-    // Update or create user
     const updateData = {
       lastActive: new Date(),
       clerkId: clerkUser.id,
@@ -32,7 +26,6 @@ export async function POST(req) {
       imageUrl: clerkUser.imageUrl,
     };
 
-    // Add optional fields if provided
     if (currentlyPlaying) {
       updateData.currentlyPlaying = currentlyPlaying;
     }
@@ -41,7 +34,6 @@ export async function POST(req) {
       updateData.status = status;
     }
 
-    // Upsert user (update if exists, create if not)
     const user = await User.findOneAndUpdate(
       { clerkId: clerkUser.id },
       { $set: updateData },
@@ -69,7 +61,6 @@ export async function POST(req) {
 }
 
 
-// Helper function to clear currently playing
 export async function DELETE() {
   try {
     const clerkUser = await currentUser();

@@ -10,7 +10,7 @@ export default function PlaylistSidebar({ onOpenChat }) {
   const [showChatList, setShowChatList] = useState(false);
   const [chatUsers, setChatUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('all'); // 'all', 'online', 'recent'
+  const [filter, setFilter] = useState('all'); 
 
   const playlists = [
     {
@@ -71,7 +71,6 @@ export default function PlaylistSidebar({ onOpenChat }) {
     },
   ];
 
-  // Fetch users when switching to chat view or filter changes
   useEffect(() => {
     if (showChatList && isSignedIn) {
       fetchChatUsers();
@@ -99,7 +98,6 @@ export default function PlaylistSidebar({ onOpenChat }) {
     }
   };
 
-  // Get user initials for avatar fallback
   const getInitials = (name) => {
     if (!name) return '?';
     const parts = name.trim().split(' ');
@@ -109,7 +107,6 @@ export default function PlaylistSidebar({ onOpenChat }) {
     return parts[0][0];
   };
 
-  // Get random color for avatar
   const getAvatarColor = (index) => {
     const colors = [
       'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500',
@@ -118,9 +115,7 @@ export default function PlaylistSidebar({ onOpenChat }) {
     return colors[index % colors.length];
   };
 
-  // Determine user status
   const getUserStatus = (user) => {
-    // If currently playing
     if (user.currentlyPlaying?.songTitle) {
       return {
         text: `Playing: ${user.currentlyPlaying.songTitle}`,
@@ -130,7 +125,6 @@ export default function PlaylistSidebar({ onOpenChat }) {
       };
     }
     
-    // Based on online status
     if (user.onlineStatus === 'online') {
       return {
         text: 'Online',
@@ -155,13 +149,11 @@ export default function PlaylistSidebar({ onOpenChat }) {
     }
   };
 
-  // Count users by status
   const onlineCount = chatUsers.filter(u => u.onlineStatus === 'online').length;
   const idleCount = chatUsers.filter(u => u.onlineStatus === 'idle').length;
 
   return (
     <div className="flex flex-col h-full bg-[#121212] rounded-md overflow-hidden">
-      {/* Header */}
       <div className="flex-shrink-0 border-b border-gray-800">
         <div className="flex items-center px-4 py-4 gap-3">
           {showChatList && (
@@ -188,7 +180,6 @@ export default function PlaylistSidebar({ onOpenChat }) {
           </h2>
         </div>
 
-        {/* Filter Tabs - Only show when in chat view */}
         {showChatList && (
           <div className="flex gap-1 px-4 pb-3">
             <button
@@ -225,10 +216,8 @@ export default function PlaylistSidebar({ onOpenChat }) {
         )}
       </div>
 
-      {/* Content Area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
         {!showChatList ? (
-          // Playlist Items
           <div className="px-2 py-2">
             {playlists.map((playlist) => (
               <Link
@@ -272,7 +261,6 @@ export default function PlaylistSidebar({ onOpenChat }) {
             ))}
           </div>
         ) : (
-          // Chat Users List
           <div>
             {loading ? (
               <div className="flex items-center justify-center py-8">
@@ -311,13 +299,11 @@ export default function PlaylistSidebar({ onOpenChat }) {
                           {getInitials(user.name)}
                         </div>
                       )}
-                      {/* Status indicator */}
                       <div
                         className={`absolute bottom-0 right-0 w-3 h-3 ${status.indicator} rounded-full border-2 border-[#121212]`}
                       ></div>
                     </div>
 
-                    {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">
                         {user.name}
@@ -337,17 +323,14 @@ export default function PlaylistSidebar({ onOpenChat }) {
         )}
       </div>
 
-      {/* Messages Button - Only visible when logged in */}
       {isLoaded && isSignedIn && (
         <div className="p-4 border-t border-gray-800 bg-[#121212]">
           <button
             onClick={() => setShowChatList(!showChatList)}
             className="w-full relative group"
           >
-            {/* Glowing Background Effect */}
             <div className="absolute -inset-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-300 animate-pulse"></div>
 
-            {/* Button Content */}
             <div className="relative bg-gradient-to-r from-green-600 to-emerald-600 text-black px-4 py-3 rounded-lg text-lg font-bold flex items-center justify-center gap-2 hover:from-green-500 hover:to-emerald-500 transition-all duration-300 shadow-lg">
               {showChatList ? (
                 <>

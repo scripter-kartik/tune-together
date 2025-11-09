@@ -1,7 +1,3 @@
-// ============================================
-// FILE 4: src/app/api/chat/history/route.js (NEW)
-// ============================================
-
 import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import ChatMessage from "@/lib/models/ChatMessage";
@@ -23,7 +19,6 @@ export async function GET(req) {
 
     await connectDB();
 
-    // Get messages between these two users
     const messages = await ChatMessage.find({
       $or: [
         { senderId: user.id, recipientId: otherUserId },
@@ -33,7 +28,6 @@ export async function GET(req) {
       .sort({ createdAt: 1 })
       .limit(100);
 
-    // Mark messages as read
     await ChatMessage.updateMany(
       {
         senderId: otherUserId,

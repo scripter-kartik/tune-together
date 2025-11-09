@@ -7,9 +7,7 @@ const ListeningUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all', 'online', 'recent'
-
-  // Fetch users based on filter
+  const [filter, setFilter] = useState('all'); 
   useEffect(() => {
     if (!isSignedIn) {
       setLoading(false);
@@ -37,12 +35,10 @@ const ListeningUsers = () => {
 
     fetchUsers();
 
-    // Refresh users list every 30 seconds
     const interval = setInterval(fetchUsers, 30000);
     return () => clearInterval(interval);
   }, [isSignedIn, filter]);
 
-  // Get user initials for avatar
   const getInitials = (name) => {
     if (!name) return '?';
     const parts = name.trim().split(' ');
@@ -52,7 +48,6 @@ const ListeningUsers = () => {
     return parts[0][0];
   };
 
-  // Get random color for avatar
   const getAvatarColor = (index) => {
     const colors = [
       'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500',
@@ -61,9 +56,7 @@ const ListeningUsers = () => {
     return colors[index % colors.length];
   };
 
-  // Determine user status with more detail
   const getUserStatus = (user) => {
-    // If currently playing
     if (user.currentlyPlaying?.songTitle) {
       return {
         text: `Playing: ${user.currentlyPlaying.songTitle}`,
@@ -74,7 +67,6 @@ const ListeningUsers = () => {
       };
     }
     
-    // Based on online status
     if (user.onlineStatus === 'online') {
       return {
         text: 'Online',
@@ -102,7 +94,6 @@ const ListeningUsers = () => {
     }
   };
 
-  // Loading state
   if (!isLoaded || loading) {
     return (
       <div className="w-full h-full bg-[#121212] flex items-center justify-center">
@@ -111,17 +102,14 @@ const ListeningUsers = () => {
     );
   }
 
-  // Not signed in - Show login prompt
   if (!isSignedIn) {
     return (
       <div className="w-full h-full bg-[#121212] text-white flex flex-col">
-        {/* Header */}
         <div className="flex items-center px-4 py-3 gap-3 border-b border-gray-800/50">
           <Users className="w-5 h-5" />
           <h1 className="font-semibold text-base">What they're listening to</h1>
         </div>
 
-        {/* Login Prompt */}
         <div className="flex flex-col gap-10 justify-center items-center text-center flex-1 px-8">
           <div className="relative">
             <div
@@ -151,22 +139,18 @@ const ListeningUsers = () => {
     );
   }
 
-  // Count users by status
   const onlineCount = users.filter(u => u.onlineStatus === 'online').length;
   const idleCount = users.filter(u => u.onlineStatus === 'idle').length;
   const offlineCount = users.filter(u => u.onlineStatus === 'offline').length;
 
-  // Signed in - Show users list
   return (
     <div className="w-full h-full bg-[#121212] text-white overflow-hidden flex flex-col">
-      {/* Header */}
       <div className="flex-shrink-0 border-b border-gray-800/50">
         <div className="flex items-center px-4 py-3 gap-3">
           <Users className="w-5 h-5" />
           <h1 className="font-semibold text-base">Community</h1>
         </div>
 
-        {/* Filter Tabs */}
         <div className="flex gap-1 px-4 pb-3">
           <button
             onClick={() => setFilter('all')}
@@ -201,14 +185,12 @@ const ListeningUsers = () => {
         </div>
       </div>
 
-      {/* Error State */}
       {error && (
         <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/20">
           <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
 
-      {/* Users List */}
       <div className="flex-1 overflow-y-auto">
         {users.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center">
@@ -225,7 +207,6 @@ const ListeningUsers = () => {
                 key={user.clerkId}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer"
               >
-                {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   {user.imageUrl ? (
                     <img
@@ -240,11 +221,9 @@ const ListeningUsers = () => {
                       {getInitials(user.name)}
                     </div>
                   )}
-                  {/* Status indicator */}
                   <div className={`absolute bottom-0 right-0 w-3 h-3 ${status.indicator} rounded-full border-2 border-[#121212]`}></div>
                 </div>
 
-                {/* User Info */}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-[15px] truncate">{user.name}</p>
                   <div className="flex items-center gap-1">

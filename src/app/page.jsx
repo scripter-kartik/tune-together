@@ -200,12 +200,10 @@ export default function Page() {
 
   return (
     <div className="w-screen h-screen flex flex-col overflow-hidden bg-black">
-      {/* Header */}
       <header className="flex-shrink-0 z-40 border-b border-neutral-800">
         <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
       </header>
       
-      {/* Main - No padding, content goes up to footer */}
       <main className="flex-1 overflow-hidden pb-28">
         <Home
           songs={getVisibleSongs()}
@@ -221,7 +219,6 @@ export default function Page() {
         />
       </main>
       
-      {/* Footer */}
       <footer className="fixed bottom-0 left-0 right-0 z-50">
         <PlayerFooter
           song={currentSongIndex !== null && songs[currentSongIndex] ? songs[currentSongIndex] : null}

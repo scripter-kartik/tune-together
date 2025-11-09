@@ -1,5 +1,3 @@
-// src/app/browse/page.jsx
-
 "use client";
 
 import { useState } from "react";
@@ -12,12 +10,10 @@ export default function BrowsePage() {
 
   const handleSearch = () => {
     if (query.trim() !== "") {
-      // Update the URL and trigger the parent page's search
       window.location.href = `/?q=${encodeURIComponent(query)}`;
     }
   };
 
-  // Browse categories with vibrant colors
   const categories = [
     { id: 1, name: "Pop", color: "from-pink-500 to-pink-700", query: "pop" },
     { id: 2, name: "Hip-Hop", color: "from-purple-500 to-purple-700", query: "hip hop" },
@@ -64,13 +60,11 @@ export default function BrowsePage() {
       <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
       
       <div className="flex-1 overflow-y-auto scrollbar-none bg-gradient-to-b from-[#121212] to-black px-6 py-6 my-3 rounded-sm pb-32">
-        {/* Page Title */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Browse All</h1>
           <p className="text-gray-400 text-sm">Explore music by genre, mood, and activity</p>
         </div>
 
-        {/* Genres Section */}
         <section className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-4">Genres</h2>
           <BrowseGrid>
@@ -85,7 +79,6 @@ export default function BrowsePage() {
           </BrowseGrid>
         </section>
 
-        {/* Moods Section */}
         <section className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-4">Moods</h2>
           <BrowseGrid>
@@ -100,7 +93,6 @@ export default function BrowsePage() {
           </BrowseGrid>
         </section>
 
-        {/* Activities Section */}
         <section className="mb-20">
           <h2 className="text-2xl font-bold text-white mb-4">Activities</h2>
           <BrowseGrid>

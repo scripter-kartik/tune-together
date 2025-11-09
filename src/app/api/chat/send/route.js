@@ -1,7 +1,3 @@
-// ============================================
-// FILE 5: src/app/api/chat/send/route.js (NEW)
-// ============================================
-
 import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import ChatMessage from "@/lib/models/ChatMessage";

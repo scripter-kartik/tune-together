@@ -1,5 +1,3 @@
-// src/lib/models/ChatMessage.js
-
 import mongoose from "mongoose";
 
 const chatMessageSchema = new mongoose.Schema(
@@ -46,11 +44,9 @@ const chatMessageSchema = new mongoose.Schema(
   }
 );
 
-// Compound index for efficient querying of conversations
 chatMessageSchema.index({ senderId: 1, recipientId: 1, createdAt: -1 });
 chatMessageSchema.index({ recipientId: 1, senderId: 1, createdAt: -1 });
 
-// Index for unread messages
 chatMessageSchema.index({ recipientId: 1, read: 1 });
 
 const ChatMessage = mongoose.models.ChatMessage || mongoose.model("ChatMessage", chatMessageSchema);

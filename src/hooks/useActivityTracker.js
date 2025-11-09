@@ -1,9 +1,6 @@
-// src/hooks/useActivityTracker.js
-
 import { useEffect, useRef, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 
-// Hook to track user activity
 export function useActivityTracker(currentSong = null) {
   const { isSignedIn } = useUser();
   const lastUpdateRef = useRef(0);
@@ -13,7 +10,6 @@ export function useActivityTracker(currentSong = null) {
     if (!isSignedIn) return;
 
     const now = Date.now();
-    // Throttle updates to avoid excessive API calls
     if (now - lastUpdateRef.current < UPDATE_INTERVAL) return;
     
     lastUpdateRef.current = now;
@@ -23,7 +19,6 @@ export function useActivityTracker(currentSong = null) {
         status: 'online',
       };
 
-      // Add currently playing song if available
       if (songData) {
         body.currentlyPlaying = {
           songId: songData.id,
@@ -46,18 +41,15 @@ export function useActivityTracker(currentSong = null) {
     }
   }, [isSignedIn]);
 
-  // Update activity on mount and when song changes
   useEffect(() => {
     if (!isSignedIn) return;
 
     updateActivity(currentSong);
 
-    // Set up periodic updates
     const interval = setInterval(() => {
       updateActivity(currentSong);
     }, UPDATE_INTERVAL);
 
-    // Update on user interaction
     const handleInteraction = () => {
       updateActivity(currentSong);
     };
@@ -65,7 +57,6 @@ export function useActivityTracker(currentSong = null) {
     window.addEventListener('click', handleInteraction);
     window.addEventListener('keydown', handleInteraction);
 
-    // Cleanup
     return () => {
       clearInterval(interval);
       window.removeEventListener('click', handleInteraction);
@@ -76,7 +67,6 @@ export function useActivityTracker(currentSong = null) {
   return { updateActivity };
 }
 
-// Separate hook for updating "now playing" status
 export function useUpdateNowPlaying() {
   const { isSignedIn } = useUser();
 
@@ -88,7 +78,6 @@ export function useUpdateNowPlaying() {
         status: 'online',
       };
 
-      // Add currently playing song if available
       if (songData) {
         body.currentlyPlaying = {
           songId: songData.id,
@@ -98,7 +87,6 @@ export function useUpdateNowPlaying() {
           startedAt: new Date(),
         };
       } else {
-        // Clear currently playing
         body.currentlyPlaying = null;
       }
 

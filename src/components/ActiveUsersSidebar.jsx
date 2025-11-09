@@ -1,7 +1,3 @@
-// ============================================
-// FILE 1: src/components/ActiveUsersSidebar.jsx (NEW)
-// ============================================
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -48,21 +44,18 @@ export default function ActiveUsersSidebar({ onUserClick }) {
                 onClick={() => onUserClick(user)}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-all cursor-pointer"
               >
-                {/* Avatar with green dot */}
                 <div className="relative flex-shrink-0">
                   <img
                     src={user.imageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
                     alt={user.name}
                     className="w-10 h-10 rounded-full border-2 border-white/20"
                   />
-                  {/* Green dot indicator */}
                   <div className="absolute bottom-0 right-0">
                     <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-black"></div>
                     <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
                   </div>
                 </div>
 
-                {/* User info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium truncate">
                     {user.name}
@@ -76,7 +69,6 @@ export default function ActiveUsersSidebar({ onUserClick }) {
                   )}
                 </div>
 
-                {/* Message icon on hover */}
                 {hoveredUser === user.clerkId && (
                   <MessageCircle className="w-5 h-5 text-purple-400 flex-shrink-0" />
                 )}

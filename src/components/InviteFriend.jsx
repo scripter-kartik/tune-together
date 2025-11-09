@@ -7,10 +7,8 @@ const InviteFriend = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch users from your API
     const fetchUsers = async () => {
       try {
-        // Replace this with your actual API endpoint
         const response = await fetch('/api/users');
         const data = await response.json();
         setUsers(data);
@@ -28,7 +26,6 @@ const InviteFriend = () => {
     }
   }, [isSignedIn]);
 
-  // Mock data for demonstration (remove this when you have real API)
   const mockUsers = [
     { id: 1, name: "Alex Morgan", avatar: "/api/placeholder/40/40", song: "Blinding Lights", artist: "The Weeknd", isPlaying: true },
     { id: 2, name: "Sarah Chen", avatar: "/api/placeholder/40/40", song: "As It Was", artist: "Harry Styles", isPlaying: true },
@@ -39,12 +36,10 @@ const InviteFriend = () => {
   if (!isSignedIn) {
     return (
       <div className="w-full h-full bg-[#121212]">
-        {/* Header */}
         <div className="flex items-center px-3 py-4 justify-start gap-4 border-b border-gray-800">
           <img className="w-5 h-5" src="/users.png" alt="" />
           <h1 className="font-bold text-sm">What they're listening to</h1>
         </div>
-        {/* Main Content - Not Signed In */}
         <div className="flex flex-col gap-10 justify-center items-center text-center h-full w-full p-14">
           <div className="relative">
             <div
@@ -87,18 +82,15 @@ const InviteFriend = () => {
     );
   }
 
-  // Use mockUsers for demo, replace with 'users' when API is ready
   const displayUsers = users.length > 0 ? users : mockUsers;
 
   return (
     <div className="w-full h-full bg-[#121212]">
-      {/* Header */}
       <div className="flex items-center px-3 py-4 justify-start gap-4 border-b border-gray-800">
         <img className="w-5 h-5" src="/users.png" alt="" />
         <h1 className="font-bold text-sm">What they're listening to</h1>
       </div>
 
-      {/* Users List */}
       <div className="overflow-y-auto h-[calc(100%-60px)]">
         {loading ? (
           <div className="flex items-center justify-center h-full">
@@ -115,7 +107,6 @@ const InviteFriend = () => {
                 key={user.id}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 transition-colors cursor-pointer border-b border-gray-800/30"
               >
-                {/* Avatar */}
                 <div className="relative">
                   <img
                     src={user.avatar}
@@ -137,7 +128,6 @@ const InviteFriend = () => {
                   )}
                 </div>
 
-                {/* User Info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">
                     {user.name}
@@ -150,11 +140,9 @@ const InviteFriend = () => {
                   </p>
                 </div>
 
-                {/* Message Button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // This will be handled by parent component
                     window.dispatchEvent(new CustomEvent('openChat', { detail: user }));
                   }}
                   className="p-2 hover:bg-emerald-500/20 rounded-full transition-colors group/btn"
@@ -176,7 +164,6 @@ const InviteFriend = () => {
                   </svg>
                 </button>
 
-                {/* Playing indicator */}
                 {user.isPlaying && (
                   <div className="flex gap-0.5 items-end h-4">
                     <div className="w-0.5 bg-emerald-400 animate-pulse h-2"></div>
