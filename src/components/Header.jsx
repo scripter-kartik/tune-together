@@ -17,7 +17,7 @@ export default function Header({ query, setQuery, handleSearch }) {
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 mt-3 md:px-5 px-3">
+    <div className="flex flex-wrap items-center justify-between gap-4 md:px-5 px-3 py-2">
 
       {/* ✅ Desktop Title */}
       <div className="md:flex hidden items-center gap-1">

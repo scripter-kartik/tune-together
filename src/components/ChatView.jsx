@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, ArrowLeft, MessageCircle } from 'lucide-react';
+import { X, Send, ArrowLeft, MessageCircle, Circle, Music } from 'lucide-react';
 import { useUser } from '@clerk/nextjs';
 import { getSocket } from '@/lib/socket';
 
@@ -23,6 +23,45 @@ export default function ChatView({ user, onClose }) {
       </div>
     );
   }
+
+  // Get user status display
+  const getUserStatusDisplay = () => {
+    // If currently playing music
+    if (user.currentlyPlaying?.songTitle) {
+      return {
+        text: `Playing: ${user.currentlyPlaying.songTitle}`,
+        color: 'text-green-400',
+        dotColor: 'bg-green-500',
+        icon: <Music className="w-3 h-3" />
+      };
+    }
+    
+    // Based on onlineStatus
+    if (user.onlineStatus === 'online') {
+      return {
+        text: 'Online',
+        color: 'text-green-400',
+        dotColor: 'bg-green-500',
+        icon: <Circle className="w-3 h-3 fill-current" />
+      };
+    } else if (user.onlineStatus === 'idle') {
+      return {
+        text: `Active ${user.minutesSinceActive}m ago`,
+        color: 'text-yellow-400',
+        dotColor: 'bg-yellow-500',
+        icon: <Circle className="w-3 h-3 fill-current" />
+      };
+    } else {
+      return {
+        text: 'Offline',
+        color: 'text-gray-400',
+        dotColor: 'bg-gray-500',
+        icon: <Circle className="w-3 h-3 fill-current" />
+      };
+    }
+  };
+
+  const status = getUserStatusDisplay();
 
   useEffect(() => {
     if (!user?.clerkId) return;
@@ -192,9 +231,8 @@ export default function ChatView({ user, onClose }) {
                   {user.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               )}
-              <div className={`absolute bottom-0 right-0 w-3 h-3 ${
-                user.status === 'online' ? 'bg-green-500' : 'bg-gray-500'
-              } rounded-full border-2 border-[#1a1a1a]`}></div>
+              {/* Status dot with correct color */}
+              <div className={`absolute bottom-0 right-0 w-3 h-3 ${status.dotColor} rounded-full border-2 border-[#1a1a1a]`}></div>
             </div>
             
             <div>
@@ -202,9 +240,12 @@ export default function ChatView({ user, onClose }) {
               {isTyping ? (
                 <p className="text-green-400 text-sm italic">typing...</p>
               ) : (
-                <p className="text-gray-400 text-sm">
-                  {user.status === 'online' ? 'Online' : 'Offline'}
-                </p>
+                <div className="flex items-center gap-1">
+                  {status.icon}
+                  <p className={`text-sm ${status.color}`}>
+                    {status.text}
+                  </p>
+                </div>
               )}
             </div>
           </div>

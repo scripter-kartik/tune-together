@@ -199,10 +199,14 @@ export default function Page() {
   const getVisibleSongs = () => songs.slice(0, visibleCount);
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-black">
-      <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
+    <div className="w-screen h-screen flex flex-col overflow-hidden bg-black">
+      {/* Header */}
+      <header className="flex-shrink-0 z-40 border-b border-neutral-800">
+        <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
+      </header>
       
-      <div className="flex-1 overflow-hidden">
+      {/* Main - No padding, content goes up to footer */}
+      <main className="flex-1 overflow-hidden pb-28">
         <Home
           songs={getVisibleSongs()}
           onLoadMore={handleLoadMore}
@@ -215,18 +219,21 @@ export default function Page() {
           onOpenChat={setSelectedChatUser}
           selectedChatUser={selectedChatUser}
         />
-      </div>
+      </main>
       
-      <PlayerFooter
-        song={currentSongIndex !== null && songs[currentSongIndex] ? songs[currentSongIndex] : null}
-        isPlaying={isPlaying}
-        onPlayPause={handleTogglePlayPause}
-        onNext={handleNext}
-        onPrev={handlePrev}
-        roomId={roomId}
-        socketRef={socketRef}
-        hasSongs={songs.length > 0}
-      />
+      {/* Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 z-50">
+        <PlayerFooter
+          song={currentSongIndex !== null && songs[currentSongIndex] ? songs[currentSongIndex] : null}
+          isPlaying={isPlaying}
+          onPlayPause={handleTogglePlayPause}
+          onNext={handleNext}
+          onPrev={handlePrev}
+          roomId={roomId}
+          socketRef={socketRef}
+          hasSongs={songs.length > 0}
+        />
+      </footer>
     </div>
   );
 }

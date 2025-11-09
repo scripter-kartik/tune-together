@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
-import { Users, Headphones, Music } from "lucide-react";
+import { Users, Headphones, Music, Circle } from "lucide-react";
 
 const ListeningUsers = () => {
   const { isSignedIn, isLoaded } = useUser();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all'); // 'all', 'online', 'recent'
 
-  // Fetch logged-in users
+  // Fetch users based on filter
   useEffect(() => {
     if (!isSignedIn) {
       setLoading(false);
@@ -18,7 +19,7 @@ const ListeningUsers = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/users/logged-in');
+        const response = await fetch(`/api/users/logged-in?filter=${filter}`);
         const data = await response.json();
 
         if (data.success) {
@@ -39,7 +40,7 @@ const ListeningUsers = () => {
     // Refresh users list every 30 seconds
     const interval = setInterval(fetchUsers, 30000);
     return () => clearInterval(interval);
-  }, [isSignedIn]);
+  }, [isSignedIn, filter]);
 
   // Get user initials for avatar
   const getInitials = (name) => {
@@ -60,22 +61,45 @@ const ListeningUsers = () => {
     return colors[index % colors.length];
   };
 
-  // Determine user status
+  // Determine user status with more detail
   const getUserStatus = (user) => {
+    // If currently playing
     if (user.currentlyPlaying?.songTitle) {
       return {
         text: `Playing: ${user.currentlyPlaying.songTitle}`,
         color: 'text-green-400',
         indicator: 'bg-green-500',
-        icon: <Music className="w-3 h-3" />
+        icon: <Music className="w-3 h-3" />,
+        statusText: 'Playing'
       };
     }
-    return {
-      text: 'Idle',
-      color: 'text-gray-400',
-      indicator: 'bg-gray-500',
-      icon: null
-    };
+    
+    // Based on online status
+    if (user.onlineStatus === 'online') {
+      return {
+        text: 'Online',
+        color: 'text-green-400',
+        indicator: 'bg-green-500',
+        icon: <Circle className="w-3 h-3 fill-current" />,
+        statusText: 'Online'
+      };
+    } else if (user.onlineStatus === 'idle') {
+      return {
+        text: `Active ${user.minutesSinceActive}m ago`,
+        color: 'text-yellow-400',
+        indicator: 'bg-yellow-500',
+        icon: <Circle className="w-3 h-3 fill-current" />,
+        statusText: 'Idle'
+      };
+    } else {
+      return {
+        text: 'Offline',
+        color: 'text-gray-400',
+        indicator: 'bg-gray-500',
+        icon: <Circle className="w-3 h-3 fill-current" />,
+        statusText: 'Offline'
+      };
+    }
   };
 
   // Loading state
@@ -127,13 +151,54 @@ const ListeningUsers = () => {
     );
   }
 
+  // Count users by status
+  const onlineCount = users.filter(u => u.onlineStatus === 'online').length;
+  const idleCount = users.filter(u => u.onlineStatus === 'idle').length;
+  const offlineCount = users.filter(u => u.onlineStatus === 'offline').length;
+
   // Signed in - Show users list
   return (
     <div className="w-full h-full bg-[#121212] text-white overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="flex items-center px-4 py-3 gap-3 border-b border-gray-800/50 flex-shrink-0">
-        <Users className="w-5 h-5" />
-        <h1 className="font-semibold text-base">What they're listening to</h1>
+      <div className="flex-shrink-0 border-b border-gray-800/50">
+        <div className="flex items-center px-4 py-3 gap-3">
+          <Users className="w-5 h-5" />
+          <h1 className="font-semibold text-base">Community</h1>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex gap-1 px-4 pb-3">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+              filter === 'all'
+                ? 'bg-emerald-500 text-white'
+                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+            }`}
+          >
+            All ({users.length})
+          </button>
+          <button
+            onClick={() => setFilter('online')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+              filter === 'online'
+                ? 'bg-emerald-500 text-white'
+                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+            }`}
+          >
+            Online ({onlineCount})
+          </button>
+          <button
+            onClick={() => setFilter('recent')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+              filter === 'recent'
+                ? 'bg-emerald-500 text-white'
+                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+            }`}
+          >
+            Recent ({onlineCount + idleCount})
+          </button>
+        </div>
       </div>
 
       {/* Error State */}
@@ -148,7 +213,9 @@ const ListeningUsers = () => {
         {users.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center">
             <Users className="w-12 h-12 text-gray-600 mb-3" />
-            <p className="text-gray-400 text-sm">No friends online right now</p>
+            <p className="text-gray-400 text-sm">
+              {filter === 'online' ? 'No users online right now' : 'No users found'}
+            </p>
           </div>
         ) : (
           users.map((user, idx) => {

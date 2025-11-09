@@ -6,7 +6,7 @@ import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
 
-const DRIFT_TOLERANCE = 0.25; // seconds
+const DRIFT_TOLERANCE = 0.25;
 
 export default function PlayerFooter({
   song,
@@ -25,11 +25,9 @@ export default function PlayerFooter({
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isSeeking = useRef(false);
-  
-  // Hook to update what's currently playing
+
   const { updateNowPlaying } = useUpdateNowPlaying();
 
-  // helper to set audio time safely
   const setTime = (t) => {
     const a = audioRef.current;
     if (!a) return;
@@ -38,24 +36,25 @@ export default function PlayerFooter({
     } catch {}
   };
 
-  // Update "now playing" when song changes or playback starts
+  // Update now playing status when song or play state changes
   useEffect(() => {
     if (!song || !isPlaying) {
-      // Clear now playing when paused or no song
       updateNowPlaying(null);
       return;
     }
 
-    // Update what's currently playing
     updateNowPlaying({
-      songId: song.id,
-      songTitle: song.title,
-      artist: song.artist.name,
-      albumArt: song.album.cover_small,
+      id: song.id,
+      title: song.title,
+      artist: {
+        name: song.artist.name
+      },
+      album: {
+        cover_small: song.album.cover_small
+      }
     });
   }, [song, isPlaying, updateNowPlaying]);
 
-  // Apply socket sync events (play/pause/song/seek) with timestamp
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket || !song) return;
@@ -92,7 +91,6 @@ export default function PlayerFooter({
     socket.on("sync-song", onSong);
     socket.on("sync-seek", onSeek);
 
-    // Also listen to page's tt-sync custom events (late-join state propagation)
     const onTTSync = (e) => {
       const d = e.detail || {};
       if (d.type === "state" || d.type === "song") {
@@ -113,7 +111,6 @@ export default function PlayerFooter({
     };
   }, [socketRef, song]);
 
-  // Load / switch track locally when song changes
   useEffect(() => {
     const a = audioRef.current;
     if (!a || !song) return;
@@ -142,7 +139,6 @@ export default function PlayerFooter({
     a.addEventListener("error", handleError);
     a.addEventListener("canplay", handleCanPlay);
 
-    // reflect prop isPlaying
     if (isPlaying) {
       a.play().catch(() => setIsLoading(false));
     } else {
@@ -158,7 +154,6 @@ export default function PlayerFooter({
     };
   }, [song, isPlaying, onNext]);
 
-  // Drift correction loop
   useEffect(() => {
     const id = setInterval(() => {
       const a = audioRef.current;
@@ -168,7 +163,6 @@ export default function PlayerFooter({
     return () => clearInterval(id);
   }, []);
 
-  // Emit play/pause with accurate timestamp when UI toggles
   useEffect(() => {
     const a = audioRef.current;
     const socket = socketRef.current;
@@ -176,7 +170,6 @@ export default function PlayerFooter({
 
     const position = a.currentTime || 0;
     socket.emit("toggle-play", { roomId, isPlaying, position });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, roomId, socketRef]);
 
   const handleSeek = (e) => {
@@ -225,100 +218,119 @@ export default function PlayerFooter({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#181818] text-white px-4 py-3 flex flex-col md:flex-row items-center justify-between z-50 border-t border-neutral-800 gap-2">
-      {/* Song Info */}
-      <div className="flex items-center gap-4 w-full md:w-[30%]">
-        {song ? (
-          <>
-            <img src={song.album.cover_small} alt={song.title} className="w-14 h-14 rounded shadow-lg" />
-            <div className="flex flex-col overflow-hidden flex-1">
-              <span className="text-sm font-medium truncate">{song.title}</span>
-              <span className="text-xs text-gray-400 truncate">{song.artist.name}</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="w-14 h-14 rounded bg-neutral-700 flex items-center justify-center">
-              <svg className="w-8 h-8 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-              </svg>
-            </div>
-            <div className="flex flex-col overflow-hidden flex-1">
-              <span className="text-sm font-medium text-gray-400">
-                {hasSongs ? "Select a song to play" : "Loading music..."}
-              </span>
-              <span className="text-xs text-gray-500">Start listening now</span>
-            </div>
-          </>
-        )}
+    <div className="w-full bg-gradient-to-r from-[#181818] to-[#1e1e1e] text-white px-2 sm:px-3 md:px-4 py-5 sm:py-3 flex flex-col gap-2 sm:gap-3 border-t border-neutral-800 z-50">
+      
+      {/* Progress Bar */}
+      <div className="flex items-center gap-1 sm:gap-2 w-full">
+        <span className="text-xs text-gray-400 flex-shrink-0 mr-2 w-7 sm:w-8 text-right">{formatTime(currentTime)}</span>
+        <input
+          type="range"
+          min="0"
+          max={duration || 30}
+          step="0.1"
+          value={currentTime}
+          onChange={handleSeek}
+          className={`flex-1 h-1 accent-green-500 cursor-pointer rounded ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+          aria-label="Seek"
+          disabled={!song}
+        />
+        <span className="text-xs ml-2 text-gray-400 flex-shrink-0 w-7 sm:w-8 text-left">{formatTime(Math.max(duration - currentTime, 0))}</span>
       </div>
 
-      {/* Player Controls */}
-      <div className="flex flex-col items-center w-full md:w-[40%]">
-        <div className="flex gap-6 items-center justify-center mb-1">
+      {/* Main Row - Song Info | Controls | Volume */}
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-between">
+        
+        {/* Song Info - Left */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-[0.3]">
+          {song ? (
+            <>
+              <img 
+                src={song.album.cover_small} 
+                alt={song.title} 
+                className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded shadow-lg flex-shrink-0" 
+              />
+              <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+                <span className="text-xs sm:text-xs md:text-sm font-medium truncate">{song.title}</span>
+                <span className="text-xs text-gray-400 truncate">{song.artist.name}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded bg-neutral-700 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+                </svg>
+              </div>
+              <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+                <span className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 truncate">
+                  {hasSongs ? "Select song" : "Loading..."}
+                </span>
+                <span className="text-xs text-gray-500 truncate">Start listening</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Player Controls - Center */}
+        <div className="flex gap-3 sm:gap-4 md:gap-5 items-center justify-center flex-1 md:flex-[0.4]">
           <button 
             onClick={onPrev} 
-            className={`text-gray-300 hover:text-white transition ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`text-gray-300 hover:text-green-400 transition flex-shrink-0 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label="Previous"
             disabled={!song}
           >
-            <FaBackward size={16} />
+            <FaBackward size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
           </button>
+          
           <button
             onClick={onPlayPause}
-            className={`bg-white text-black p-2 rounded-full hover:scale-105 transition ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`bg-white text-black p-1.5 sm:p-1.5 md:p-2 rounded-full hover:scale-110 hover:bg-green-400 transition flex-shrink-0 shadow-lg ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!song || isLoading}
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {isLoading ? (
-              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
             ) : isPlaying ? (
-              <FaPause size={16} />
+              <FaPause size={13} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
             ) : (
-              <FaPlay size={16} />
+              <FaPlay size={13} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 ml-0.5" />
             )}
           </button>
+          
           <button 
             onClick={onNext} 
-            className={`text-gray-300 hover:text-white transition ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`text-gray-300 hover:text-green-400 transition flex-shrink-0 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label="Next"
             disabled={!song}
           >
-            <FaForward size={16} />
+            <FaForward size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
           </button>
         </div>
-        <div className="flex items-center gap-2 w-full">
-          <span className="text-xs text-gray-400 w-10 text-right">{formatTime(currentTime)}</span>
+
+        {/* Volume Controls - Right */}
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0 flex-1 md:flex-[0.3] justify-end">
+          <button 
+            onClick={toggleMute} 
+            className="hover:text-green-400 transition flex-shrink-0 text-gray-300" 
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted || volume === 0 ? (
+              <BsFillVolumeMuteFill size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+            ) : (
+              <BsFillVolumeUpFill size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+            )}
+          </button>
           <input
             type="range"
             min="0"
-            max={duration || 30}
-            step="0.1"
-            value={currentTime}
-            onChange={handleSeek}
-            className={`w-full h-1 accent-green-500 ${!song ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            aria-label="Seek"
-            disabled={!song}
+            max="1"
+            step="0.01"
+            value={isMuted ? 0 : volume}
+            onChange={handleVolumeChange}
+            className="w-12 sm:w-14 md:w-20 accent-green-500 cursor-pointer h-1 rounded flex-shrink-0"
+            aria-label="Volume"
           />
-          <span className="text-xs text-gray-400 w-10 text-left">{formatTime(Math.max(duration - currentTime, 0))}</span>
         </div>
-      </div>
-
-      {/* Volume Controls */}
-      <div className="w-full md:w-[30%] flex justify-center md:justify-end items-center gap-3">
-        <button onClick={toggleMute} className="hover:text-green-500 transition" aria-label={isMuted ? "Unmute" : "Mute"}>
-          {isMuted || volume === 0 ? <BsFillVolumeMuteFill size={20} /> : <BsFillVolumeUpFill size={20} />}
-        </button>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={isMuted ? 0 : volume}
-          onChange={handleVolumeChange}
-          className="w-24 accent-green-500 cursor-pointer"
-          aria-label="Volume"
-        />
       </div>
 
       <audio ref={audioRef} preload="metadata" />
