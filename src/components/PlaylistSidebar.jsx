@@ -282,7 +282,7 @@ export default function PlaylistSidebar({ onOpenChat }) {
                     onClick={() => handleChatClick(user)}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-[#1a1a1a] transition-colors cursor-pointer"
                   >
-                    {/* User Avatar */}
+                    
                     <div className="relative flex-shrink-0">
                       {user.imageUrl ? (
                         <img
@@ -327,23 +327,19 @@ export default function PlaylistSidebar({ onOpenChat }) {
         <div className="p-4 border-t border-gray-800 bg-[#121212]">
           <button
             onClick={() => setShowChatList(!showChatList)}
-            className="w-full relative group"
+            className="w-full bg-[#1db954] hover:bg-[#1ed760] text-black px-4 py-3 rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
-            <div className="absolute -inset-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-300 animate-pulse"></div>
-
-            <div className="relative bg-gradient-to-r from-green-600 to-emerald-600 text-black px-4 py-3 rounded-lg text-lg font-bold flex items-center justify-center gap-2 hover:from-green-500 hover:to-emerald-500 transition-all duration-300 shadow-lg">
-              {showChatList ? (
-                <>
-                  <ArrowLeft className="w-5 h-5" />
-                  <span>Back to Playlists</span>
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="w-5 h-5" />
-                  <span>Messages</span>
-                </>
-              )}
-            </div>
+            {showChatList ? (
+              <>
+                <ArrowLeft className="w-5 h-5" />
+                <span>Playlists</span>
+              </>
+            ) : (
+              <>
+                <MessageCircle className="w-5 h-5" />
+                <span>Messages</span>
+              </>
+            )}
           </button>
         </div>
       )}

@@ -1,9 +1,8 @@
-
 "use client";
 
 export default function CategoryCard({ name, color, query }) {
   const handleClick = () => {
-    // Store the query and navigate to home page
+
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('browseQuery', query);
       window.location.href = '/';

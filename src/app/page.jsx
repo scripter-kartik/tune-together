@@ -15,13 +15,28 @@ export default function Page() {
   const [songs, setSongs] = useState([]);
   const [visibleCount, setVisibleCount] = useState(20);
   const [currentSongIndex, setCurrentSongIndex] = useState(null);
+  const [currentSong, setCurrentSong] = useState(null);
+  const [queue, setQueue] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roomId, setRoomId] = useState("");
   const [isRoomHost, setIsRoomHost] = useState(false);
   const [selectedChatUser, setSelectedChatUser] = useState(null);
+  const [selectedArtistId, setSelectedArtistId] = useState(null);
+  const [selectedAlbumId, setSelectedAlbumId] = useState(null);
   const socketRef = useRef(null);
+
+  const songsRef = useRef([]);
+  const currentSongRef = useRef(null);
+
+  useEffect(() => {
+    songsRef.current = songs;
+  }, [songs]);
+
+  useEffect(() => {
+    currentSongRef.current = currentSong;
+  }, [currentSong]);
   
   useChat();
 
@@ -67,40 +82,60 @@ export default function Page() {
     const onConnect = () => {
       socket.emit("join-room", roomId);
     };
-    socket.on("connect", onConnect);
 
-    socket.on("room-state", (state) => {
-      const { currentSong, isPlaying } = state;
-      if (currentSong) {
-        const idx = songs.findIndex((s) => s.id === currentSong.id);
-        if (idx !== -1) setCurrentSongIndex(idx);
-      }
-      setIsPlaying(!!isPlaying);
+    const applySong = (song) => {
+      if (!song) return;
+      setCurrentSong(song);
+      const idx = songsRef.current.findIndex((s) => s.id === song.id);
+      if (idx !== -1) setCurrentSongIndex(idx);
+    };
+
+    const onRoomState = (state) => {
+      applySong(state.currentSong);
+      setQueue(state.playlist || []);
+      setIsPlaying(!!state.isPlaying);
       window.dispatchEvent(
         new CustomEvent("tt-sync", { detail: { type: "state", ...state } })
       );
-    });
+    };
 
-    socket.on("sync-song", (data) => {
-      const idx = songs.findIndex((s) => s.id === data.song?.id);
-      if (idx !== -1) setCurrentSongIndex(idx);
+    const onSyncQueue = (data) => {
+      setQueue(data.playlist || []);
+    };
+
+    const onSyncSong = (data) => {
+      applySong(data.song);
       setIsPlaying(!!data.isPlaying);
       window.dispatchEvent(new CustomEvent("tt-sync", { detail: { type: "song", ...data } }));
-    });
+    };
 
-    socket.on("sync-play", (data) => {
+    const onSyncPlay = (data) => {
       setIsPlaying(!!data.isPlaying);
       window.dispatchEvent(new CustomEvent("tt-sync", { detail: { type: "play", ...data } }));
-    });
+    };
 
-    socket.on("sync-seek", (data) => {
+    const onSyncSeek = (data) => {
       window.dispatchEvent(new CustomEvent("tt-sync", { detail: { type: "seek", ...data } }));
-    });
+    };
+
+    socket.on("connect", onConnect);
+    socket.on("room-state", onRoomState);
+    socket.on("sync-song", onSyncSong);
+    socket.on("sync-play", onSyncPlay);
+    socket.on("sync-seek", onSyncSeek);
+    socket.on("sync-queue", onSyncQueue);
+
+    if (socket.connected) socket.emit("join-room", roomId);
 
     return () => {
       socket.off("connect", onConnect);
+      socket.off("room-state", onRoomState);
+      socket.off("sync-song", onSyncSong);
+      socket.off("sync-play", onSyncPlay);
+      socket.off("sync-seek", onSyncSeek);
+      socket.off("sync-queue", onSyncQueue);
     };
-  }, [roomId, songs]);
+  }, [roomId]);
 
   const fetchSongs = async (searchTerm) => {
     setIsLoading(true);
@@ -129,8 +164,10 @@ export default function Page() {
       } else {
         setSongs(data.data);
         setVisibleCount(20);
-        if (currentSongIndex === null) {
+
+        if (currentSongIndex === null && !currentSongRef.current) {
           setCurrentSongIndex(0);
+          setCurrentSong(data.data[0]);
         }
       }
     } catch (err) {
@@ -161,26 +198,50 @@ export default function Page() {
 
   const handlePlay = (song) => {
     const idx = songs.findIndex((s) => s.id === song.id);
-    if (idx !== -1) {
-      setCurrentSongIndex(idx);
-      setIsPlaying(true);
-      socketRef.current?.emit("change-song", {
-        roomId,
-        song,
-        position: 0,
-      });
-    }
+    setCurrentSong(song);
+    if (idx !== -1) setCurrentSongIndex(idx);
+    setIsPlaying(true);
+    socketRef.current?.emit("change-song", {
+      roomId,
+      song,
+      position: 0,
+    });
   };
 
   const handleTogglePlayPause = () => {
     setIsPlaying((p) => !p);
   };
 
+  const handleAddToQueue = (song) => {
+    if (!song) return;
+    setQueue((prev) => {
+      if (prev.some((s) => s.id === song.id)) return prev;
+      return [...prev, song];
+    });
+    socketRef.current?.emit("add-to-queue", { roomId, song });
+  };
+
+  const handleRemoveFromQueue = (songId) => {
+    setQueue((prev) => prev.filter((s) => s.id !== songId));
+    socketRef.current?.emit("remove-from-queue", { roomId, songId });
+  };
+
+  const handleClearQueue = () => {
+    setQueue([]);
+    socketRef.current?.emit("clear-queue", { roomId });
+  };
+
   const handleNext = () => {
+
+    if (queue.length > 0) {
+      socketRef.current?.emit("next-song", { roomId });
+      return;
+    }
     if (songs.length === 0) return;
     const nextIndex =
       currentSongIndex !== null ? (currentSongIndex + 1) % songs.length : 0;
     setCurrentSongIndex(nextIndex);
+    setCurrentSong(songs[nextIndex]);
     setIsPlaying(true);
     socketRef.current?.emit("next-song", { roomId, song: songs[nextIndex] });
   };
@@ -192,6 +253,7 @@ export default function Page() {
         ? (currentSongIndex - 1 + songs.length) % songs.length
         : 0;
     setCurrentSongIndex(prevIndex);
+    setCurrentSong(songs[prevIndex]);
     setIsPlaying(true);
     socketRef.current?.emit("prev-song", { roomId, song: songs[prevIndex] });
   };
@@ -201,27 +263,37 @@ export default function Page() {
   return (
     <div className="w-screen h-screen flex flex-col overflow-hidden bg-black">
       <header className="flex-shrink-0 z-40 border-b border-neutral-800">
-        <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
+        <Header query={query} setQuery={setQuery} handleSearch={handleSearch} roomId={roomId} />
       </header>
       
-      <main className="flex-1 overflow-hidden pb-28">
+      <main className="flex-1 overflow-hidden">
         <Home
           songs={getVisibleSongs()}
           onLoadMore={handleLoadMore}
           showLoadMore={songs.length > visibleCount}
           onPlay={handlePlay}
+          onQueue={handleAddToQueue}
+          currentSongId={currentSong?.id}
+          isPlaying={isPlaying}
+          queue={queue}
+          onRemoveFromQueue={handleRemoveFromQueue}
+          onClearQueue={handleClearQueue}
           isLoading={isLoading}
           error={error}
           roomId={roomId}
           socketRef={socketRef}
           onOpenChat={setSelectedChatUser}
           selectedChatUser={selectedChatUser}
+          selectedArtistId={selectedArtistId}
+          onOpenArtist={setSelectedArtistId}
+          selectedAlbumId={selectedAlbumId}
+          onOpenAlbum={setSelectedAlbumId}
         />
       </main>
       
-      <footer className="fixed bottom-0 left-0 right-0 z-50">
+      <footer className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">
         <PlayerFooter
-          song={currentSongIndex !== null && songs[currentSongIndex] ? songs[currentSongIndex] : null}
+          song={currentSong}
           isPlaying={isPlaying}
           onPlayPause={handleTogglePlayPause}
           onNext={handleNext}

@@ -314,7 +314,7 @@ export default function PlaylistPage() {
         </div>
       </div>
 
-      <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-neutral-800">
+      <footer className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">
         <PlayerFooter
           song={songs[currentSongIndex] ?? null}
           isPlaying={isPlaying}

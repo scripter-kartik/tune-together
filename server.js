@@ -75,7 +75,6 @@ app.prepare().then(() => {
       socket.to(roomId).emit("chat message", msg);
     });
 
-    
     socket.on("send-dm", ({ recipientId, message, senderName, senderImage }) => {
       const recipientSocketId = userSockets.get(recipientId);
       
@@ -120,7 +119,6 @@ app.prepare().then(() => {
       }
     });
 
-
     socket.on("toggle-play", ({ roomId, isPlaying, position }) => {
       const room = getRoom(roomId);
       room.isPlaying = !!isPlaying;
@@ -141,12 +139,42 @@ app.prepare().then(() => {
       room.at = now();
       room.isPlaying = true;
 
+      if (song) {
+        const before = room.playlist.length;
+        room.playlist = room.playlist.filter((s) => s.id !== song.id);
+        if (room.playlist.length !== before) {
+          io.to(roomId).emit("sync-queue", { playlist: room.playlist });
+        }
+      }
+
       io.to(roomId).emit("sync-song", {
         song: room.currentSong,
         isPlaying: room.isPlaying,
         position: room.position,
         at: room.at,
       });
+    });
+
+    socket.on("add-to-queue", ({ roomId, song }) => {
+      if (!song) return;
+      const room = getRoom(roomId);
+
+      if (!room.playlist.some((s) => s.id === song.id)) {
+        room.playlist.push(song);
+      }
+      io.to(roomId).emit("sync-queue", { playlist: room.playlist });
+    });
+
+    socket.on("remove-from-queue", ({ roomId, songId }) => {
+      const room = getRoom(roomId);
+      room.playlist = room.playlist.filter((s) => s.id !== songId);
+      io.to(roomId).emit("sync-queue", { playlist: room.playlist });
+    });
+
+    socket.on("clear-queue", ({ roomId }) => {
+      const room = getRoom(roomId);
+      room.playlist = [];
+      io.to(roomId).emit("sync-queue", { playlist: room.playlist });
     });
 
     socket.on("seek-time", ({ roomId, position }) => {
@@ -162,7 +190,14 @@ app.prepare().then(() => {
 
     socket.on("next-song", ({ roomId, song }) => {
       const room = getRoom(roomId);
-      room.currentSong = song || null;
+
+      let nextSong = song || null;
+      if (room.playlist.length > 0) {
+        nextSong = room.playlist.shift();
+        io.to(roomId).emit("sync-queue", { playlist: room.playlist });
+      }
+
+      room.currentSong = nextSong || null;
       room.position = 0;
       room.at = now();
       room.isPlaying = true;

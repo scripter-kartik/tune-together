@@ -54,7 +54,7 @@ export default function PlayerFooter({
 
   useEffect(() => {
     const socket = socketRef.current;
-    if (!socket || !song) return;
+    if (!socket) return;
 
     const onPlay = ({ isPlaying, position, at }) => {
       const a = audioRef.current;
@@ -90,8 +90,10 @@ export default function PlayerFooter({
 
     const onTTSync = (e) => {
       const d = e.detail || {};
-      if (d.type === "state" || d.type === "song") {
-        onSong({ song, isPlaying: d.isPlaying, position: d.position, at: d.at });
+      if (d.type === "state") {
+        onSong({ song: d.currentSong, isPlaying: d.isPlaying, position: d.position, at: d.at });
+      } else if (d.type === "song") {
+        onSong({ song: d.song, isPlaying: d.isPlaying, position: d.position, at: d.at });
       } else if (d.type === "play") {
         onPlay({ isPlaying: d.isPlaying, position: d.position, at: d.at });
       } else if (d.type === "seek") {
@@ -160,14 +162,18 @@ export default function PlayerFooter({
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
+  const handlePlayPauseClick = () => {
     const a = audioRef.current;
-    const socket = socketRef.current;
-    if (!a || !socket || !roomId || !song) return;
-
-    const position = a.currentTime || 0;
-    socket.emit("toggle-play", { roomId, isPlaying, position });
-  }, [isPlaying, roomId, socketRef]);
+    const nextPlaying = !isPlaying;
+    if (roomId && socketRef.current && song) {
+      socketRef.current.emit("toggle-play", {
+        roomId,
+        isPlaying: nextPlaying,
+        position: a?.currentTime || 0,
+      });
+    }
+    onPlayPause();
+  };
 
   const handleSeek = (e) => {
     if (!song) return;
@@ -215,114 +221,177 @@ export default function PlayerFooter({
   };
 
   return (
-    <div className="w-full bg-gradient-to-r from-[#181818] to-[#1e1e1e] text-white px-2 sm:px-3 md:px-4 py-5 sm:py-3 flex flex-col gap-2 sm:gap-3 border-t border-neutral-800 z-50">
-      
-      <div className="flex items-center gap-1 sm:gap-2 w-full">
-        <span className="text-xs text-gray-400 flex-shrink-0 mr-2 w-7 sm:w-8 text-right">{formatTime(currentTime)}</span>
-        <input
-          type="range"
-          min="0"
-          max={duration || 30}
-          step="0.1"
-          value={currentTime}
-          onChange={handleSeek}
-          className={`flex-1 h-1 accent-green-500 cursor-pointer rounded ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
-          aria-label="Seek"
-          disabled={!song}
-        />
-        <span className="text-xs ml-2 text-gray-400 flex-shrink-0 w-7 sm:w-8 text-left">{formatTime(Math.max(duration - currentTime, 0))}</span>
+    <div className="w-full bg-[#121212]/80 backdrop-blur-xl border-t border-white/5 text-white px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
+
+      <div className="md:hidden absolute top-0 left-0 right-0">
+        <div className="flex items-center w-full">
+          <input
+            type="range"
+            min="0"
+            max={duration || 30}
+            step="0.1"
+            value={currentTime}
+            onChange={handleSeek}
+            className={`w-full h-1 appearance-none bg-neutral-800 cursor-pointer outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-0 [&::-webkit-slider-thumb]:h-0 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            aria-label="Seek"
+            disabled={!song}
+            style={{
+              background: `linear-gradient(to right, #1db954 ${(currentTime / (duration || 30)) * 100}%, #262626 ${(currentTime / (duration || 30)) * 100}%)`
+            }}
+          />
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-between">
-        
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-[0.3]">
+      <div className="flex items-center justify-between w-full h-full">
+
+        <div className="flex items-center gap-3 md:gap-4 w-[65%] md:w-[30%] min-w-0">
           {song ? (
             <>
-              <img 
-                src={song.album.cover_small} 
-                alt={song.title} 
-                className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded shadow-lg flex-shrink-0" 
-              />
-              <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-                <span className="text-xs sm:text-xs md:text-sm font-medium truncate">{song.title}</span>
-                <span className="text-xs text-gray-400 truncate">{song.artist.name}</span>
+              <div className="relative flex-shrink-0 rounded flex items-center shadow-lg shadow-black/50">
+                <img
+                  src={song.album.cover_small}
+                  alt={song.title}
+                  className="w-12 h-12 md:w-14 md:h-14 object-cover rounded shadow-md"
+                />
+              </div>
+              <div className="flex flex-col overflow-hidden min-w-0 justify-center">
+                <span className="text-[13px] md:text-[14px] font-normal truncate hover:underline cursor-pointer text-white">{song.title}</span>
+                <span className="text-[11px] md:text-[12px] text-[#b3b3b3] truncate hover:underline cursor-pointer hover:text-white transition-colors">{song.artist.name}</span>
               </div>
             </>
           ) : (
             <>
-              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded bg-neutral-700 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded bg-[#282828] flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-[#121212]" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
                 </svg>
-              </div>
-              <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-                <span className="text-xs sm:text-xs md:text-sm font-medium text-gray-400 truncate">
-                  {hasSongs ? "Select song" : "Loading..."}
-                </span>
-                <span className="text-xs text-gray-500 truncate">Start listening</span>
               </div>
             </>
           )}
         </div>
 
-        <div className="flex gap-3 sm:gap-4 md:gap-5 items-center justify-center flex-1 md:flex-[0.4]">
-          <button 
-            onClick={onPrev} 
-            className={`text-gray-300 hover:text-green-400 transition flex-shrink-0 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
-            aria-label="Previous"
-            disabled={!song}
-          >
-            <FaBackward size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
-          </button>
+        <div className="hidden md:flex flex-col items-center justify-center w-[40%] max-w-[722px] gap-2">
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={onPrev} 
+              className={`text-[#b3b3b3] hover:text-white transition-colors ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+              aria-label="Previous"
+              disabled={!song}
+            >
+              <FaBackward size={16} />
+            </button>
+            
+            <button
+              onClick={handlePlayPauseClick}
+              className={`bg-white text-black w-8 h-8 rounded-full flex items-center justify-center hover:scale-105 transition-all ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!song || isLoading}
+              aria-label={isPlaying ? "Pause" : "Play"}
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              ) : isPlaying ? (
+                <FaPause size={14} />
+              ) : (
+                <FaPlay size={14} className="ml-1" />
+              )}
+            </button>
+            
+            <button 
+              onClick={onNext} 
+              className={`text-[#b3b3b3] hover:text-white transition-colors ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+              aria-label="Next"
+              disabled={!song}
+            >
+              <FaForward size={16} />
+            </button>
+          </div>
           
+          <div className="flex items-center gap-2 w-full group">
+            <span className="text-[11px] text-[#a7a7a7] font-normal min-w-[40px] text-right">{formatTime(currentTime)}</span>
+            <input
+              type="range"
+              min="0"
+              max={duration || 30}
+              step="0.1"
+              value={currentTime}
+              onChange={handleSeek}
+              className={`flex-1 h-1 appearance-none bg-[#4d4d4d] rounded-full cursor-pointer outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:opacity-0 group-hover:[&::-webkit-slider-thumb]:opacity-100 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+              aria-label="Seek"
+              disabled={!song}
+              style={{
+                background: `linear-gradient(to right, ${song ? '#ffffff' : '#4d4d4d'} ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`
+              }}
+              onMouseEnter={(e) => {
+                if(song) e.target.style.background = `linear-gradient(to right, #1db954 ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`;
+              }}
+              onMouseLeave={(e) => {
+                if(song) e.target.style.background = `linear-gradient(to right, #ffffff ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`;
+              }}
+            />
+            <span className="text-[11px] text-[#a7a7a7] font-normal min-w-[40px]">{formatTime(duration)}</span>
+          </div>
+        </div>
+
+        <div className="flex md:hidden items-center justify-end gap-4 w-[35%]">
           <button
-            onClick={onPlayPause}
-            className={`bg-white text-black p-1.5 sm:p-1.5 md:p-2 rounded-full hover:scale-110 hover:bg-green-400 transition flex-shrink-0 shadow-lg ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handlePlayPauseClick}
+            className={`text-white p-2 ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!song || isLoading}
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {isLoading ? (
-              <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : isPlaying ? (
-              <FaPause size={13} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
+              <FaPause size={20} />
             ) : (
-              <FaPlay size={13} className="sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 ml-0.5" />
+              <FaPlay size={20} />
             )}
           </button>
-          
           <button 
             onClick={onNext} 
-            className={`text-gray-300 hover:text-green-400 transition flex-shrink-0 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`text-neutral-300 hover:text-white transition-colors p-2 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label="Next"
             disabled={!song}
           >
-            <FaForward size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
+            <FaForward size={20} />
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0 flex-1 md:flex-[0.3] justify-end">
+        <div className="hidden md:flex items-center justify-end gap-2 w-[30%] min-w-[180px] group">
           <button 
             onClick={toggleMute} 
-            className="hover:text-green-400 transition flex-shrink-0 text-gray-300" 
+            className="text-[#b3b3b3] hover:text-white transition-colors" 
             aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted || volume === 0 ? (
-              <BsFillVolumeMuteFill size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              <BsFillVolumeMuteFill size={16} />
             ) : (
-              <BsFillVolumeUpFill size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              <BsFillVolumeUpFill size={16} />
             )}
           </button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={isMuted ? 0 : volume}
-            onChange={handleVolumeChange}
-            className="w-12 sm:w-14 md:w-20 accent-green-500 cursor-pointer h-1 rounded flex-shrink-0"
-            aria-label="Volume"
-          />
+          <div className="w-[93px] flex items-center group/vol">
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={isMuted ? 0 : volume}
+              onChange={handleVolumeChange}
+              className="w-full h-1 appearance-none bg-[#4d4d4d] rounded-full cursor-pointer outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:opacity-0 group-hover/vol:[&::-webkit-slider-thumb]:opacity-100"
+              aria-label="Volume"
+              style={{
+                background: `linear-gradient(to right, #ffffff ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = `linear-gradient(to right, #1db954 ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`;
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = `linear-gradient(to right, #ffffff ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`;
+              }}
+            />
+          </div>
         </div>
+
       </div>
 
       <audio ref={audioRef} preload="metadata" />

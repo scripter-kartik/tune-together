@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 🔴 Live Demo
+
+**[tunetogether.vercel.app](https://tunetogether.vercel.app)**
+
+Listen to music and chat together in real time — create a room, hit **Invite**, and share the link so friends join the same synced session.
+
 ## Getting Started
 
 First, run the development server:

@@ -129,9 +129,9 @@ const ListeningUsers = () => {
               Login to discover what music your friends are enjoying right now
             </p>
             <SignInButton mode="modal">
-              <button className="text-emerald-400 text-sm hover:underline cursor-pointer font-medium mt-2">
+              <span className="inline-block text-emerald-400 text-sm hover:underline cursor-pointer font-medium mt-2">
                 Log in
-              </button>
+              </span>
             </SignInButton>
           </div>
         </div>
