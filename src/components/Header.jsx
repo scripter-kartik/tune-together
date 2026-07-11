@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   SignedIn,
@@ -9,8 +10,16 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import InviteButton from "./InviteButton";
+import { Search, Home, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function Header({ query, setQuery, handleSearch, roomId }) {
+  const [mounted, setMounted] = useState(false);
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       handleSearch();
@@ -18,134 +27,90 @@ export default function Header({ query, setQuery, handleSearch, roomId }) {
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 md:px-5 px-3 py-2">
+    <div className="flex items-center justify-between gap-3 md:gap-4 px-4 md:px-6 py-3 bg-black">
 
-      <div className="md:flex hidden items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer">
-        <img src="/icon2.png" alt="Logo" className="md:w-8 md:h-8" />
-        <h1 className="font-black text-xl tracking-tight text-white drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]">
-          tune<span className="text-green-500">together</span>
-        </h1>
+      {/* Left - Logo (mobile) + Nav arrows (desktop) */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Logo - mobile only */}
+        <div className="flex md:hidden items-center gap-1.5">
+          <img src="/icon2.png" alt="Logo" className="w-7 h-7" />
+          <span className="font-black text-base text-white">tune<span className="text-green-500">together</span></span>
+        </div>
+
+        {/* Logo - desktop */}
+        <Link href="/" className="hidden md:flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <img src="/icon2.png" alt="Logo" className="w-8 h-8" />
+          <span className="font-black text-lg tracking-tight text-white drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
+            tune<span className="text-green-500">together</span>
+          </span>
+        </Link>
       </div>
 
-      <div className="md:flex hidden items-center justify-between w-[calc(100vw-240px)]">
+      {/* Center - Nav + Search */}
+      <div className="flex items-center gap-2 flex-1 max-w-3xl">
 
-        <div className="flex flex-wrap justify-center items-center gap-3 flex-1">
+        {/* Home button - desktop */}
+        <Link href="/" className="hidden md:flex flex-shrink-0">
+          <div className="w-12 h-12 bg-[#242424] hover:bg-[#2a2a2a] rounded-full flex items-center justify-center transition-colors cursor-pointer">
+            <Home className="w-5 h-5 text-white" />
+          </div>
+        </Link>
 
-          <Link href="/">
-            <div className="bg-[#1e1e1e] w-12 h-12 rounded-full flex justify-center items-center p-2 hover:bg-[#2a2a2a] hover:scale-105 transition-all cursor-pointer shadow-lg">
-              <img className="w-5 h-5 opacity-80 hover:opacity-100" src="/home.png" alt="Home" />
-            </div>
+        {/* Search bar */}
+        <div className={`flex items-center gap-3 bg-[#242424] rounded-full px-4 h-12 flex-1 transition-all duration-200 ${focused ? 'ring-1 ring-white/30 bg-[#2a2a2a]' : 'hover:bg-[#2a2a2a]'}`}>
+          <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="What do you want to play?"
+            className="text-white text-sm font-medium outline-none border-0 bg-transparent flex-1 min-w-0 placeholder-neutral-400"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="text-neutral-400 hover:text-white transition-colors text-lg leading-none flex-shrink-0"
+            >
+              ✕
+            </button>
+          )}
+          <div className="w-px h-5 bg-neutral-600 flex-shrink-0" />
+          <Link href="/browse" className="flex-shrink-0">
+            <LayoutGrid className="w-4 h-4 text-neutral-400 hover:text-white transition-colors" />
           </Link>
-
-          <div className="bg-[#242424] hover:bg-[#2a2a2a] focus-within:bg-[#2a2a2a] focus-within:ring-1 focus-within:ring-white/20 transition-all flex items-center rounded-full px-4 py-2 h-12 flex-1 max-w-2xl mr-2 shadow-lg">
-            <img className="w-5 h-5 mr-3 opacity-60" src="/search.png" alt="Search" />
-
-            <input
-              type="text"
-              placeholder="What do you want to play?"
-              className="text-white text-sm font-medium outline-none border-0 bg-transparent flex-1 min-w-0 placeholder-neutral-400"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-
-            <div className="w-[1px] h-6 bg-neutral-700 mx-3"></div>
-
-            <Link href="/browse">
-              <button className="text-neutral-400 hover:text-white transition flex items-center font-bold text-sm tracking-wide">
-                <img className="w-4 h-4 mr-1.5 opacity-80" src="/browse.png" alt="Browse" />
-                Browse
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex justify-center items-center gap-4">
-          <InviteButton roomId={roomId} />
-          <SignedOut>
-            <div className="flex justify-center items-center gap-1">
-              <SignInButton mode="modal">
-                <span className="inline-block px-5 py-2 text-gray-300 text-[13px] shadow-lg cursor-pointer hover:text-white font-bold">
-                  Login
-                </span>
-              </SignInButton>
-
-              <SignUpButton mode="modal">
-                <span className="inline-block text-black px-5 py-3 bg-green-400 rounded-full shadow-lg cursor-pointer hover:bg-green-500 hover:scale-110 text-sm transition font-bold">
-                  Signup
-                </span>
-              </SignUpButton>
-            </div>
-          </SignedOut>
-
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
         </div>
       </div>
 
-      <div className="flex flex-col w-full h-full md:hidden">
+      {/* Right - Auth + Invite */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="hidden md:block">
+          <InviteButton roomId={roomId} />
+        </div>
 
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-1">
-            <img src="/icon2.png" alt="Logo" className="w-6 h-6" />
-            <h1 className="font-bold text-green-400">tune-together</h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <InviteButton roomId={roomId} />
+        {mounted && (
+          <>
             <SignedOut>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <SignInButton mode="modal">
-                  <span className="inline-block px-4 py-1 text-gray-300 text-[13px] cursor-pointer hover:text-white transition font-bold">
-                    Login
+                  <span className="hidden md:inline-block text-neutral-300 hover:text-white text-sm font-bold cursor-pointer transition-colors px-2 py-1">
+                    Log in
                   </span>
                 </SignInButton>
-
                 <SignUpButton mode="modal">
-                  <span className="inline-block text-black px-4 py-2 bg-green-400 rounded-full cursor-pointer hover:bg-green-500 hover:scale-105 text-sm transition font-bold">
-                    Signup
+                  <span className="inline-block text-black bg-white hover:bg-neutral-200 px-4 md:px-5 py-2 rounded-full text-sm font-bold cursor-pointer transition-all hover:scale-105">
+                    Sign up
                   </span>
                 </SignUpButton>
               </div>
             </SignedOut>
-
             <SignedIn>
               <UserButton />
             </SignedIn>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 mt-3 w-full">
-
-          <Link href="/">
-            <div className="bg-[#1e1e1e] w-10 h-10 rounded-full flex justify-center items-center p-2 hover:bg-[#2a2a2a] transition cursor-pointer">
-              <img className="w-5 h-5" src="/home.png" alt="Home" />
-            </div>
-          </Link>
-
-          <div className="bg-[#1e1e1e] flex items-center rounded-full px-3 py-2 h-10 flex-1">
-            <img className="w-5 h-5 mr-3" src="/search.png" alt="Search" />
-
-            <input
-              type="text"
-              placeholder="What do you want to play?"
-              className="text-white outline-none border-0 bg-transparent flex-1 min-w-0"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-
-            <img className="w-5 h-7 mx-2" src="/line.png" alt="Divider" />
-
-            <Link href="/browse">
-              <button className="hover:opacity-80 transition flex items-center">
-                <img className="w-5 h-5 mr-1" src="/browse.png" alt="Browse" />
-              </button>
-            </Link>
-          </div>
-        </div>
-
+          </>
+        )}
       </div>
     </div>
   );

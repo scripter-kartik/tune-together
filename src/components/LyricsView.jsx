@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { X, Copy, Check } from "lucide-react";
 
 // Parse LRC synced lyrics ("[mm:ss.xx] text") into [{ time, text }], sorted.
 function parseLRC(lrc) {
@@ -24,53 +24,19 @@ function parseLRC(lrc) {
   return out;
 }
 
-export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek }) {
-  const [data, setData] = useState(null); // { syncedLyrics, plainLyrics }
-  const [status, setStatus] = useState("idle"); // idle | loading | ready | error
+// `lyrics` ({ syncedLyrics, plainLyrics }) and `status` are prefetched by the
+// parent (PlayerFooter) as soon as the song changes, so opening is instant.
+export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek, lyrics, status = "idle" }) {
+  const data = lyrics;
   const [mounted, setMounted] = useState(false);
-  const fetchedIdRef = useRef(null);
+  const [copied, setCopied] = useState(false);
   const activeLineRef = useRef(null);
 
   // Portals need the DOM — only render after mount (avoids SSR crash).
   useEffect(() => setMounted(true), []);
 
-  // Fetch lyrics when the overlay is open (once per song).
-  useEffect(() => {
-    if (!isOpen || !song) return;
-    if (fetchedIdRef.current === song.id && data) return;
-
-    let cancelled = false;
-    setStatus("loading");
-    setData(null);
-    fetchedIdRef.current = song.id;
-
-    const params = new URLSearchParams({
-      id: String(song.id),
-      title: song.title || "",
-      artist: song.artist?.name || "",
-      album: song.album?.title || "",
-      duration: song.duration ? String(song.duration) : "",
-    });
-
-    fetch(`/api/lyrics?${params.toString()}`)
-      .then((r) => r.json())
-      .then((res) => {
-        if (cancelled) return;
-        if (res.syncedLyrics || res.plainLyrics) {
-          setData(res);
-          setStatus("ready");
-        } else {
-          setStatus("error");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setStatus("error");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, song?.id]);
+  // Reset the "copied" flourish when switching songs.
+  useEffect(() => setCopied(false), [song?.id]);
 
   const synced = useMemo(
     () => (data?.syncedLyrics ? parseLRC(data.syncedLyrics) : null),
@@ -95,18 +61,48 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek 
     }
   }, [activeIndex]);
 
+  const handleCopy = () => {
+    const text =
+      data?.plainLyrics ||
+      (synced ? synced.map((l) => l.text).join("\n") : "");
+    if (!text) return;
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
   if (!isOpen || !mounted) return null;
 
+  const cover =
+    song?.album?.cover_xl || song?.album?.cover_big || song?.album?.cover_medium;
+  const hasLyrics = status === "ready" && (synced || data?.plainLyrics);
+
   const overlay = (
-    <div className="fixed inset-0 z-[9999] flex flex-col bg-gradient-to-b from-[#1e3a34] via-[#121212] to-black">
+    // Sits above the footer (70px mobile / 90px desktop) so the playback bar
+    // with the current song stays visible — like Spotify's lyrics view.
+    <div className="fixed inset-x-0 top-0 bottom-[70px] md:bottom-[90px] z-[9999] flex flex-col overflow-hidden bg-[#0b0b0b]">
+      {/* Immersive blurred album-art backdrop */}
+      {cover && (
+        <>
+          <img
+            src={cover}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-40"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/70 to-black/95" />
+        </>
+      )}
+
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 flex-shrink-0">
+      <div className="relative flex items-center justify-between px-5 py-4 flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           {song?.album?.cover_small && (
             <img
               src={song.album.cover_small}
               alt={song.title}
-              className="w-11 h-11 rounded object-cover shadow-lg"
+              className="w-12 h-12 rounded object-cover shadow-lg"
             />
           )}
           <div className="min-w-0">
@@ -114,17 +110,29 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek 
             <p className="text-white/60 text-sm truncate">{song?.artist?.name}</p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors flex-shrink-0"
-          aria-label="Close lyrics"
-        >
-          <X className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {hasLyrics && (
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-sm font-medium"
+              aria-label="Copy lyrics"
+            >
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            aria-label="Close lyrics"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
       </div>
 
       {/* Body */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 md:px-10">
+      <div className="relative flex-1 min-h-0 overflow-y-auto px-6 md:px-10">
         <div className="max-w-3xl mx-auto">
           {status === "loading" && (
             <div className="flex flex-col items-center justify-center gap-3 py-32 text-white/60">
@@ -141,7 +149,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek 
           )}
 
           {status === "ready" && synced && (
-            <div className="py-[45vh]">
+            <div className="py-[40vh]">
               {synced.map((line, i) => {
                 const isActive = i === activeIndex;
                 return (
@@ -159,6 +167,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek 
                   </p>
                 );
               })}
+              <p className="text-xs text-white/30 pt-6">Lyrics provided by LRCLIB</p>
             </div>
           )}
 
@@ -170,6 +179,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek 
               <pre className="text-2xl md:text-3xl font-extrabold text-white/90 whitespace-pre-wrap font-sans leading-relaxed tracking-tight">
                 {data.plainLyrics}
               </pre>
+              <p className="text-xs text-white/30 pt-8">Lyrics provided by LRCLIB</p>
             </div>
           )}
         </div>

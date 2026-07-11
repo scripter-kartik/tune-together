@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageCircle, Users, ListMusic } from "lucide-react";
 import ChatSidebar from "./ChatSidebar";
 import ListeningUsers from "./ListeningUsers";
@@ -13,6 +13,13 @@ export default function RightPanel({
   onClearQueue,
 }) {
   const [tab, setTab] = useState("community");
+
+  // The player footer's Queue button opens this panel's Queue tab.
+  useEffect(() => {
+    const openQueue = () => setTab("queue");
+    window.addEventListener("tt-open-queue", openQueue);
+    return () => window.removeEventListener("tt-open-queue", openQueue);
+  }, []);
 
   const tabClass = (active) =>
     `flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all duration-300 ${

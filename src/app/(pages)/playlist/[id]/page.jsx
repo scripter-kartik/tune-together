@@ -167,7 +167,11 @@ export default function PlaylistPage() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-black overflow-hidden">
-      <Header query={query} setQuery={setQuery} handleSearch={() => {}} />
+      <Header query={query} setQuery={setQuery} handleSearch={() => {
+        if (query.trim() !== "") {
+          window.location.href = `/?q=${encodeURIComponent(query)}`;
+        }
+      }} />
 
       <div className="flex lg:hidden p-2 bg-black border-b border-neutral-800 flex-shrink-0">
         <button

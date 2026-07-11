@@ -57,7 +57,7 @@ export async function GET(req) {
     await connectDB();
     const cached = await Lyrics.findOne({ deezerId: String(deezerId) });
     if (cached && (cached.syncedLyrics || cached.plainLyrics)) {
-      return Response.json({
+      return jsonCached({
         syncedLyrics: cached.syncedLyrics,
         plainLyrics: cached.plainLyrics,
         cached: true,
@@ -67,13 +67,21 @@ export async function GET(req) {
     console.error("lyrics: cache lookup failed", err);
   }
 
-  // 2. Cache miss — query LRCLIB (exact match, then fuzzy search).
+  // 2. Cache miss — hit both LRCLIB endpoints IN PARALLEL (each can take
+  // several seconds; running them together roughly halves the cold latency).
   let record = null;
   try {
-    record = await lrclibGet({ title, artist, album, duration });
-    if (!record || (!record.syncedLyrics && !record.plainLyrics)) {
-      record = await lrclibSearch({ title, artist });
-    }
+    const [getRes, searchRes] = await Promise.allSettled([
+      lrclibGet({ title, artist, album, duration }),
+      lrclibSearch({ title, artist }),
+    ]);
+    const getVal = getRes.status === "fulfilled" ? getRes.value : null;
+    const searchVal = searchRes.status === "fulfilled" ? searchRes.value : null;
+
+    // Prefer whichever result actually has time-synced lyrics.
+    if (getVal?.syncedLyrics) record = getVal;
+    else if (searchVal?.syncedLyrics) record = searchVal;
+    else record = getVal || searchVal;
   } catch (err) {
     console.error("lyrics: LRCLIB request failed", err);
   }
@@ -94,5 +102,15 @@ export async function GET(req) {
     }
   }
 
-  return Response.json({ syncedLyrics, plainLyrics });
+  return jsonCached({ syncedLyrics, plainLyrics });
+}
+
+// JSON response with long-lived caching so the browser/CDN serves repeat
+// requests for the same track instantly (lyrics never change).
+function jsonCached(body) {
+  return Response.json(body, {
+    headers: {
+      "Cache-Control": "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=86400",
+    },
+  });
 }

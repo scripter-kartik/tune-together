@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
-import { MdLyrics } from "react-icons/md";
+import { MicVocal, ListMusic } from "lucide-react";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
 import LyricsView from "./LyricsView";
 
@@ -25,7 +25,12 @@ export default function PlayerFooter({
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const isSeeking = useRef(false);
+
+  // react-player renders a <Suspense> internally, which mismatches during SSR.
+  // Only mount it on the client to avoid a hydration error.
+  useEffect(() => setMounted(true), []);
 
   // Player readiness + a seek we couldn't apply yet (media still loading).
   const playerReadyRef = useRef(false);
@@ -59,6 +64,13 @@ export default function PlayerFooter({
     setCurrentTime(0);
     setDuration(0);
 
+    if (song.youtubeId) {
+      setPlayerUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const params = new URLSearchParams({
       id: String(song.id),
       title: song.title || "",
@@ -85,6 +97,63 @@ export default function PlayerFooter({
     };
   }, [song?.id]);
 
+  // Prefetch lyrics the instant the song changes (before the user clicks the
+  // lyrics button), and cache them in memory so opening the panel is instant.
+  const lyricsCacheRef = useRef(new Map());
+  const [lyricsData, setLyricsData] = useState(null);
+  const [lyricsStatus, setLyricsStatus] = useState("idle"); // idle|loading|ready|error
+
+  useEffect(() => {
+    if (!song) {
+      setLyricsData(null);
+      setLyricsStatus("idle");
+      return;
+    }
+
+    const id = song.id;
+    const cache = lyricsCacheRef.current;
+    if (cache.has(id)) {
+      const cached = cache.get(id);
+      setLyricsData(cached);
+      setLyricsStatus(cached ? "ready" : "error");
+      return;
+    }
+
+    let cancelled = false;
+    setLyricsData(null);
+    setLyricsStatus("loading");
+
+    const params = new URLSearchParams({
+      id: String(id),
+      title: song.title || "",
+      artist: song.artist?.name || "",
+      album: song.album?.title || "",
+      duration: song.duration ? String(song.duration) : "",
+    });
+
+    fetch(`/api/lyrics?${params.toString()}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (cancelled) return;
+        if (res.syncedLyrics || res.plainLyrics) {
+          cache.set(id, res);
+          setLyricsData(res);
+          setLyricsStatus("ready");
+        } else {
+          cache.set(id, null);
+          setLyricsData(null);
+          setLyricsStatus("error");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLyricsStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [song?.id]);
+
   // Broadcast "now playing" for the activity/presence feature.
   useEffect(() => {
     if (!song || !isPlaying) {
@@ -96,10 +165,10 @@ export default function PlayerFooter({
       id: song.id,
       title: song.title,
       artist: {
-        name: song.artist.name,
+        name: song.artist?.name || "Unknown",
       },
       album: {
-        cover_small: song.album.cover_small,
+        cover_small: song.album?.cover_small || song.album?.cover_medium || '/icon2.png',
       },
     });
   }, [song, isPlaying, updateNowPlaying]);
@@ -207,6 +276,9 @@ export default function PlayerFooter({
 
   const toggleMute = () => setIsMuted((m) => !m);
 
+  // Open the Queue tab in the right panel (RightPanel/Home listen for this).
+  const openQueue = () => window.dispatchEvent(new CustomEvent("tt-open-queue"));
+
   const formatTime = (time) => {
     if (isNaN(time)) return "00:00";
     const minutes = Math.floor(time / 60).toString().padStart(2, "0");
@@ -238,14 +310,15 @@ export default function PlayerFooter({
 
       <div className="flex items-center justify-between w-full h-full">
 
-        <div className="flex items-center gap-3 md:gap-4 w-[65%] md:w-[30%] min-w-0">
+        <div className="flex items-center gap-3 md:gap-4 w-[60%] md:w-[30%] min-w-0">
           {song ? (
             <>
               <div className="relative flex-shrink-0 rounded flex items-center shadow-lg shadow-black/50">
                 <img
-                  src={song.album.cover_small}
+                  src={song.album?.cover_medium || song.album?.cover_small || '/icon2.png'}
                   alt={song.title}
                   className="w-12 h-12 md:w-14 md:h-14 object-cover rounded shadow-md"
+                  onError={e => { e.target.src = '/icon2.png'; }}
                 />
               </div>
               <div className="flex flex-col overflow-hidden min-w-0 justify-center">
@@ -326,14 +399,21 @@ export default function PlayerFooter({
           </div>
         </div>
 
-        <div className="flex md:hidden items-center justify-end gap-4 w-[35%]">
+        <div className="flex md:hidden items-center justify-end gap-3 w-[40%]">
           <button
             onClick={() => song && setShowLyrics(true)}
-            className={`p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`p-1.5 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label="Lyrics"
             disabled={!song}
           >
-            <MdLyrics size={20} />
+            <MicVocal size={19} />
+          </button>
+          <button
+            onClick={openQueue}
+            className="p-1.5 text-neutral-300 hover:text-white"
+            aria-label="Queue"
+          >
+            <ListMusic size={19} />
           </button>
           <button
             onClick={handlePlayPauseClick}
@@ -359,7 +439,7 @@ export default function PlayerFooter({
           </button>
         </div>
 
-        <div className="hidden md:flex items-center justify-end gap-3 w-[30%] min-w-[180px] group">
+        <div className="hidden md:flex items-center justify-end gap-3 w-[30%] min-w-[220px] group">
           <button
             onClick={() => song && setShowLyrics(true)}
             className={`transition-colors ${showLyrics ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'} ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -367,7 +447,15 @@ export default function PlayerFooter({
             disabled={!song}
             title="Lyrics"
           >
-            <MdLyrics size={18} />
+            <MicVocal size={18} />
+          </button>
+          <button
+            onClick={openQueue}
+            className="text-[#b3b3b3] hover:text-white transition-colors"
+            aria-label="Queue"
+            title="Queue"
+          >
+            <ListMusic size={18} />
           </button>
           <button
             onClick={toggleMute}
@@ -411,6 +499,8 @@ export default function PlayerFooter({
         isOpen={showLyrics}
         onClose={() => setShowLyrics(false)}
         onSeek={handleLyricSeek}
+        lyrics={lyricsData}
+        status={lyricsStatus}
       />
 
       {/* Hidden audio engine. Kept offscreen (but non-zero size) so YouTube keeps
@@ -427,30 +517,32 @@ export default function PlayerFooter({
         }}
         aria-hidden="true"
       >
-        <ReactPlayer
-          ref={playerRef}
-          url={playerUrl}
-          playing={isPlaying}
-          controls={false}
-          volume={isMuted ? 0 : volume}
-          muted={isMuted}
-          width="1px"
-          height="1px"
-          progressInterval={500}
-          onReady={handleReady}
-          onStart={() => setIsLoading(false)}
-          onBuffer={() => setIsLoading(true)}
-          onBufferEnd={() => setIsLoading(false)}
-          onProgress={handleProgress}
-          onDuration={handleDuration}
-          onEnded={onNext}
-          onError={() => setIsLoading(false)}
-          config={{
-            youtube: {
-              playerVars: { playsinline: 1, disablekb: 1, modestbranding: 1 },
-            },
-          }}
-        />
+        {mounted && (
+          <ReactPlayer
+            ref={playerRef}
+            url={playerUrl}
+            playing={isPlaying}
+            controls={false}
+            volume={isMuted ? 0 : volume}
+            muted={isMuted}
+            width="1px"
+            height="1px"
+            progressInterval={500}
+            onReady={handleReady}
+            onStart={() => setIsLoading(false)}
+            onBuffer={() => setIsLoading(true)}
+            onBufferEnd={() => setIsLoading(false)}
+            onProgress={handleProgress}
+            onDuration={handleDuration}
+            onEnded={onNext}
+            onError={() => setIsLoading(false)}
+            config={{
+              youtube: {
+                playerVars: { playsinline: 1, disablekb: 1, modestbranding: 1 },
+              },
+            }}
+          />
+        )}
       </div>
     </div>
   );

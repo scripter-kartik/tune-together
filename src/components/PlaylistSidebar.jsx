@@ -1,348 +1,192 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { MessageCircle, X, ArrowLeft, Circle, Music } from "lucide-react";
+import Link from "next/link";
+import { MessageCircle, X, ArrowLeft, Circle, Music, Plus, Library, Home } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+
+const PLAYLISTS = [
+  { id: 1, name: "Old is <3", type: "Album", artist: "Ram :)", image: "/playlist1.png", gradient: "from-purple-600 to-blue-600" },
+  { id: 2, name: "Arijit Singh All time hits", type: "Album", artist: "Arijit Singh", image: "/playlist2.png", gradient: "from-red-600 to-orange-600" },
+  { id: 3, name: "Best of Shreya Ghoshal", type: "Album", artist: "Shreya Ghoshal", image: "/playlist3.png", gradient: "from-blue-500 to-cyan-500" },
+  { id: 4, name: "Highlights of honey singh", type: "Album", artist: "Yo yo honey singh", image: "/playlist4.png", gradient: "from-purple-500 to-pink-500" },
+  { id: 5, name: "Golden Songs of Kishore Kumar", type: "Album", artist: "Kishore Kumar", image: "/playlist5.png", gradient: "from-teal-500 to-green-600" },
+  { id: 6, name: "Madness of Badshah", type: "Album", artist: "Badshah", image: "/playlist6.png", gradient: "from-indigo-600 to-purple-600" },
+  { id: 7, name: "Charlie Puth Hits of 2024", type: "Album", artist: "Charlie Puth", image: "/playlist7.png", gradient: "from-pink-500 to-rose-600" },
+];
+
+function getInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) return parts[0][0] + parts[1][0];
+  return parts[0][0];
+}
+
+const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-red-500'];
 
 export default function PlaylistSidebar({ onOpenChat }) {
   const { isSignedIn, isLoaded } = useUser();
-  const [showChatList, setShowChatList] = useState(false);
+  const [view, setView] = useState('library'); // 'library' | 'messages'
   const [chatUsers, setChatUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('all'); 
-
-  const playlists = [
-    {
-      id: 1,
-      name: "Old is <3",
-      type: "Album",
-      artist: "Ram :)",
-      image: "/playlist1.png",
-      gradient: "from-purple-600 to-blue-600",
-    },
-    {
-      id: 2,
-      name: "Arijit Singh All time hits",
-      type: "Album",
-      artist: "Arijit Singh",
-      image: "/playlist2.png",
-      gradient: "from-red-600 to-orange-600",
-    },
-    {
-      id: 3,
-      name: "Best of Shreya Ghoshal",
-      type: "Album",
-      artist: "Shreya Ghoshal",
-      image: "/playlist3.png",
-      gradient: "from-blue-500 to-cyan-500",
-    },
-    {
-      id: 4,
-      name: "Highlights of honey singh",
-      type: "Album",
-      artist: "Yo yo honey singh",
-      image: "/playlist4.png",
-      gradient: "from-purple-500 to-pink-500",
-    },
-    {
-      id: 5,
-      name: "Golden Songs of Kishore Kumar",
-      type: "Album",
-      artist: "Kishore Kumar",
-      image: "/playlist5.png",
-      gradient: "from-teal-500 to-green-600",
-    },
-    {
-      id: 6,
-      name: "Madness of Badshah",
-      type: "Album",
-      artist: "Badshah",
-      image: "/playlist6.png",
-      gradient: "from-indigo-600 to-purple-600",
-    },
-    {
-      id: 7,
-      name: "Charlie Puth Hits of 2024",
-      type: "Album",
-      artist: "Charlie Puth",
-      image: "/playlist7.png",
-      gradient: "from-pink-500 to-rose-600",
-    },
-  ];
+  const [filter, setFilter] = useState('all');
+  const [listMode, setListMode] = useState('list'); // 'list' | 'compact'
 
   useEffect(() => {
-    if (showChatList && isSignedIn) {
+    if (view === 'messages' && isSignedIn) {
       fetchChatUsers();
     }
-  }, [showChatList, isSignedIn, filter]);
+  }, [view, isSignedIn, filter]);
 
   const fetchChatUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/users/logged-in?filter=${filter}`);
-      if (response.ok) {
-        const data = await response.json();
+      const res = await fetch(`/api/users/logged-in?filter=${filter}`);
+      if (res.ok) {
+        const data = await res.json();
         setChatUsers(data.users || []);
       }
-    } catch (error) {
-      console.error('Error fetching chat users:', error);
+    } catch (err) {
+      console.error('Error fetching users:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChatClick = (user) => {
-    if (onOpenChat) {
-      onOpenChat(user);
-    }
-  };
-
-  const getInitials = (name) => {
-    if (!name) return '?';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return parts[0][0] + parts[1][0];
-    }
-    return parts[0][0];
-  };
-
-  const getAvatarColor = (index) => {
-    const colors = [
-      'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500',
-      'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-red-500'
-    ];
-    return colors[index % colors.length];
-  };
-
   const getUserStatus = (user) => {
     if (user.currentlyPlaying?.songTitle) {
-      return {
-        text: `Playing: ${user.currentlyPlaying.songTitle}`,
-        color: 'text-green-400',
-        indicator: 'bg-green-500',
-        icon: <Music className="w-3 h-3" />
-      };
+      return { text: user.currentlyPlaying.songTitle, color: 'text-green-400', dot: 'bg-green-500' };
     }
-    
-    if (user.onlineStatus === 'online') {
-      return {
-        text: 'Online',
-        color: 'text-green-400',
-        indicator: 'bg-green-500',
-        icon: <Circle className="w-3 h-3 fill-current" />
-      };
-    } else if (user.onlineStatus === 'idle') {
-      return {
-        text: `Active ${user.minutesSinceActive}m ago`,
-        color: 'text-yellow-400',
-        indicator: 'bg-yellow-500',
-        icon: <Circle className="w-3 h-3 fill-current" />
-      };
-    } else {
-      return {
-        text: 'Offline',
-        color: 'text-gray-400',
-        indicator: 'bg-gray-500',
-        icon: <Circle className="w-3 h-3 fill-current" />
-      };
-    }
+    if (user.onlineStatus === 'online') return { text: 'Online', color: 'text-green-400', dot: 'bg-green-500' };
+    if (user.onlineStatus === 'idle') return { text: `Active ${user.minutesSinceActive}m ago`, color: 'text-yellow-400', dot: 'bg-yellow-500' };
+    return { text: 'Offline', color: 'text-neutral-500', dot: 'bg-neutral-600' };
   };
 
   const onlineCount = chatUsers.filter(u => u.onlineStatus === 'online').length;
-  const idleCount = chatUsers.filter(u => u.onlineStatus === 'idle').length;
+  const recentCount = chatUsers.filter(u => u.onlineStatus === 'online' || u.onlineStatus === 'idle').length;
 
   return (
-    <div className="flex flex-col h-full bg-[#121212] rounded-md overflow-hidden">
-      <div className="flex-shrink-0 border-b border-gray-800">
-        <div className="flex items-center px-4 py-4 gap-3">
-          {showChatList && (
+    <div className="flex flex-col h-full bg-[#121212]">
+
+      {/* Header */}
+      <div className="flex-shrink-0 px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setView(view === 'library' ? 'messages' : 'library')}
+            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors"
+          >
+            {view === 'messages' ? (
+              <>
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-bold text-white">Messages</span>
+              </>
+            ) : (
+              <>
+                <Library className="w-5 h-5" />
+                <span className="font-bold text-white">Your Library</span>
+              </>
+            )}
+          </button>
+          {view === 'library' && isLoaded && isSignedIn && (
             <button
-              onClick={() => setShowChatList(false)}
-              className="text-gray-400 hover:text-white transition"
+              onClick={() => setView('messages')}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+              title="Messages"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <MessageCircle className="w-5 h-5" />
             </button>
           )}
-          <svg
-            className="w-6 h-6 text-gray-400"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            {showChatList ? (
-              <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z" />
-            ) : (
-              <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
-            )}
-          </svg>
-          <h2 className="text-lg font-bold text-white">
-            {showChatList ? "Messages" : "Playlist's"}
-          </h2>
         </div>
 
-        {showChatList && (
-          <div className="flex gap-1 px-4 pb-3">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition ${
-                filter === 'all'
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
-              }`}
-            >
-              All ({chatUsers.length})
-            </button>
-            <button
-              onClick={() => setFilter('online')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition ${
-                filter === 'online'
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
-              }`}
-            >
-              Online ({onlineCount})
-            </button>
-            <button
-              onClick={() => setFilter('recent')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition ${
-                filter === 'recent'
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
-              }`}
-            >
-              Recent ({onlineCount + idleCount})
-            </button>
+        {view === 'messages' && (
+          <div className="flex gap-1 mb-3">
+            {[
+              { key: 'all', label: `All (${chatUsers.length})` },
+              { key: 'online', label: `Online (${onlineCount})` },
+              { key: 'recent', label: `Recent (${recentCount})` },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                  filter === tab.key ? 'bg-white text-black' : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-        {!showChatList ? (
-          <div className="px-2 py-2">
-            {playlists.map((playlist) => (
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-2 pb-4">
+        {view === 'library' ? (
+          <div className="flex flex-col gap-0.5">
+            {PLAYLISTS.map(pl => (
               <Link
-                key={playlist.id}
-                href={`/playlist/${playlist.id}?name=${encodeURIComponent(
-                  playlist.name
-                )}&artist=${encodeURIComponent(
-                  playlist.artist
-                )}&gradient=${encodeURIComponent(playlist.gradient)}`}
+                key={pl.id}
+                href={`/playlist/${pl.id}?name=${encodeURIComponent(pl.name)}&artist=${encodeURIComponent(pl.artist)}&gradient=${encodeURIComponent(pl.gradient)}`}
               >
-                <div className="flex items-center gap-3 p-2 rounded-md hover:bg-[#1a1a1a] transition cursor-pointer group">
-                  <div className="relative w-14 h-14 flex-shrink-0 bg-gradient-to-br from-gray-700 to-gray-800 rounded overflow-hidden">
-                    {playlist.image ? (
-                      <img
-                        src={playlist.image}
-                        alt={playlist.name}
-                        className="w-full h-full object-cover"
-                      />
+                <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
+                  <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
+                    {pl.image ? (
+                      <img src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <svg
-                          className="w-8 h-8 text-gray-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-                        </svg>
+                      <div className={`absolute inset-0 bg-gradient-to-br ${pl.gradient} flex items-center justify-center`}>
+                        <Music className="w-5 h-5 text-white/70" />
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition">
-                      {playlist.name}
-                    </p>
-                    <p className="text-gray-400 text-xs truncate">
-                      {playlist.type} • {playlist.artist}
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{pl.name}</p>
+                    <p className="text-neutral-400 text-xs truncate">{pl.type} • {pl.artist}</p>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
-              </div>
-            ) : chatUsers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <MessageCircle className="w-16 h-16 text-gray-600 mb-3" />
-                <p className="text-gray-400 text-sm">
-                  {filter === 'online' ? 'No users online right now' : 'No users available'}
-                </p>
-              </div>
-            ) : (
-              chatUsers.map((user, index) => {
-                const status = getUserStatus(user);
-                return (
-                  <div
-                    key={user.clerkId}
-                    onClick={() => handleChatClick(user)}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#1a1a1a] transition-colors cursor-pointer"
-                  >
-                    
-                    <div className="relative flex-shrink-0">
-                      {user.imageUrl ? (
-                        <img
-                          src={user.imageUrl}
-                          alt={user.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          className={`w-12 h-12 rounded-full ${getAvatarColor(
-                            index
-                          )} flex items-center justify-center text-white font-semibold text-sm`}
-                        >
-                          {getInitials(user.name)}
-                        </div>
-                      )}
-                      <div
-                        className={`absolute bottom-0 right-0 w-3 h-3 ${status.indicator} rounded-full border-2 border-[#121212]`}
-                      ></div>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">
-                        {user.name}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        {status.icon}
-                        <p className={`text-xs ${status.color} truncate`}>
-                          {status.text}
-                        </p>
+          loading ? (
+            <div className="flex justify-center py-10">
+              <div className="w-6 h-6 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
+            </div>
+          ) : chatUsers.length === 0 ? (
+            <div className="flex flex-col items-center py-10 text-center px-4">
+              <MessageCircle className="w-12 h-12 text-neutral-600 mb-3" />
+              <p className="text-neutral-400 text-sm">
+                {filter === 'online' ? 'No users online right now' : 'No users found'}
+              </p>
+            </div>
+          ) : (
+            chatUsers.map((user, i) => {
+              const status = getUserStatus(user);
+              return (
+                <div
+                  key={user.clerkId}
+                  onClick={() => onOpenChat?.(user)}
+                  className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <div className="relative flex-shrink-0">
+                    {user.imageUrl ? (
+                      <img src={user.imageUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className={`w-10 h-10 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white font-semibold text-sm`}>
+                        {getInitials(user.name)}
                       </div>
-                    </div>
+                    )}
+                    <div className={`absolute bottom-0 right-0 w-3 h-3 ${status.dot} rounded-full border-2 border-[#121212]`} />
                   </div>
-                );
-              })
-            )}
-          </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{user.name}</p>
+                    <p className={`text-xs truncate ${status.color}`}>{status.text}</p>
+                  </div>
+                </div>
+              );
+            })
+          )
         )}
       </div>
-
-      {isLoaded && isSignedIn && (
-        <div className="p-4 border-t border-gray-800 bg-[#121212]">
-          <button
-            onClick={() => setShowChatList(!showChatList)}
-            className="w-full bg-[#1db954] hover:bg-[#1ed760] text-black px-4 py-3 rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            {showChatList ? (
-              <>
-                <ArrowLeft className="w-5 h-5" />
-                <span>Playlists</span>
-              </>
-            ) : (
-              <>
-                <MessageCircle className="w-5 h-5" />
-                <span>Messages</span>
-              </>
-            )}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

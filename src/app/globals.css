@@ -2,24 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-sizing: border-box;
+}
+
 body {
-  background-color: black;
+  background-color: #000000;
   width: 100%;
   height: 100%;
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
   color: white;
+  overflow: hidden;
 }
 
-html, body {
+html {
+  overflow: hidden;
+}
+
+/* Spotify-like scrollbar */
+html, body, * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 ::-webkit-scrollbar {
-  width: 14px;
-  height: 14px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -27,12 +40,76 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.2);
   border-radius: 10px;
-  border: 4px solid transparent;
-  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Hide scrollbar for horizontal scroll areas */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Spotify-green glow for active elements */
+.glow-green {
+  box-shadow: 0 0 20px rgba(29, 185, 84, 0.3);
+}
+
+/* Smooth range input styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Slide-in animations */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-left {
+  animation: slideInLeft 0.25s ease-out;
+}
+
+.animate-slide-right {
+  animation: slideInRight 0.25s ease-out;
+}
+
+.animate-fade-up {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Equalizer animation bars */
+@keyframes equalize {
+  0%, 100% { height: 4px; }
+  50% { height: 14px; }
+}
+
+/* Ensure no overflow on root */
+#__next, main {
+  height: 100%;
+  overflow: hidden;
 }

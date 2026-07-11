@@ -25,6 +25,9 @@ export default function Page() {
   const [selectedChatUser, setSelectedChatUser] = useState(null);
   const [selectedArtistId, setSelectedArtistId] = useState(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState(null);
+  const [artists, setArtists] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [isSearchQuery, setIsSearchQuery] = useState(false);
   const socketRef = useRef(null);
 
   const songsRef = useRef([]);
@@ -137,62 +140,64 @@ export default function Page() {
     };
   }, [roomId]);
 
-  const fetchSongs = async (searchTerm) => {
+  const fetchSongs = async (searchTerm, isUserSearch = false) => {
     setIsLoading(true);
     setError(null);
+    setIsSearchQuery(isUserSearch);
     try {
-      const apiKey = process.env.NEXT_PUBLIC_RAPIDAPI_KEY;
-      if (!apiKey) throw new Error("API key is missing. Please check your .env.local file.");
+      const res = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
 
-      const response = await fetch(
-        `https://deezerdevs-deezer.p.rapidapi.com/search?q=${encodeURIComponent(searchTerm)}`,
-        {
-          method: "GET",
-          headers: {
-            "X-RapidAPI-Key": apiKey,
-            "X-RapidAPI-Host": "deezerdevs-deezer.p.rapidapi.com",
-          },
-        }
-      );
+      if (!res.ok) throw new Error(`API Error: ${res.status} ${res.statusText}`);
 
-      if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
-
-      const data = await response.json();
-      if (!data.data || data.data.length === 0) {
-        setError("No songs found. Try a different search term.");
+      const data = await res.json();
+      
+      if (!data.songs || data.songs.length === 0) {
+        setError("No results found. Try a different search term.");
         setSongs([]);
+        setArtists([]);
+        setAlbums([]);
       } else {
-        setSongs(data.data);
+        setSongs(data.songs);
+        setArtists(data.artists || []);
+        setAlbums(data.albums || []);
         setVisibleCount(20);
 
         if (currentSongIndex === null && !currentSongRef.current) {
           setCurrentSongIndex(0);
-          setCurrentSong(data.data[0]);
+          setCurrentSong(data.songs[0]);
         }
       }
     } catch (err) {
-      console.error("Error fetching songs:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch songs. Please try again.");
+      console.error("Error fetching results:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch results. Please try again.");
       setSongs([]);
+      setArtists([]);
+      setAlbums([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSearch = () => {
-    if (query.trim() !== "") fetchSongs(query);
+    if (query.trim() !== "") fetchSongs(query, true);
   };
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 20);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlQuery = params.get('q');
     const browseQuery = sessionStorage.getItem('browseQuery');
-    if (browseQuery) {
+    
+    if (urlQuery) {
+      setQuery(urlQuery);
+      fetchSongs(urlQuery, true);
+    } else if (browseQuery) {
       setQuery(browseQuery);
-      fetchSongs(browseQuery);
+      fetchSongs(browseQuery, true);
       sessionStorage.removeItem('browseQuery');
     } else {
-      fetchSongs(random);
+      fetchSongs(random, false);
     }
   }, [random]);
 
@@ -269,6 +274,9 @@ export default function Page() {
       <main className="flex-1 overflow-hidden">
         <Home
           songs={getVisibleSongs()}
+          artists={artists}
+          albums={albums}
+          isSearchQuery={isSearchQuery}
           onLoadMore={handleLoadMore}
           showLoadMore={songs.length > visibleCount}
           onPlay={handlePlay}

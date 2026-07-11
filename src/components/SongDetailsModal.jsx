@@ -20,9 +20,10 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
         <div className="relative h-64 sm:h-80 w-full">
           <div className="absolute inset-0 bg-gradient-to-t from-[#181818] via-[#181818]/60 to-transparent z-10" />
           <img 
-            src={song.album?.cover_xl || song.album?.cover_big || song.album?.cover_medium} 
+            src={song.album?.cover_xl || song.album?.cover_big || song.album?.cover_medium || '/icon2.png'} 
             alt={song.title}
             className="w-full h-full object-cover"
+            onError={e => { e.target.src = '/icon2.png'; }}
           />
           <button 
             onClick={onClose}
