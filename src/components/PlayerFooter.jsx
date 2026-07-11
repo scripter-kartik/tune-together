@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import ReactPlayer from "react-player";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
+import { MdLyrics } from "react-icons/md";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
-
-const DRIFT_TOLERANCE = 0.25;
+import LyricsView from "./LyricsView";
 
 export default function PlayerFooter({
   song,
@@ -16,24 +17,75 @@ export default function PlayerFooter({
   socketRef,
   hasSongs,
 }) {
-  const audioRef = useRef(null);
+  const playerRef = useRef(null);
+  const [playerUrl, setPlayerUrl] = useState(null);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(30);
+  const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   const isSeeking = useRef(false);
+
+  // Player readiness + a seek we couldn't apply yet (media still loading).
+  const playerReadyRef = useRef(false);
+  const pendingSeekRef = useRef(null);
 
   const { updateNowPlaying } = useUpdateNowPlaying();
 
-  const setTime = (t) => {
-    const a = audioRef.current;
-    if (!a) return;
-    try {
-      a.currentTime = Math.max(0, t || 0);
-    } catch {}
+  // Seek helper: apply now if the media is ready, otherwise defer until onReady.
+  const seekTo = (t) => {
+    const pos = Math.max(0, t || 0);
+    if (playerRef.current && playerReadyRef.current) {
+      try {
+        playerRef.current.seekTo(pos, "seconds");
+      } catch {}
+    } else {
+      pendingSeekRef.current = pos;
+    }
   };
 
+  // Resolve the current Deezer track to a full-length YouTube source.
+  // Falls back to Deezer's 30s preview if no match is found.
+  useEffect(() => {
+    if (!song) {
+      setPlayerUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+    playerReadyRef.current = false;
+    setCurrentTime(0);
+    setDuration(0);
+
+    const params = new URLSearchParams({
+      id: String(song.id),
+      title: song.title || "",
+      artist: song.artist?.name || "",
+    });
+
+    fetch(`/api/resolve?${params.toString()}`)
+      .then((r) => r.json())
+      .then(({ youtubeId }) => {
+        if (cancelled) return;
+        if (youtubeId) {
+          setPlayerUrl(`https://www.youtube.com/watch?v=${youtubeId}`);
+        } else {
+          // Graceful fallback: the 30s preview beats nothing.
+          setPlayerUrl(song.preview || null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPlayerUrl(song.preview || null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [song?.id]);
+
+  // Broadcast "now playing" for the activity/presence feature.
   useEffect(() => {
     if (!song || !isPlaying) {
       updateNowPlaying(null);
@@ -44,45 +96,29 @@ export default function PlayerFooter({
       id: song.id,
       title: song.title,
       artist: {
-        name: song.artist.name
+        name: song.artist.name,
       },
       album: {
-        cover_small: song.album.cover_small
-      }
+        cover_small: song.album.cover_small,
+      },
     });
   }, [song, isPlaying, updateNowPlaying]);
 
+  // Room sync: play/pause state is driven by the `isPlaying` prop (parent
+  // updates it from sync-play/sync-song), so here we only apply the shared
+  // playback POSITION by seeking.
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;
 
-    const onPlay = ({ isPlaying, position, at }) => {
-      const a = audioRef.current;
-      if (!a) return;
+    const applyPosition = (position, at) => {
       const posNow = (position ?? 0) + (Date.now() - (at || Date.now())) / 1000;
-      setTime(posNow);
-      if (isPlaying) a.play().catch(() => {});
-      else a.pause();
+      seekTo(posNow);
     };
 
-    const onSong = ({ song: s, isPlaying, position, at }) => {
-      const a = audioRef.current;
-      if (!a || !s) return;
-      if (a.src !== s.preview) {
-        setIsLoading(true);
-        a.src = s.preview;
-        a.load();
-      }
-      const posNow = (position ?? 0) + (Date.now() - (at || Date.now())) / 1000;
-      setTime(posNow);
-      if (isPlaying) a.play().catch(() => {});
-      else a.pause();
-    };
-
-    const onSeek = ({ position, at }) => {
-      const posNow = (position ?? 0) + (Date.now() - (at || Date.now())) / 1000;
-      setTime(posNow);
-    };
+    const onPlay = ({ position, at }) => applyPosition(position, at);
+    const onSong = ({ position, at }) => applyPosition(position, at);
+    const onSeek = ({ position, at }) => applyPosition(position, at);
 
     socket.on("sync-play", onPlay);
     socket.on("sync-song", onSong);
@@ -90,14 +126,12 @@ export default function PlayerFooter({
 
     const onTTSync = (e) => {
       const d = e.detail || {};
-      if (d.type === "state") {
-        onSong({ song: d.currentSong, isPlaying: d.isPlaying, position: d.position, at: d.at });
-      } else if (d.type === "song") {
-        onSong({ song: d.song, isPlaying: d.isPlaying, position: d.position, at: d.at });
+      if (d.type === "state" || d.type === "song") {
+        applyPosition(d.position, d.at);
       } else if (d.type === "play") {
-        onPlay({ isPlaying: d.isPlaying, position: d.position, at: d.at });
+        applyPosition(d.position, d.at);
       } else if (d.type === "seek") {
-        onSeek({ position: d.position, at: d.at });
+        applyPosition(d.position, d.at);
       }
     };
     window.addEventListener("tt-sync", onTTSync);
@@ -108,68 +142,33 @@ export default function PlayerFooter({
       socket.off("sync-seek", onSeek);
       window.removeEventListener("tt-sync", onTTSync);
     };
-  }, [socketRef, song]);
+  }, [socketRef, song?.id]);
 
-  useEffect(() => {
-    const a = audioRef.current;
-    if (!a || !song) return;
-
-    if (a.src !== song.preview) {
-      setIsLoading(true);
-      a.src = song.preview;
-      a.load();
+  const handleReady = () => {
+    playerReadyRef.current = true;
+    setIsLoading(false);
+    if (pendingSeekRef.current != null) {
+      const pos = pendingSeekRef.current;
+      pendingSeekRef.current = null;
+      try {
+        playerRef.current?.seekTo(pos, "seconds");
+      } catch {}
     }
+  };
 
-    const handleLoadedMetadata = () => {
-      setDuration(a.duration || 30);
-      setIsLoading(false);
-    };
-    const handleTimeUpdate = () => setCurrentTime(a.currentTime);
-    const handleEnded = () => onNext();
-    const handleError = (e) => {
-      console.error("Audio error:", e);
-      setIsLoading(false);
-    };
-    const handleCanPlay = () => setIsLoading(false);
+  const handleProgress = ({ playedSeconds }) => {
+    if (!isSeeking.current) setCurrentTime(playedSeconds);
+  };
 
-    a.addEventListener("loadedmetadata", handleLoadedMetadata);
-    a.addEventListener("timeupdate", handleTimeUpdate);
-    a.addEventListener("ended", handleEnded);
-    a.addEventListener("error", handleError);
-    a.addEventListener("canplay", handleCanPlay);
-
-    if (isPlaying) {
-      a.play().catch(() => setIsLoading(false));
-    } else {
-      a.pause();
-    }
-
-    return () => {
-      a.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      a.removeEventListener("timeupdate", handleTimeUpdate);
-      a.removeEventListener("ended", handleEnded);
-      a.removeEventListener("error", handleError);
-      a.removeEventListener("canplay", handleCanPlay);
-    };
-  }, [song, isPlaying, onNext]);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      const a = audioRef.current;
-      if (!a) return;
-      if (Number.isNaN(a.currentTime)) setTime(0);
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
+  const handleDuration = (d) => setDuration(d || 0);
 
   const handlePlayPauseClick = () => {
-    const a = audioRef.current;
     const nextPlaying = !isPlaying;
     if (roomId && socketRef.current && song) {
       socketRef.current.emit("toggle-play", {
         roomId,
         isPlaying: nextPlaying,
-        position: a?.currentTime || 0,
+        position: playerRef.current?.getCurrentTime?.() || 0,
       });
     }
     onPlayPause();
@@ -180,38 +179,33 @@ export default function PlayerFooter({
     const newTime = parseFloat(e.target.value);
     isSeeking.current = true;
 
-    const a = audioRef.current;
-    if (a) {
-      setTime(newTime);
-      setCurrentTime(newTime);
-      socketRef.current?.emit("seek-time", {
-        roomId,
-        position: newTime,
-      });
-    }
+    seekTo(newTime);
+    setCurrentTime(newTime);
+    socketRef.current?.emit("seek-time", {
+      roomId,
+      position: newTime,
+    });
+
     setTimeout(() => {
       isSeeking.current = false;
     }, 100);
   };
 
+  // Jump to a lyric line (Spotify-style click-to-seek), and keep the room in sync.
+  const handleLyricSeek = (t) => {
+    if (!song) return;
+    seekTo(t);
+    setCurrentTime(t);
+    socketRef.current?.emit("seek-time", { roomId, position: t });
+  };
+
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
-    if (audioRef.current) audioRef.current.volume = newVolume;
     if (newVolume > 0 && isMuted) setIsMuted(false);
   };
 
-  const toggleMute = () => {
-    const a = audioRef.current;
-    if (!a) return;
-    if (isMuted) {
-      a.volume = volume;
-      setIsMuted(false);
-    } else {
-      a.volume = 0;
-      setIsMuted(true);
-    }
-  };
+  const toggleMute = () => setIsMuted((m) => !m);
 
   const formatTime = (time) => {
     if (isNaN(time)) return "00:00";
@@ -272,15 +266,15 @@ export default function PlayerFooter({
 
         <div className="hidden md:flex flex-col items-center justify-center w-[40%] max-w-[722px] gap-2">
           <div className="flex items-center gap-6">
-            <button 
-              onClick={onPrev} 
+            <button
+              onClick={onPrev}
               className={`text-[#b3b3b3] hover:text-white transition-colors ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label="Previous"
               disabled={!song}
             >
               <FaBackward size={16} />
             </button>
-            
+
             <button
               onClick={handlePlayPauseClick}
               className={`bg-white text-black w-8 h-8 rounded-full flex items-center justify-center hover:scale-105 transition-all ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -295,9 +289,9 @@ export default function PlayerFooter({
                 <FaPlay size={14} className="ml-1" />
               )}
             </button>
-            
-            <button 
-              onClick={onNext} 
+
+            <button
+              onClick={onNext}
               className={`text-[#b3b3b3] hover:text-white transition-colors ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label="Next"
               disabled={!song}
@@ -305,7 +299,7 @@ export default function PlayerFooter({
               <FaForward size={16} />
             </button>
           </div>
-          
+
           <div className="flex items-center gap-2 w-full group">
             <span className="text-[11px] text-[#a7a7a7] font-normal min-w-[40px] text-right">{formatTime(currentTime)}</span>
             <input
@@ -334,6 +328,14 @@ export default function PlayerFooter({
 
         <div className="flex md:hidden items-center justify-end gap-4 w-[35%]">
           <button
+            onClick={() => song && setShowLyrics(true)}
+            className={`p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            aria-label="Lyrics"
+            disabled={!song}
+          >
+            <MdLyrics size={20} />
+          </button>
+          <button
             onClick={handlePlayPauseClick}
             className={`text-white p-2 ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!song || isLoading}
@@ -347,8 +349,8 @@ export default function PlayerFooter({
               <FaPlay size={20} />
             )}
           </button>
-          <button 
-            onClick={onNext} 
+          <button
+            onClick={onNext}
             className={`text-neutral-300 hover:text-white transition-colors p-2 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label="Next"
             disabled={!song}
@@ -357,10 +359,19 @@ export default function PlayerFooter({
           </button>
         </div>
 
-        <div className="hidden md:flex items-center justify-end gap-2 w-[30%] min-w-[180px] group">
-          <button 
-            onClick={toggleMute} 
-            className="text-[#b3b3b3] hover:text-white transition-colors" 
+        <div className="hidden md:flex items-center justify-end gap-3 w-[30%] min-w-[180px] group">
+          <button
+            onClick={() => song && setShowLyrics(true)}
+            className={`transition-colors ${showLyrics ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'} ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            aria-label="Lyrics"
+            disabled={!song}
+            title="Lyrics"
+          >
+            <MdLyrics size={18} />
+          </button>
+          <button
+            onClick={toggleMute}
+            className="text-[#b3b3b3] hover:text-white transition-colors"
             aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted || volume === 0 ? (
@@ -394,7 +405,53 @@ export default function PlayerFooter({
 
       </div>
 
-      <audio ref={audioRef} preload="metadata" />
+      <LyricsView
+        song={song}
+        currentTime={currentTime}
+        isOpen={showLyrics}
+        onClose={() => setShowLyrics(false)}
+        onSeek={handleLyricSeek}
+      />
+
+      {/* Hidden audio engine. Kept offscreen (but non-zero size) so YouTube keeps
+          playing audio. Play/pause follows the shared `isPlaying` state. */}
+      <div
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          top: "-9999px",
+          left: "-9999px",
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+        aria-hidden="true"
+      >
+        <ReactPlayer
+          ref={playerRef}
+          url={playerUrl}
+          playing={isPlaying}
+          controls={false}
+          volume={isMuted ? 0 : volume}
+          muted={isMuted}
+          width="1px"
+          height="1px"
+          progressInterval={500}
+          onReady={handleReady}
+          onStart={() => setIsLoading(false)}
+          onBuffer={() => setIsLoading(true)}
+          onBufferEnd={() => setIsLoading(false)}
+          onProgress={handleProgress}
+          onDuration={handleDuration}
+          onEnded={onNext}
+          onError={() => setIsLoading(false)}
+          config={{
+            youtube: {
+              playerVars: { playsinline: 1, disablekb: 1, modestbranding: 1 },
+            },
+          }}
+        />
+      </div>
     </div>
   );
 }
