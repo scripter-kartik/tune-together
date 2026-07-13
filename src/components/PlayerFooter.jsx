@@ -287,7 +287,7 @@ export default function PlayerFooter({
   };
 
   return (
-    <div className="w-full bg-[#121212]/80 backdrop-blur-xl border-t border-white/5 text-white px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
+    <div className="relative w-full bg-[#121212]/80 backdrop-blur-xl border-t border-white/5 text-white px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
 
       <div className="md:hidden absolute top-0 left-0 right-0">
         <div className="flex items-center w-full">
@@ -310,7 +310,7 @@ export default function PlayerFooter({
 
       <div className="flex items-center justify-between w-full h-full">
 
-        <div className="flex items-center gap-3 md:gap-4 w-[60%] md:w-[30%] min-w-0">
+        <div className="flex items-center gap-3 md:gap-4 flex-1 md:flex-none md:w-[30%] min-w-0">
           {song ? (
             <>
               <div className="relative flex-shrink-0 rounded flex items-center shadow-lg shadow-black/50">
@@ -399,43 +399,43 @@ export default function PlayerFooter({
           </div>
         </div>
 
-        <div className="flex md:hidden items-center justify-end gap-3 w-[40%]">
+        <div className="flex md:hidden items-center justify-end gap-1 flex-shrink-0 pl-2">
           <button
             onClick={() => song && setShowLyrics(true)}
-            className={`p-1.5 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
             aria-label="Lyrics"
             disabled={!song}
           >
-            <MicVocal size={19} />
+            <MicVocal size={18} />
           </button>
           <button
             onClick={openQueue}
-            className="p-1.5 text-neutral-300 hover:text-white"
+            className="p-2 text-neutral-300 hover:text-white"
             aria-label="Queue"
           >
-            <ListMusic size={19} />
+            <ListMusic size={18} />
           </button>
           <button
             onClick={handlePlayPauseClick}
-            className={`text-white p-2 ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`bg-white text-black w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${(!song || isLoading) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'} transition-transform`}
             disabled={!song || isLoading}
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
             ) : isPlaying ? (
-              <FaPause size={20} />
+              <FaPause size={15} />
             ) : (
-              <FaPlay size={20} />
+              <FaPlay size={15} className="ml-0.5" />
             )}
           </button>
           <button
             onClick={onNext}
-            className={`text-neutral-300 hover:text-white transition-colors p-2 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`text-neutral-300 hover:text-white transition-colors p-2 ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
             aria-label="Next"
             disabled={!song}
           >
-            <FaForward size={20} />
+            <FaForward size={18} />
           </button>
         </div>
 

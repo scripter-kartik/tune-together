@@ -362,7 +362,7 @@ export default function Page() {
   const getVisibleSongs = () => songs.slice(0, visibleCount);
 
   return (
-    <div className="w-screen h-screen flex flex-col overflow-hidden bg-black">
+    <div className="w-full h-[100dvh] flex flex-col overflow-hidden bg-black">
       <header className="flex-shrink-0 z-40 border-b border-neutral-800">
         <Header query={query} setQuery={setQuery} handleSearch={handleSearch} roomId={roomId} />
       </header>

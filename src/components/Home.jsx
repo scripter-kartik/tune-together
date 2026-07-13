@@ -475,10 +475,10 @@ export default function Home({
   };
 
   return (
-    <div className="w-full h-full flex flex-col md:flex-row gap-0 md:gap-2 p-0 md:p-2 bg-black overflow-hidden">
+    <div className="w-full h-full flex flex-col lg:flex-row gap-0 lg:gap-2 p-0 lg:p-2 bg-black overflow-hidden">
 
-      {/* Mobile top bar */}
-      <div className="flex md:hidden gap-2 p-2 bg-[#121212] border-b border-neutral-800 flex-shrink-0">
+      {/* Mobile / tablet top bar */}
+      <div className="flex lg:hidden gap-2 p-2 bg-[#121212] border-b border-neutral-800 flex-shrink-0">
         <button
           onClick={() => setShowLeft(!showLeft)}
           className="flex-1 bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-full text-sm font-medium transition flex items-center justify-center gap-2"
@@ -494,15 +494,15 @@ export default function Home({
       </div>
 
       {/* Left sidebar - desktop */}
-      <div className="hidden md:flex md:w-72 lg:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
+      <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
         <PlaylistSidebar onOpenChat={onOpenChat} />
       </div>
 
-      {/* Mobile left drawer */}
+      {/* Mobile / tablet left drawer */}
       {showLeft && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowLeft(false)} />
-          <div className="absolute left-0 top-0 bottom-0 w-72 bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[105px] animate-slide-left">
+          <div className="absolute left-0 top-0 bottom-0 w-[85%] max-w-xs bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-left">
             <div className="flex items-center justify-between p-4 border-b border-neutral-800">
               <h3 className="text-white font-bold">Your Library</h3>
               <button onClick={() => setShowLeft(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
@@ -522,7 +522,7 @@ export default function Home({
       </div>
 
       {/* Right panel - desktop */}
-      <div className="hidden md:flex md:w-72 lg:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
+      <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
         <RightPanel
           roomId={roomId}
           socketRef={socketRef}
@@ -532,11 +532,11 @@ export default function Home({
         />
       </div>
 
-      {/* Mobile right drawer */}
+      {/* Mobile / tablet right drawer */}
       {showRight && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowRight(false)} />
-          <div className="absolute right-0 top-0 bottom-0 w-72 bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[105px] animate-slide-right">
+          <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-xs bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-right">
             <div className="flex items-center justify-between p-4 border-b border-neutral-800">
               <h3 className="text-white font-bold">Queue & Room</h3>
               <button onClick={() => setShowRight(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
