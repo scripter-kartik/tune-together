@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Check, Play, Music2 } from "lucide-react";
 import SongDetailsModal from "./SongDetailsModal";
+import { coverPlaceholder } from "../lib/coverPlaceholder";
 
 function Equalizer() {
   return (
@@ -29,7 +30,8 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 lg:gap-5 p-4">
       {songs.map((song) => {
         const isActive = currentSongId != null && song.id === currentSongId;
-        const cover = song.album?.cover_medium || song.album?.cover_big || song.album?.cover_small || '/icon2.png';
+        const fallback = coverPlaceholder(song.title || song.id);
+        const cover = song.album?.cover_medium || song.album?.cover_big || song.album?.cover_small || fallback;
         return (
           <div
             key={song._uniqueKey || song.id + "-" + song.title}
@@ -53,7 +55,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
               <img
                 src={cover}
                 alt={song.title}
-                onError={e => { e.target.src = '/icon2.png'; }}
+                onError={e => { e.target.src = fallback; }}
                 className="object-cover w-full h-full group-hover:scale-105 transition-all duration-500 ease-out"
               />
               {/* Play button overlay */}

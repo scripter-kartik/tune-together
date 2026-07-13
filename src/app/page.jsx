@@ -10,7 +10,7 @@ import { useChat } from "../hooks/useChat";
 import { useUser } from "@clerk/nextjs";
 
 export default function Page() {
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
   const [query, setQuery] = useState("");
   const [songs, setSongs] = useState([]);
   const [visibleCount, setVisibleCount] = useState(20);
@@ -28,6 +28,8 @@ export default function Page() {
   const [artists, setArtists] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [isSearchQuery, setIsSearchQuery] = useState(false);
+  const [topArtists, setTopArtists] = useState([]);
+  const [historySongs, setHistorySongs] = useState([]);
   const socketRef = useRef(null);
 
   const songsRef = useRef([]);
@@ -61,8 +63,8 @@ export default function Page() {
     "racing", "study_beats", "late_night", "snow", "rain", "storm", "cozy", "soft_piano", "guitar", "strings"
   ];
 
-  const random = useMemo(
-    () => terms[Math.floor(Math.random() * terms.length)],
+  const randomTerms = useMemo(
+    () => [...terms].sort(() => Math.random() - 0.5).slice(0, 5),
     []
   );
 
@@ -178,6 +180,64 @@ export default function Page() {
     }
   };
 
+  // Home feed: pull from several random topics and mix them so the
+  // fresh page isn't flooded with songs from a single genre/mood.
+  const fetchHomeFeed = async (searchTerms) => {
+    setIsLoading(true);
+    setError(null);
+    setIsSearchQuery(false);
+    try {
+      const results = await Promise.all(
+        searchTerms.map((t) =>
+          fetch(`/api/search?q=${encodeURIComponent(t)}`)
+            .then((r) => (r.ok ? r.json() : { songs: [], artists: [], albums: [] }))
+            .catch(() => ({ songs: [], artists: [], albums: [] }))
+        )
+      );
+
+      const dedupe = (arr) => {
+        const seen = new Set();
+        return arr.filter((x) => x && x.id != null && !seen.has(x.id) && seen.add(x.id));
+      };
+      const shuffle = (arr) => {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      };
+
+      const songs = shuffle(dedupe(results.flatMap((r) => r.songs || [])));
+      const artists = dedupe(results.flatMap((r) => r.artists || []));
+      const albums = dedupe(results.flatMap((r) => r.albums || []));
+
+      if (songs.length === 0) {
+        setError("No results found. Try a different search term.");
+        setSongs([]);
+        setArtists([]);
+        setAlbums([]);
+      } else {
+        setSongs(songs);
+        setArtists(artists);
+        setAlbums(albums);
+        setVisibleCount(20);
+        if (currentSongIndex === null && !currentSongRef.current) {
+          setCurrentSongIndex(0);
+          setCurrentSong(songs[0]);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching home feed:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch results. Please try again.");
+      setSongs([]);
+      setArtists([]);
+      setAlbums([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSearch = () => {
     if (query.trim() !== "") fetchSongs(query, true);
   };
@@ -197,15 +257,51 @@ export default function Page() {
       fetchSongs(browseQuery, true);
       sessionStorage.removeItem('browseQuery');
     } else {
-      fetchSongs(random, false);
+      fetchHomeFeed(randomTerms);
     }
-  }, [random]);
+  }, [randomTerms]);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch("/api/history");
+      if (!res.ok) return;
+      const data = await res.json();
+      setTopArtists(data.topArtists || []);
+      setHistorySongs(data.songs || []);
+    } catch (err) {
+      console.error("Failed to fetch listening history:", err);
+    }
+  };
+
+  const recordPlay = async (song) => {
+    if (!isSignedIn || !song?.id) return;
+    try {
+      await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ song }),
+      });
+      fetchHistory();
+    } catch (err) {
+      console.error("Failed to record play:", err);
+    }
+  };
+
+  // Load the user's most-listened artists on sign-in.
+  useEffect(() => {
+    if (isSignedIn) fetchHistory();
+    else {
+      setTopArtists([]);
+      setHistorySongs([]);
+    }
+  }, [isSignedIn]);
 
   const handlePlay = (song) => {
     const idx = songs.findIndex((s) => s.id === song.id);
     setCurrentSong(song);
     if (idx !== -1) setCurrentSongIndex(idx);
     setIsPlaying(true);
+    recordPlay(song);
     socketRef.current?.emit("change-song", {
       roomId,
       song,
@@ -276,6 +372,8 @@ export default function Page() {
           songs={getVisibleSongs()}
           artists={artists}
           albums={albums}
+          topArtists={topArtists}
+          historySongs={historySongs}
           isSearchQuery={isSearchQuery}
           onLoadMore={handleLoadMore}
           showLoadMore={songs.length > visibleCount}
