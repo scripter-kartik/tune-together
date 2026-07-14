@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Play, Plus, Check, Music2, ListMusic } from "lucide-react";
 
 function formatTime(seconds) {
@@ -10,8 +10,11 @@ function formatTime(seconds) {
   return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
 
-export default function CollectionView({
-  collection,
+// In-app playlist view. Renders inside the home page (like AlbumView) instead
+// of navigating to a separate route, so the player never unmounts and whatever
+// is currently playing keeps playing while you browse.
+export default function PlaylistView({
+  playlist,
   onClose,
   onPlay,
   onQueue,
@@ -19,12 +22,38 @@ export default function CollectionView({
   isPlaying,
   onOpenArtist,
 }) {
+  const [songs, setSongs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [addedId, setAddedId] = useState(null);
 
-  if (!collection) return null;
+  const gradient = playlist?.gradient || "from-purple-600 to-blue-600";
+  const coverUrl = playlist?.image || "/icon2.png";
 
-  const tracks = collection.songs || [];
-  const coverUrl = collection.cover || "/icon2.png";
+  useEffect(() => {
+    if (!playlist?.artist) return;
+    let cancelled = false;
+    const fetchSongs = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(playlist.artist)}`);
+        if (!res.ok) throw new Error("Failed to load playlist");
+        const data = await res.json();
+        if (cancelled) return;
+        setSongs(data.songs || []);
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err);
+          setError("Could not load this playlist.");
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    fetchSongs();
+    return () => { cancelled = true; };
+  }, [playlist?.id, playlist?.artist]);
 
   const handleQueue = (song) => {
     onQueue?.(song);
@@ -33,15 +62,13 @@ export default function CollectionView({
   };
 
   const playAll = () => {
-    if (!tracks.length) return;
-    // Pass the collection as the playback context so Next/Prev walk it.
-    onPlay(tracks[0], tracks);
+    if (songs.length) onPlay(songs[0], songs);
   };
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
       {/* Header */}
-      <div className="relative bg-gradient-to-b from-[#3a3a52] to-[#121212] pt-16 pb-8 px-6 md:px-8">
+      <div className={`relative bg-gradient-to-b ${gradient} to-[#121212] pt-16 pb-8 px-6 md:px-8`}>
         <button
           onClick={onClose}
           className="absolute top-5 left-5 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-colors"
@@ -53,7 +80,7 @@ export default function CollectionView({
           <div className="flex-shrink-0 shadow-2xl shadow-black/60">
             <img
               src={coverUrl}
-              alt={collection.title}
+              alt={playlist?.name}
               className="w-44 h-44 md:w-56 md:h-56 rounded shadow-2xl object-cover"
               onError={(e) => { e.target.src = "/icon2.png"; }}
             />
@@ -61,12 +88,16 @@ export default function CollectionView({
           <div className="flex flex-col gap-2">
             <p className="text-white/70 text-xs font-bold tracking-widest uppercase">Playlist</p>
             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight line-clamp-2">
-              {collection.title}
+              {playlist?.name}
             </h1>
-            <div className="flex items-center gap-2 text-neutral-300 text-sm mt-2 flex-wrap">
-              <span className="font-bold text-white">tune-together</span>
-              <span className="text-neutral-500">•</span>
-              <span>{tracks.length} songs</span>
+            <div className="flex items-center gap-2 text-neutral-200 text-sm mt-2 flex-wrap">
+              <span className="font-bold text-white">{playlist?.artist}</span>
+              {songs.length > 0 && (
+                <>
+                  <span className="text-white/50">•</span>
+                  <span>{songs.length} songs</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -74,7 +105,7 @@ export default function CollectionView({
 
       {/* Actions + Tracks */}
       <div className="px-6 md:px-8 py-4 flex flex-col gap-6 pb-12">
-        {tracks.length > 0 && (
+        {songs.length > 0 && (
           <div className="flex items-center gap-4">
             <button
               onClick={playAll}
@@ -86,7 +117,17 @@ export default function CollectionView({
           </div>
         )}
 
-        {tracks.length > 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <div className="w-12 h-12 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin" />
+            <p className="text-neutral-400 animate-pulse">Loading playlist…</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-neutral-400">
+            <ListMusic className="w-10 h-10" />
+            <p className="text-sm">{error}</p>
+          </div>
+        ) : songs.length > 0 ? (
           <div className="flex flex-col">
             {/* Header row */}
             <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-white/10 mb-2">
@@ -95,13 +136,13 @@ export default function CollectionView({
               <span className="text-neutral-400 text-xs font-medium tabular-nums">⏱</span>
             </div>
 
-            {tracks.map((track, idx) => {
+            {songs.map((track, idx) => {
               const isActive = currentSongId === track.id;
               return (
                 <div
                   key={track._uniqueKey || track.id || idx}
                   className={`grid grid-cols-[auto_1fr_auto] gap-4 items-center px-3 py-2.5 rounded-lg group cursor-pointer transition-colors ${isActive ? "bg-white/10" : "hover:bg-white/5"}`}
-                  onClick={() => onPlay(track, tracks)}
+                  onClick={() => onPlay(track, songs)}
                 >
                   <span className="text-neutral-500 w-5 text-right text-sm select-none">
                     {isActive && isPlaying ? (
@@ -152,7 +193,7 @@ export default function CollectionView({
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-neutral-500">
             <ListMusic className="w-10 h-10" />
-            <p className="text-sm">No songs in this collection yet.</p>
+            <p className="text-sm">No songs in this playlist yet.</p>
           </div>
         )}
       </div>

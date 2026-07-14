@@ -113,7 +113,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
       <div className="px-6 md:px-8 py-6 flex items-center gap-4">
         {topTracks.length > 0 && (
           <button
-            onClick={() => onPlay(topTracks[0])}
+            onClick={() => onPlay(topTracks[0], topTracks)}
             className="w-14 h-14 bg-green-500 hover:bg-green-400 hover:scale-105 text-black rounded-full flex items-center justify-center transition-all duration-200 shadow-xl shadow-green-500/25"
           >
             <Play className="w-6 h-6 fill-black ml-0.5" />
@@ -135,7 +135,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                   <div
                     key={track.id || idx}
                     className={`flex items-center justify-between px-3 py-2 rounded-lg group cursor-pointer transition-colors ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}
-                    onClick={() => onPlay(track)}
+                    onClick={() => onPlay(track, topTracks)}
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <span className="text-neutral-500 w-5 text-right text-sm select-none flex-shrink-0">

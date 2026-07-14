@@ -64,7 +64,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                   className="w-10 h-10 bg-green-500 hover:bg-green-400 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onPlay(song);
+                    onPlay(song, songs);
                   }}
                 >
                   <Play className="w-4 h-4 fill-black text-black ml-0.5" />
@@ -128,7 +128,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
         <SongDetailsModal
           song={selectedSong}
           onClose={() => setSelectedSong(null)}
-          onPlay={onPlay}
+          onPlay={(s) => onPlay(s, songs)}
           onQueue={onQueue}
           onOpenArtist={onOpenArtist}
         />

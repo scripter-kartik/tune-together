@@ -9,6 +9,7 @@ import ChatView from "./ChatView";
 import ArtistView from "./ArtistView";
 import AlbumView from "./AlbumView";
 import CollectionView from "./CollectionView";
+import PlaylistView from "./PlaylistView";
 import { Menu, X, Play, Shuffle, Music4, Home as HomeIcon } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { coverPlaceholder } from "../lib/coverPlaceholder";
@@ -128,15 +129,18 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
 
   const playAll = (list) => {
     if (!list?.length) return;
-    onPlay(list[0]);
-    if (onQueue) list.slice(1).forEach((s) => onQueue(s));
+    // The list itself becomes the playback context (Next/Prev walk it).
+    onPlay(list[0], list);
   };
 
   const shuffleFeed = () => {
     if (!songs.length) return;
-    const i = Math.floor(Math.random() * songs.length);
-    onPlay(songs[i]);
-    if (onQueue) songs.filter((_, idx) => idx !== i).forEach((s) => onQueue(s));
+    const shuffled = [...songs];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    onPlay(shuffled[0], shuffled);
   };
 
   if (isLoading) {
@@ -283,10 +287,17 @@ export default function Home({
   onLoadMore, showLoadMore, onGoHome, onPlay, onQueue, currentSongId, isPlaying,
   queue, onRemoveFromQueue, onClearQueue, isLoading, error, roomId, socketRef,
   onOpenChat, selectedChatUser, selectedArtistId, onOpenArtist, selectedAlbumId, onOpenAlbum,
+  selectedPlaylist, onOpenPlaylist,
 }) {
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
+
+  // Open a sidebar playlist in-app and close the mobile drawer.
+  const openPlaylist = (pl) => {
+    onOpenPlaylist?.(pl);
+    setShowLeft(false);
+  };
 
   useEffect(() => {
     const openDrawer = () => setShowRight(true);
@@ -295,6 +306,19 @@ export default function Home({
   }, []);
 
   const renderMain = () => {
+    if (selectedPlaylist) {
+      return (
+        <PlaylistView
+          playlist={selectedPlaylist}
+          onClose={() => onOpenPlaylist(null)}
+          onPlay={onPlay}
+          onQueue={onQueue}
+          currentSongId={currentSongId}
+          isPlaying={isPlaying}
+          onOpenArtist={onOpenArtist}
+        />
+      );
+    }
     if (selectedCollection) {
       return (
         <CollectionView
@@ -515,7 +539,7 @@ export default function Home({
 
       {/* Left sidebar - desktop */}
       <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
-        <PlaylistSidebar onOpenChat={onOpenChat} />
+        <PlaylistSidebar onOpenChat={onOpenChat} onOpenPlaylist={openPlaylist} />
       </div>
 
       {/* Mobile / tablet left drawer */}
@@ -530,7 +554,7 @@ export default function Home({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <PlaylistSidebar onOpenChat={onOpenChat} />
+              <PlaylistSidebar onOpenChat={onOpenChat} onOpenPlaylist={openPlaylist} />
             </div>
           </div>
         </div>

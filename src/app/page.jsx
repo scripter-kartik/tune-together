@@ -25,6 +25,7 @@ export default function Page() {
   const [selectedChatUser, setSelectedChatUser] = useState(null);
   const [selectedArtistId, setSelectedArtistId] = useState(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [artists, setArtists] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [isSearchQuery, setIsSearchQuery] = useState(false);
@@ -34,6 +35,10 @@ export default function Page() {
 
   const songsRef = useRef([]);
   const currentSongRef = useRef(null);
+  // The ordered list the current song belongs to (album/playlist/collection/
+  // artist/feed section). Next/Prev walk THIS list, so playback follows
+  // whatever you started it from instead of always the home feed.
+  const playContextRef = useRef([]);
 
   useEffect(() => {
     songsRef.current = songs;
@@ -250,6 +255,7 @@ export default function Page() {
   const handleGoHome = () => {
     setSelectedArtistId(null);
     setSelectedAlbumId(null);
+    setSelectedPlaylist(null);
     setSelectedChatUser(null);
     if (isSearchQuery || query) {
       setQuery("");
@@ -310,10 +316,15 @@ export default function Page() {
     }
   }, [isSignedIn]);
 
-  const handlePlay = (song) => {
-    const idx = songs.findIndex((s) => s.id === song.id);
+  // `list` (optional) is the ordered list the song was played from — an album's
+  // tracks, a playlist, a feed section, etc. It becomes the context that Next/
+  // Prev traverse. Falls back to the current feed when not supplied.
+  const handlePlay = (song, list) => {
+    const context = Array.isArray(list) && list.length ? list : songs;
+    playContextRef.current = context;
+    const idx = context.findIndex((s) => s.id === song.id);
     setCurrentSong(song);
-    if (idx !== -1) setCurrentSongIndex(idx);
+    setCurrentSongIndex(idx !== -1 ? idx : null);
     setIsPlaying(true);
     recordPlay(song);
     socketRef.current?.emit("change-song", {
@@ -346,31 +357,40 @@ export default function Page() {
     socketRef.current?.emit("clear-queue", { roomId });
   };
 
-  const handleNext = () => {
+  // Resolve the list Next/Prev should traverse: the active playback context if
+  // we have one, otherwise the current feed.
+  const activeList = () =>
+    playContextRef.current?.length ? playContextRef.current : songs;
 
+  const handleNext = () => {
+    // An explicit user queue always takes priority (server-managed).
     if (queue.length > 0) {
       socketRef.current?.emit("next-song", { roomId });
       return;
     }
-    if (songs.length === 0) return;
-    const nextIndex =
-      currentSongIndex !== null ? (currentSongIndex + 1) % songs.length : 0;
+    const list = activeList();
+    if (list.length === 0) return;
+    const cur = currentSongRef.current;
+    const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;
+    const nextIndex = curIdx === -1 ? 0 : (curIdx + 1) % list.length;
+    const nextSong = list[nextIndex];
+    setCurrentSong(nextSong);
     setCurrentSongIndex(nextIndex);
-    setCurrentSong(songs[nextIndex]);
     setIsPlaying(true);
-    socketRef.current?.emit("next-song", { roomId, song: songs[nextIndex] });
+    socketRef.current?.emit("next-song", { roomId, song: nextSong });
   };
 
   const handlePrev = () => {
-    if (songs.length === 0) return;
-    const prevIndex =
-      currentSongIndex !== null
-        ? (currentSongIndex - 1 + songs.length) % songs.length
-        : 0;
+    const list = activeList();
+    if (list.length === 0) return;
+    const cur = currentSongRef.current;
+    const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;
+    const prevIndex = curIdx === -1 ? 0 : (curIdx - 1 + list.length) % list.length;
+    const prevSong = list[prevIndex];
+    setCurrentSong(prevSong);
     setCurrentSongIndex(prevIndex);
-    setCurrentSong(songs[prevIndex]);
     setIsPlaying(true);
-    socketRef.current?.emit("prev-song", { roomId, song: songs[prevIndex] });
+    socketRef.current?.emit("prev-song", { roomId, song: prevSong });
   };
 
   const getVisibleSongs = () => songs.slice(0, visibleCount);
@@ -409,6 +429,8 @@ export default function Page() {
           onOpenArtist={setSelectedArtistId}
           selectedAlbumId={selectedAlbumId}
           onOpenAlbum={setSelectedAlbumId}
+          selectedPlaylist={selectedPlaylist}
+          onOpenPlaylist={setSelectedPlaylist}
         />
       </main>
       

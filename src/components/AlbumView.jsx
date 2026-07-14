@@ -72,6 +72,10 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
     }
   });
 
+  // Full album order — passed as the playback context so Next/Prev walk the
+  // album instead of the home feed.
+  const fullTracks = tracks.map(getFullTrack);
+
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
 
@@ -132,7 +136,7 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
         {tracks.length > 0 && (
           <div className="flex items-center gap-4">
             <button
-              onClick={() => onPlay(getFullTrack(tracks[0]))}
+              onClick={() => onPlay(fullTracks[0], fullTracks)}
               className="w-14 h-14 bg-green-500 hover:bg-green-400 hover:scale-105 text-black rounded-full flex items-center justify-center transition-all duration-200 shadow-xl shadow-green-500/25"
             >
               <Play className="w-6 h-6 fill-black ml-0.5" />
@@ -152,12 +156,12 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
 
             {tracks.map((track, idx) => {
               const isActive = currentSongId === track.id;
-              const fullTrack = getFullTrack(track);
+              const fullTrack = fullTracks[idx];
               return (
                 <div
                   key={track.id || idx}
                   className={`grid grid-cols-[auto_1fr_auto] gap-4 items-center px-3 py-2.5 rounded-lg group cursor-pointer transition-colors ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}
-                  onClick={() => onPlay(fullTrack)}
+                  onClick={() => onPlay(fullTrack, fullTracks)}
                 >
                   <span className="text-neutral-500 w-5 text-right text-sm select-none">
                     {isActive && isPlaying ? (

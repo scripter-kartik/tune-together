@@ -63,8 +63,8 @@ export default function FeaturedCards({ songs, onPlay, onQueue, onOpenCollection
 
   const playCollection = (col) => {
     if (!col?.songs?.length) return;
-    onPlay(col.songs[0]);
-    if (onQueue) col.songs.slice(1).forEach((s) => onQueue(s));
+    // Play the mix with its songs as the context so Next/Prev walk it.
+    onPlay(col.songs[0], col.songs);
   };
 
   if (!tiles.length) return null;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { MessageCircle, X, ArrowLeft, Circle, Music, Plus, Library, Home } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 
@@ -24,7 +23,7 @@ function getInitials(name) {
 
 const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-red-500'];
 
-export default function PlaylistSidebar({ onOpenChat }) {
+export default function PlaylistSidebar({ onOpenChat, onOpenPlaylist }) {
   const { isSignedIn, isLoaded } = useUser();
   const [view, setView] = useState('library'); // 'library' | 'messages'
   const [chatUsers, setChatUsers] = useState([]);
@@ -124,26 +123,25 @@ export default function PlaylistSidebar({ onOpenChat }) {
         {view === 'library' ? (
           <div className="flex flex-col gap-0.5">
             {PLAYLISTS.map(pl => (
-              <Link
+              <div
                 key={pl.id}
-                href={`/playlist/${pl.id}?name=${encodeURIComponent(pl.name)}&artist=${encodeURIComponent(pl.artist)}&gradient=${encodeURIComponent(pl.gradient)}`}
+                onClick={() => onOpenPlaylist?.(pl)}
+                className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
               >
-                <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
-                  <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
-                    {pl.image ? (
-                      <img src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${pl.gradient} flex items-center justify-center`}>
-                        <Music className="w-5 h-5 text-white/70" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{pl.name}</p>
-                    <p className="text-neutral-400 text-xs truncate">{pl.type} • {pl.artist}</p>
-                  </div>
+                <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
+                  {pl.image ? (
+                    <img src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={`absolute inset-0 bg-gradient-to-br ${pl.gradient} flex items-center justify-center`}>
+                      <Music className="w-5 h-5 text-white/70" />
+                    </div>
+                  )}
                 </div>
-              </Link>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{pl.name}</p>
+                  <p className="text-neutral-400 text-xs truncate">{pl.type} • {pl.artist}</p>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
