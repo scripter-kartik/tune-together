@@ -6,6 +6,7 @@ import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
 import { MicVocal, ListMusic } from "lucide-react";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
 import LyricsView from "./LyricsView";
+import NowPlayingView from "./NowPlayingView";
 
 export default function PlayerFooter({
   song,
@@ -25,6 +26,7 @@ export default function PlayerFooter({
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [showNowPlaying, setShowNowPlaying] = useState(false);
   const [mounted, setMounted] = useState(false);
   const isSeeking = useRef(false);
 
@@ -306,6 +308,14 @@ export default function PlayerFooter({
   // Open the Queue tab in the right panel (RightPanel/Home listen for this).
   const openQueue = () => window.dispatchEvent(new CustomEvent("tt-open-queue"));
 
+  // Tapping the mini-player opens the full-screen "Now Playing" sheet — but
+  // only on mobile/tablet, where there's no room for the full desktop player.
+  const openNowPlaying = () => {
+    if (song && typeof window !== "undefined" && window.innerWidth < 768) {
+      setShowNowPlaying(true);
+    }
+  };
+
   const formatTime = (time) => {
     if (isNaN(time)) return "00:00";
     const minutes = Math.floor(time / 60).toString().padStart(2, "0");
@@ -339,7 +349,10 @@ export default function PlayerFooter({
 
         <div className="flex items-center gap-3 md:gap-4 flex-1 md:flex-none md:w-[30%] min-w-0">
           {song ? (
-            <>
+            <div
+              onClick={openNowPlaying}
+              className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 cursor-pointer md:cursor-default"
+            >
               <div className="relative flex-shrink-0 rounded flex items-center shadow-lg shadow-black/50">
                 <img
                   src={song.album?.cover_medium || song.album?.cover_small || '/icon2.png'}
@@ -349,10 +362,10 @@ export default function PlayerFooter({
                 />
               </div>
               <div className="flex flex-col overflow-hidden min-w-0 justify-center">
-                <span className="text-[13px] md:text-[14px] font-normal truncate hover:underline cursor-pointer text-white">{song.title}</span>
-                <span className="text-[11px] md:text-[12px] text-[#b3b3b3] truncate hover:underline cursor-pointer hover:text-white transition-colors">{song.artist.name}</span>
+                <span className="text-[13px] md:text-[14px] font-normal truncate md:hover:underline cursor-pointer text-white">{song.title}</span>
+                <span className="text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer md:hover:text-white transition-colors">{song.artist.name}</span>
               </div>
-            </>
+            </div>
           ) : (
             <>
               <div className="w-12 h-12 md:w-14 md:h-14 rounded bg-[#282828] flex items-center justify-center flex-shrink-0">
@@ -519,6 +532,23 @@ export default function PlayerFooter({
         </div>
 
       </div>
+
+      <NowPlayingView
+        song={song}
+        isOpen={showNowPlaying}
+        onClose={() => setShowNowPlaying(false)}
+        isPlaying={isPlaying}
+        isLoading={isLoading}
+        currentTime={currentTime}
+        duration={duration}
+        onSeek={handleSeek}
+        onPlayPause={handlePlayPauseClick}
+        onPrev={onPrev}
+        onNext={onNext}
+        onOpenLyrics={() => song && setShowLyrics(true)}
+        onOpenQueue={() => { setShowNowPlaying(false); openQueue(); }}
+        showLyrics={showLyrics}
+      />
 
       <LyricsView
         song={song}

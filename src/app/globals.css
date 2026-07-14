@@ -90,12 +90,21 @@ input[type="range"]::-webkit-slider-thumb {
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
 .animate-slide-left {
   animation: slideInLeft 0.25s ease-out;
 }
 
 .animate-slide-right {
   animation: slideInRight 0.25s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUpSheet 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .animate-fade-up {

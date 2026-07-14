@@ -119,6 +119,19 @@ app.prepare().then(() => {
       }
     });
 
+    // Live friend updates: after a request/accept/remove is persisted via the
+    // API, the acting client pings the other user so their friends list
+    // refreshes instantly (they fall back to polling if currently offline).
+    socket.on("friend-notify", ({ toClerkId, type }) => {
+      const targetSocketId = userSockets.get(toClerkId);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("friend-update", {
+          from: socket.clerkId,
+          type: type || "update",
+        });
+      }
+    });
+
     socket.on("toggle-play", ({ roomId, isPlaying, position }) => {
       const room = getRoom(roomId);
       room.isPlaying = !!isPlaying;

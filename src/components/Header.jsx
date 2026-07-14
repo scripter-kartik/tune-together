@@ -10,6 +10,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import InviteButton from "./InviteButton";
+import FriendsHub from "./FriendsHub";
 import { Search, Home, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function Header({ query, setQuery, handleSearch, roomId }) {
@@ -63,10 +64,10 @@ export default function Header({ query, setQuery, handleSearch, roomId }) {
         {/* Left - Logo */}
         <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
           {/* Logo - mobile only */}
-          <div className="flex md:hidden items-center gap-1.5 min-w-0">
+          <Link href="/" className="flex md:hidden items-center gap-1.5 min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
             <img src="/icon2.png" alt="Logo" className="w-7 h-7 flex-shrink-0" />
             <span className="font-black text-base text-white truncate">tune<span className="text-green-500">together</span></span>
-          </div>
+          </Link>
 
           {/* Logo - desktop */}
           <Link href="/" className="hidden md:flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -110,7 +111,10 @@ export default function Header({ query, setQuery, handleSearch, roomId }) {
                 </div>
               </SignedOut>
               <SignedIn>
-                <UserButton />
+                <div className="flex items-center gap-2 md:gap-3">
+                  <FriendsHub roomId={roomId} />
+                  <UserButton />
+                </div>
               </SignedIn>
             </>
           )}

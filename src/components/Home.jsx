@@ -10,7 +10,7 @@ import ArtistView from "./ArtistView";
 import AlbumView from "./AlbumView";
 import CollectionView from "./CollectionView";
 import PlaylistView from "./PlaylistView";
-import { Menu, X, Play, Shuffle, Music4, Home as HomeIcon } from "lucide-react";
+import { Menu, X, Play, Shuffle, Music4 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { coverPlaceholder } from "../lib/coverPlaceholder";
 
@@ -284,7 +284,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
 
 export default function Home({
   songs, artists = [], albums = [], topArtists = [], historySongs = [], isSearchQuery = false,
-  onLoadMore, showLoadMore, onGoHome, onPlay, onQueue, currentSongId, isPlaying,
+  onLoadMore, showLoadMore, onPlay, onQueue, currentSongId, isPlaying,
   queue, onRemoveFromQueue, onClearQueue, isLoading, error, roomId, socketRef,
   onOpenChat, selectedChatUser, selectedArtistId, onOpenArtist, selectedAlbumId, onOpenAlbum,
   selectedPlaylist, onOpenPlaylist,
@@ -516,13 +516,6 @@ export default function Home({
 
       {/* Mobile / tablet top bar */}
       <div className="flex lg:hidden gap-2 p-2 bg-[#121212] border-b border-neutral-800 flex-shrink-0">
-        <button
-          onClick={() => { setSelectedCollection(null); onGoHome?.(); }}
-          className="flex-shrink-0 w-11 bg-white/5 hover:bg-white/10 text-white rounded-full flex items-center justify-center transition"
-          aria-label="Home"
-        >
-          <HomeIcon size={17} />
-        </button>
         <button
           onClick={() => setShowLeft(!showLeft)}
           className="flex-1 bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-full text-sm font-medium transition flex items-center justify-center gap-2"

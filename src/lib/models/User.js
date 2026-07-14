@@ -11,6 +11,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    username: {
+      type: String,
+      unique: true,
+      sparse: true, // let existing users have no handle until they claim one
+      lowercase: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 20,
+      match: /^[a-z0-9_]+$/,
+    },
     email: {
       type: String,
       required: true,
