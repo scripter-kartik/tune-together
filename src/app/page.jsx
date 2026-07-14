@@ -244,6 +244,20 @@ export default function Page() {
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 20);
 
+  // Return to the home feed: close any open artist/album/chat view and, if the
+  // user had searched, drop the query and reload the mixed feed. Preserves the
+  // current room (unlike a hard navigation to "/").
+  const handleGoHome = () => {
+    setSelectedArtistId(null);
+    setSelectedAlbumId(null);
+    setSelectedChatUser(null);
+    if (isSearchQuery || query) {
+      setQuery("");
+      setIsSearchQuery(false);
+      fetchHomeFeed(randomTerms);
+    }
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlQuery = params.get('q');
@@ -377,6 +391,7 @@ export default function Page() {
           isSearchQuery={isSearchQuery}
           onLoadMore={handleLoadMore}
           showLoadMore={songs.length > visibleCount}
+          onGoHome={handleGoHome}
           onPlay={handlePlay}
           onQueue={handleAddToQueue}
           currentSongId={currentSong?.id}

@@ -31,6 +31,8 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
   const activeLineRef = useRef(null);
+  const bodyRef = useRef(null);
+  const didInitialScroll = useRef(false);
 
   // Portals need the DOM — only render after mount (avoids SSR crash).
   useEffect(() => setMounted(true), []);
@@ -54,12 +56,38 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
     return idx;
   }, [synced, currentTime]);
 
-  // Keep the active line centered.
+  // Re-arm the "snap instantly" behavior each time the panel opens or the
+  // song changes, so the first scroll after opening is immediate.
   useEffect(() => {
-    if (activeLineRef.current) {
-      activeLineRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
+    didInitialScroll.current = false;
+  }, [isOpen, song?.id]);
+
+  // Keep the active line centered. The first scroll after opening snaps
+  // instantly (so the lyrics are visible the moment you click), and every
+  // subsequent line change smooth-scrolls. If no line is active yet (the song
+  // hasn't reached the first lyric), jump to the top so lyrics show right away
+  // instead of leaving the reader staring at blank space.
+  //
+  // We scroll the body container manually rather than using
+  // `scrollIntoView`, which walks up and scrolls *every* scrollable ancestor
+  // (and the page itself) — that was dragging the whole fixed overlay upward
+  // and clipping the header off the top of the screen.
+  useEffect(() => {
+    if (!isOpen) return;
+    const body = bodyRef.current;
+    if (!body) return;
+    const line = activeLineRef.current;
+    if (line) {
+      const top = line.offsetTop - body.clientHeight / 2 + line.clientHeight / 2;
+      body.scrollTo({
+        top,
+        behavior: didInitialScroll.current ? "smooth" : "auto",
+      });
+      didInitialScroll.current = true;
+    } else if (!didInitialScroll.current) {
+      body.scrollTop = 0;
     }
-  }, [activeIndex]);
+  }, [activeIndex, isOpen, status]);
 
   const handleCopy = () => {
     const text =
@@ -95,8 +123,12 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
         </>
       )}
 
-      {/* Header */}
-      <div className="relative flex items-center justify-between px-5 py-4 flex-shrink-0">
+      {/* Header — pad the top for the mobile status bar / notch (safe area) so
+          the title and buttons aren't clipped against the screen edge. */}
+      <div
+        className="relative flex items-center justify-between gap-3 px-4 sm:px-5 py-4 flex-shrink-0"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
+      >
         <div className="flex items-center gap-3 min-w-0">
           {song?.album?.cover_small && (
             <img
@@ -132,7 +164,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       </div>
 
       {/* Body */}
-      <div className="relative flex-1 min-h-0 overflow-y-auto px-6 md:px-10">
+      <div ref={bodyRef} className="relative flex-1 min-h-0 overflow-y-auto px-6 md:px-10">
         <div className="max-w-3xl mx-auto">
           {status === "loading" && (
             <div className="flex flex-col items-center justify-center gap-3 py-32 text-white/60">

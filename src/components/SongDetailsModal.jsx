@@ -1,8 +1,13 @@
 "use client";
 import { X, Play, Plus } from "lucide-react";
+import { hiResCover } from "../lib/coverArt";
 
 export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpenArtist }) {
   if (!song) return null;
+
+  const rawCover =
+    song.album?.cover_xl || song.album?.cover_big || song.album?.cover_medium;
+  const cover = rawCover ? hiResCover(rawCover, 800) : "/icon2.png";
 
   const formatTime = (seconds) => {
     if (!seconds) return "0:00";
@@ -19,8 +24,8 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
       >
         <div className="relative h-64 sm:h-80 w-full">
           <div className="absolute inset-0 bg-gradient-to-t from-[#181818] via-[#181818]/60 to-transparent z-10" />
-          <img 
-            src={song.album?.cover_xl || song.album?.cover_big || song.album?.cover_medium || '/icon2.png'} 
+          <img
+            src={cover}
             alt={song.title}
             className="w-full h-full object-cover"
             onError={e => { e.target.src = '/icon2.png'; }}
@@ -63,25 +68,25 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button 
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <button
               onClick={() => {
                 onPlay(song);
                 onClose();
               }}
-              className="bg-green-500 hover:bg-green-400 text-black font-bold rounded-full px-8 py-3.5 flex items-center gap-2 transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-green-500/20"
+              className="flex-1 sm:flex-none bg-green-500 hover:bg-green-400 text-black font-bold rounded-full px-8 py-3 flex items-center justify-center gap-2 transition-transform hover:scale-[1.03] active:scale-95 shadow-lg shadow-green-500/20"
             >
               <Play className="w-5 h-5 fill-current" />
               Play Now
             </button>
-            
+
             {onQueue && (
-              <button 
+              <button
                 onClick={() => {
                   onQueue(song);
                   onClose();
                 }}
-                className="bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full px-6 py-3.5 flex items-center gap-2 transition-transform hover:scale-105 active:scale-95 ring-1 ring-white/20"
+                className="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full px-6 py-3 flex items-center justify-center gap-2 transition-transform hover:scale-[1.03] active:scale-95 ring-1 ring-white/15"
               >
                 <Plus className="w-5 h-5" />
                 Add to Queue
