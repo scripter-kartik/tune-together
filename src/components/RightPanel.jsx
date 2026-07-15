@@ -4,6 +4,7 @@ import { MessageCircle, Users, ListMusic } from "lucide-react";
 import ChatSidebar from "./ChatSidebar";
 import ListeningUsers from "./ListeningUsers";
 import QueueList from "./QueueList";
+import FriendsListRight from "./FriendsListRight";
 
 export default function RightPanel({
   roomId,
@@ -17,8 +18,15 @@ export default function RightPanel({
   // The player footer's Queue button opens this panel's Queue tab.
   useEffect(() => {
     const openQueue = () => setTab("queue");
+    const openDms = () => setTab("dms");
+    
     window.addEventListener("tt-open-queue", openQueue);
-    return () => window.removeEventListener("tt-open-queue", openQueue);
+    window.addEventListener("tt-open-dms", openDms);
+    
+    return () => {
+      window.removeEventListener("tt-open-queue", openQueue);
+      window.removeEventListener("tt-open-dms", openDms);
+    };
   }, []);
 
   const tabClass = (active) =>
@@ -33,18 +41,15 @@ export default function RightPanel({
       <div className="flex gap-1 p-1.5 m-3 bg-[#1e1e1e] rounded-full border border-neutral-800 flex-shrink-0 shadow-inner">
         <button onClick={() => setTab("chat")} className={tabClass(tab === "chat")}>
           <MessageCircle className="w-4 h-4" />
-          Chat
+          Room
+        </button>
+        <button onClick={() => setTab("dms")} className={tabClass(tab === "dms")}>
+          <Users className="w-4 h-4" />
+          Friends
         </button>
         <button onClick={() => setTab("queue")} className={tabClass(tab === "queue")}>
           <ListMusic className="w-4 h-4" />
           Queue{queue.length > 0 ? ` (${queue.length})` : ""}
-        </button>
-        <button
-          onClick={() => setTab("community")}
-          className={tabClass(tab === "community")}
-        >
-          <Users className="w-4 h-4" />
-          People
         </button>
       </div>
 
@@ -52,15 +57,15 @@ export default function RightPanel({
         <div className={`absolute inset-0 w-full h-full ${tab === "chat" ? "flex" : "hidden"}`}>
           <ChatSidebar roomId={roomId} socketRef={socketRef} />
         </div>
+        <div className={`absolute inset-0 w-full h-full ${tab === "dms" ? "flex flex-col" : "hidden"}`}>
+          <FriendsListRight />
+        </div>
         <div className={`absolute inset-0 w-full h-full ${tab === "queue" ? "flex flex-col" : "hidden"}`}>
           <QueueList
             queue={queue}
             onRemove={onRemoveFromQueue}
             onClear={onClearQueue}
           />
-        </div>
-        <div className={`absolute inset-0 w-full h-full ${tab === "community" ? "flex flex-col" : "hidden"}`}>
-          <ListeningUsers />
         </div>
       </div>
     </div>

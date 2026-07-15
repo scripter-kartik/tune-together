@@ -64,9 +64,15 @@ export default function SidebarRail({ activeView, onTabChange }) {
             <div className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-300 ${isActive ? 'h-10' : 'h-0 group-hover:h-5'}`} />
             
             <button
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => {
+                if (tab.id === 'messages') {
+                  window.dispatchEvent(new CustomEvent("tt-open-dms"));
+                } else {
+                  onTabChange(tab.id);
+                }
+              }}
               className={`w-12 h-12 rounded-[24px] flex items-center justify-center transition-all duration-300 ${
-                isActive 
+                (isActive && tab.id !== 'messages')
                   ? 'bg-green-500 text-black rounded-[16px]' 
                   : 'bg-[#181818] text-neutral-400 hover:bg-green-500 hover:text-black hover:rounded-[16px]'
               }`}

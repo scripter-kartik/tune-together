@@ -238,6 +238,16 @@ app.prepare().then(() => {
       });
     });
 
+    socket.on("send-reaction", ({ roomId, reaction, user }) => {
+      // Broadcast reaction to everyone in the room (including sender if desired, but we can exclude sender with socket.to)
+      io.to(roomId).emit("room-reaction", {
+        id: Math.random().toString(36).substr(2, 9),
+        reaction,
+        user,
+        timestamp: Date.now()
+      });
+    });
+
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
       

@@ -10,6 +10,7 @@ import ArtistView from "./ArtistView";
 import AlbumView from "./AlbumView";
 import CollectionView from "./CollectionView";
 import PlaylistView from "./PlaylistView";
+import ReactionOverlay from "./ReactionOverlay";
 import SidebarRail from "./SidebarRail";
 import { Menu, X, Play, Shuffle, Music4, Plus, Compass } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
@@ -287,7 +288,7 @@ export default function Home({
   songs, artists = [], albums = [], topArtists = [], historySongs = [], isSearchQuery = false,
   onLoadMore, showLoadMore, onPlay, onQueue, currentSongId, isPlaying,
   queue, onRemoveFromQueue, onClearQueue, isLoading, error, roomId, socketRef,
-  onOpenChat, selectedChatUser, selectedArtistId, onOpenArtist, selectedAlbumId, onOpenAlbum,
+  selectedArtistId, onOpenArtist, selectedAlbumId, onOpenAlbum,
   selectedPlaylist, onOpenPlaylist,
 }) {
   const [showLeft, setShowLeft] = useState(false);
@@ -312,7 +313,7 @@ export default function Home({
       return (
         <PlaylistView
           playlist={selectedPlaylist}
-          onClose={() => onOpenPlaylist(null)}
+          onClose={() => openPlaylist(null)}
           onPlay={onPlay}
           onQueue={onQueue}
           currentSongId={currentSongId}
@@ -332,13 +333,6 @@ export default function Home({
           isPlaying={isPlaying}
           onOpenArtist={onOpenArtist}
         />
-      );
-    }
-    if (selectedChatUser) {
-      return (
-        <div className="flex-1 overflow-y-auto">
-          <ChatView user={selectedChatUser} onClose={() => onOpenChat(null)} />
-        </div>
       );
     }
     if (selectedAlbumId) {
@@ -565,9 +559,8 @@ export default function Home({
 
       {/* Left sidebar - desktop */}
       <div className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 bg-[#121212] rounded-r-xl overflow-hidden flex-col h-full">
-        <PlaylistSidebar 
-          onOpenChat={onOpenChat} 
-          onOpenPlaylist={openPlaylist} 
+        <PlaylistSidebar
+          onOpenPlaylist={openPlaylist}
           externalView={activeSidebarView} 
           onExternalViewChange={setActiveSidebarView} 
         />
@@ -585,7 +578,7 @@ export default function Home({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <PlaylistSidebar onOpenChat={onOpenChat} onOpenPlaylist={openPlaylist} />
+              <PlaylistSidebar onOpenPlaylist={openPlaylist} />
             </div>
           </div>
         </div>
@@ -594,6 +587,10 @@ export default function Home({
       {/* Main content */}
       <div className="flex-1 bg-gradient-to-b from-[#1a1a2e] via-[#121212] to-[#121212] rounded-xl flex flex-col min-w-0 overflow-hidden h-full">
         {renderMain()}
+
+        {roomId && (
+          <ReactionOverlay roomId={roomId} socketRef={socketRef} />
+        )}
       </div>
 
       {/* Right panel - desktop */}

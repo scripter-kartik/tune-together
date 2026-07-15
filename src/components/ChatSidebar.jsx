@@ -18,7 +18,9 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isConnected, setIsConnected] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [username, setUsername] = useState("");
+  const [clientId, setClientId] = useState("");
   const [userCount, setUserCount] = useState(0);
   const messagesEndRef = useRef(null);
   const localSocketRef = useRef(null);
@@ -39,6 +41,18 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
       localStorage.setItem("chatUsername", u);
       setUsername(u);
     }
+  }, [user]);
+
+  useEffect(() => {
+    let cid = user?.id;
+    if (!cid) {
+      cid = localStorage.getItem("chatClientId");
+      if (!cid) {
+        cid = "guest_" + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem("chatClientId", cid);
+      }
+    }
+    setClientId(cid);
   }, [user]);
 
   useEffect(() => {
@@ -82,16 +96,41 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
   }, [roomId, username, externalSocketRef]);
 
   useEffect(() => {
+    if (!roomId) return;
+    const fetchHistory = async () => {
+      setIsLoadingHistory(true);
+      try {
+        const res = await fetch(`/api/rooms/chat/history?roomId=${roomId}`);
+        const data = await res.json();
+        if (data.success && data.messages) {
+          const formatted = data.messages.map(m => ({
+            user: m.senderName,
+            senderId: m.senderId,
+            text: m.message,
+            time: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          }));
+          setMessages(formatted);
+        }
+      } catch (e) {
+        console.error("Failed to fetch room history", e);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+    fetchHistory();
+  }, [roomId]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = (e) => {
     e.preventDefault();
-    if (input.trim() === "" || !socketRef.current || !isConnected || !username) return;
+    if (input.trim() === "" || !socketRef.current || !isConnected || !username || !clientId) return;
 
     const msg = {
       user: username,
-      senderId: socketRef.current.id,
+      senderId: clientId,
       text: input.trim(),
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
@@ -99,6 +138,28 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
     socketRef.current.emit("chat message", { roomId, msg });
     setMessages((prev) => [...prev, msg]);
     setInput("");
+
+    // Persist to database in background
+    fetch("/api/rooms/chat/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomId,
+        senderId: clientId,
+        senderName: username,
+        senderImage: user?.imageUrl || null,
+        message: input.trim(),
+      })
+    }).catch(console.error);
+  };
+
+  const sendReaction = (emoji) => {
+    if (!roomId || !socketRef.current || !username) return;
+    socketRef.current.emit("send-reaction", {
+      roomId,
+      reaction: emoji,
+      user: username
+    });
   };
 
   return (
@@ -122,16 +183,20 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
+        {isLoadingHistory ? (
+          <div className="flex items-center justify-center h-full text-neutral-500">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500"></div>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-neutral-500 gap-2">
             <MessageCircle className="w-8 h-8 opacity-50 mb-1" />
             <p className="text-xs">No messages yet. Start the conversation!</p>
           </div>
-        )}
+        ) : null}
 
         {messages.map((msg, idx) => {
-          // Use senderId if available, fallback to username
-          const isMe = msg.senderId ? msg.senderId === socketRef.current?.id : msg.user === username;
+          // Use clientId to strictly verify ownership
+          const isMe = msg.senderId ? msg.senderId === clientId : msg.user === username;
           
           return (
             <div
@@ -166,8 +231,19 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-3 border-t border-neutral-800 flex-shrink-0 bg-[#121212]">
-        <form onSubmit={sendMessage} className="flex items-center gap-2 relative">
+      <div className="flex-shrink-0 bg-[#121212] pt-2 relative">
+        <div className="flex items-center justify-between gap-1 mb-2 px-5 py-2 mx-4 bg-[#1e1e1e]/80 backdrop-blur-md rounded-full border border-white/5 shadow-inner">
+          {["🔥", "💖", "🎵", "🤯", "😭", "👏"].map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => sendReaction(emoji)}
+              className="text-xl hover:scale-125 transition-transform active:scale-90 opacity-70 hover:opacity-100 drop-shadow-md"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+        <form onSubmit={sendMessage} className="flex items-center gap-2 px-3 pb-3 relative">
           <input
             type="text"
             className="flex-1 rounded-full pl-4 pr-12 py-2.5 bg-[#282828] text-sm text-white placeholder-neutral-500 outline-none focus:ring-1 focus:ring-neutral-600 transition-all border border-transparent hover:border-neutral-700"
