@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Header from "../../../../components/Header";
 import PlayerFooter from "../../../../components/PlayerFooter";
 import { FaPlay, FaPause, FaShuffle } from "react-icons/fa6";
@@ -9,23 +9,14 @@ import { IoMdTime } from "react-icons/io";
 import { getSocket } from "../../../../lib/socket";
 import { v4 as uuidv4 } from "uuid";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Plus, Check } from "lucide-react";
 import { useActivityTracker } from "../../../../hooks/useActivityTracker"; // ADD THIS IMPORT
+import { PLAYLISTS } from "../../../../lib/constants";
 
 function PlaylistSidebarContent({ currentId }) {
-  const playlists = [
-    { id: "1", name: "Old is <3", type: "Album", artist: "Ram :)", image: "/playlist1.png", gradient: "from-purple-600 to-blue-600" },
-    { id: "2", name: "Arijit Singh All time hits", type: "Album", artist: "Arijit Singh", image: "/playlist2.png", gradient: "from-red-600 to-orange-600" },
-    { id: "3", name: "Best of Shreya Ghoshal", type: "Album", artist: "Shreya Ghoshal", image: "/playlist3.png", gradient: "from-blue-500 to-cyan-500" },
-    { id: "4", name: "Highlights of honey singh", type: "Album", artist: "Yo yo honey singh", image: "/playlist4.png", gradient: "from-purple-500 to-pink-500" },
-    { id: "5", name: "Golden Songs of Kishore Kumar", type: "Album", artist: "Kishore Kumar", image: "/playlist5.png", gradient: "from-teal-500 to-green-600" },
-    { id: "6", name: "Madness of Badshah", type: "Album", artist: "Badshah", image: "/playlist6.png", gradient: "from-indigo-600 to-purple-600" },
-    { id: "7", name: "Charlie Puth Hits of 2024", type: "Album", artist: "Charlie Puth", image: "/playlist7.png", gradient: "from-pink-500 to-rose-600" },
-  ];
-
   return (
     <>
-      {playlists.map((playlist) => (
+      {PLAYLISTS.map((playlist) => (
         <Link
           key={playlist.id}
           href={`/playlist/${playlist.id}?name=${encodeURIComponent(playlist.name)}&artist=${encodeURIComponent(playlist.artist)}&gradient=${encodeURIComponent(playlist.gradient)}`}
@@ -58,7 +49,19 @@ export default function PlaylistPage() {
   const [roomId, setRoomId] = useState("");
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [showLeft, setShowLeft] = useState(false);
+  const [addedId, setAddedId] = useState(null);
   const socketRef = useRef(null);
+  const router = useRouter();
+
+  // Redirect to home if user starts typing a global search
+  useEffect(() => {
+    if (query.trim() !== "") {
+      const timer = setTimeout(() => {
+        router.push(`/?q=${encodeURIComponent(query)}`);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [query, router]);
 
   const playlistName = searchParams.get("name") || "Playlist";
   const artist = searchParams.get("artist") || "Various Artists";
@@ -98,21 +101,11 @@ export default function PlaylistPage() {
     const fetchSongs = async () => {
       setIsLoading(true);
       try {
-        const apiKey = process.env.NEXT_PUBLIC_RAPIDAPI_KEY;
-        const response = await fetch(
-          `https://deezerdevs-deezer.p.rapidapi.com/search?q=${encodeURIComponent(artist)}`,
-          {
-            method: "GET",
-            headers: {
-              "X-RapidAPI-Key": apiKey,
-              "X-RapidAPI-Host": "deezerdevs-deezer.p.rapidapi.com",
-            },
-          }
-        );
-
+        const response = await fetch(`/api/search?q=${encodeURIComponent(artist)}`);
+        if (!response.ok) throw new Error("Failed to load playlist");
         const data = await response.json();
-        if (data?.data?.length) {
-          setSongs(data.data.slice(0, 26));
+        if (data?.songs?.length) {
+          setSongs(data.songs.slice(0, 26));
           setCurrentSongIndex(0);
         }
       } catch (err) {
@@ -129,6 +122,12 @@ export default function PlaylistPage() {
     setCurrentSongIndex(index);
     setIsPlaying(true);
     socketRef.current?.emit("change-song", { roomId, song, position: 0 });
+  };
+
+  const handleQueue = (song) => {
+    socketRef.current?.emit("add-to-queue", { roomId, song });
+    setAddedId(song.id);
+    setTimeout(() => setAddedId((cur) => (cur === song.id ? null : cur)), 1200);
   };
 
   const handlePlayAll = () => handlePlaySong(songs[0], 0);
@@ -166,10 +165,10 @@ export default function PlaylistPage() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-black overflow-hidden">
+    <div className="h-[100dvh] w-full flex flex-col bg-black overflow-hidden">
       <Header query={query} setQuery={setQuery} handleSearch={() => {
         if (query.trim() !== "") {
-          window.location.href = `/?q=${encodeURIComponent(query)}`;
+          router.push(`/?q=${encodeURIComponent(query)}`);
         }
       }} />
 
@@ -215,16 +214,14 @@ export default function PlaylistPage() {
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-md">
           <div className="flex-1 overflow-y-auto">
             <div className={`bg-gradient-to-b ${gradient} to-black px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 flex-shrink-0`}>
-              <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 bg-black/20 rounded shadow-xl overflow-hidden flex-shrink-0">
-                  {songs[0]?.album?.cover_xl ? (
-                    <img src={songs[0].album.cover_xl} className="w-full h-full object-cover" />
-                  ) : null}
+              <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6 mt-4 sm:mt-0">
+                <div className="w-40 h-40 sm:w-40 sm:h-40 md:w-56 md:h-56 bg-black/20 rounded shadow-xl overflow-hidden flex-shrink-0">
+                  <img src={songs[0]?.album?.cover_xl || songs[0]?.album?.cover_medium || "/icon2.png"} className="w-full h-full object-cover" />
                 </div>
 
-                <div className="flex-1 pb-2 sm:pb-4 text-center sm:text-left">
-                  <p className="text-xs sm:text-sm text-white mb-1">Album</p>
-                  <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-2 sm:mb-3">
+                <div className="flex-1 pb-2 sm:pb-4 text-center sm:text-left mt-2 sm:mt-0">
+                  <p className="text-xs sm:text-sm text-white mb-1 uppercase tracking-wider font-bold">Album</p>
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-2 sm:mb-3 line-clamp-2">
                     {playlistName}
                   </h1>
 
@@ -294,18 +291,25 @@ export default function PlaylistPage() {
                         </div>
 
                         <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-                          <img src={song.album.cover_small} className="w-8 h-8 sm:w-10 sm:h-10 rounded flex-shrink-0" />
+                          <img src={song.album?.cover_small || song.album?.cover_medium || "/icon2.png"} className="w-8 h-8 sm:w-10 sm:h-10 rounded flex-shrink-0" />
                           <div className="overflow-hidden min-w-0">
                             <p className={`text-xs sm:text-sm truncate ${currentSongIndex === index ? "text-green-500" : "text-white"}`}>
                               {song.title}
                             </p>
-                            <p className="text-xs text-gray-400 truncate">{song.artist.name}</p>
+                            <p className="text-xs text-gray-400 truncate">{song.artist?.name || "Unknown Artist"}</p>
                           </div>
                         </div>
 
                         <div className="hidden md:flex items-center text-sm text-gray-400">2024</div>
 
-                        <div className="flex items-center justify-end text-xs sm:text-sm text-gray-400">
+                        <div className="flex items-center justify-end gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleQueue(song); }}
+                            className={`transition p-1 ${addedId === song.id ? "text-green-400 opacity-100" : "text-neutral-400 hover:text-white opacity-0 group-hover:opacity-100"}`}
+                            title="Add to queue"
+                          >
+                            {addedId === song.id ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                          </button>
                           {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, "0")}
                         </div>
                       </div>

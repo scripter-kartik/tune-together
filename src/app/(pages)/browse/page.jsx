@@ -1,12 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 import BrowseGrid from "../../../components/BrowseGrid";
 import CategoryCard from "../../../components/CategoryCard";
 
 export default function BrowsePage() {
   const [query, setQuery] = useState("");
+  const router = useRouter();
+
+  // Redirect to home if user starts typing a global search
+  useEffect(() => {
+    if (query.trim() !== "") {
+      const timer = setTimeout(() => {
+        router.push(`/?q=${encodeURIComponent(query)}`);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [query, router]);
 
   const handleSearch = () => {
     if (query.trim() !== "") {
@@ -56,8 +68,12 @@ export default function BrowsePage() {
   ];
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col">
-      <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
+    <div className="h-[100dvh] w-full overflow-hidden flex flex-col">
+      <Header query={query} setQuery={setQuery} handleSearch={() => {
+        if (query.trim() !== "") {
+          router.push(`/?q=${encodeURIComponent(query)}`);
+        }
+      }} />
       
       <div className="flex-1 overflow-y-auto scrollbar-none bg-gradient-to-b from-[#121212] to-black px-6 py-6 my-3 rounded-sm pb-32">
         <div className="mb-8">

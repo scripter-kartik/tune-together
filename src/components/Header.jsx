@@ -16,6 +16,33 @@ import { Search, Home, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-reac
 export default function Header({ query, setQuery, handleSearch, roomId }) {
   const [mounted, setMounted] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsFetchingSuggestions(true);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const top = [];
+          if (data.artists?.length > 0) top.push({ type: 'Artist', ...data.artists[0] });
+          if (data.songs?.length > 0) top.push(...data.songs.slice(0, 4).map(s => ({ type: 'Song', ...s })));
+          setSuggestions(top.slice(0, 6));
+        }
+      } catch (err) {
+        console.error("Failed to load suggestions", err);
+      } finally {
+        setIsFetchingSuggestions(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   useEffect(() => {
     setMounted(true);
@@ -28,31 +55,65 @@ export default function Header({ query, setQuery, handleSearch, roomId }) {
   };
 
   const searchBar = (
-    <div className={`flex items-center gap-3 bg-[#242424] rounded-full px-4 h-11 md:h-12 flex-1 min-w-0 transition-all duration-200 ${focused ? 'ring-1 ring-white/30 bg-[#2a2a2a]' : 'hover:bg-[#2a2a2a]'}`}>
-      <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-      <input
-        type="text"
-        placeholder="What do you want to play?"
-        className="text-white text-base md:text-sm font-medium outline-none border-0 bg-transparent flex-1 min-w-0 placeholder-neutral-400"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-      />
-      {query && (
-        <button
-          onClick={() => setQuery("")}
-          className="text-neutral-400 hover:text-white transition-colors text-lg leading-none flex-shrink-0"
-          aria-label="Clear search"
-        >
-          ✕
-        </button>
+    <div className="relative flex-1 min-w-0 max-w-[500px]">
+      <div className={`flex items-center gap-3 bg-[#242424] rounded-full px-4 h-11 md:h-12 w-full transition-all duration-200 ${focused ? 'ring-1 ring-white/30 bg-[#2a2a2a]' : 'hover:bg-[#2a2a2a]'}`}>
+        <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+        <input
+          type="text"
+          placeholder="What do you want to play?"
+          className="text-white text-base md:text-sm font-medium outline-none border-0 bg-transparent flex-1 min-w-0 placeholder-neutral-400"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+        />
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="text-neutral-400 hover:text-white transition-colors text-lg leading-none flex-shrink-0"
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        )}
+        <div className="w-px h-5 bg-neutral-600 flex-shrink-0" />
+        <Link href="/browse" className="flex-shrink-0" aria-label="Browse">
+          <LayoutGrid className="w-4 h-4 text-neutral-400 hover:text-white transition-colors" />
+        </Link>
+      </div>
+
+      {focused && query.trim() && (suggestions.length > 0 || isFetchingSuggestions) && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-md shadow-2xl border border-neutral-700 overflow-hidden z-50">
+          {isFetchingSuggestions && suggestions.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-neutral-400">Loading...</div>
+          ) : (
+            suggestions.map((s, i) => (
+              <div 
+                key={i}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const suggestionText = s.title || s.name;
+                  setQuery(suggestionText);
+                  setFocused(false);
+                  setTimeout(() => {
+                    handleSearch();
+                  }, 0);
+                }}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-white/10 cursor-pointer"
+              >
+                <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{s.title || s.name}</p>
+                  <p className="text-neutral-400 text-xs truncate">
+                    {s.type} {s.artist?.name ? `• ${s.artist.name}` : ''}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       )}
-      <div className="w-px h-5 bg-neutral-600 flex-shrink-0" />
-      <Link href="/browse" className="flex-shrink-0" aria-label="Browse">
-        <LayoutGrid className="w-4 h-4 text-neutral-400 hover:text-white transition-colors" />
-      </Link>
     </div>
   );
 

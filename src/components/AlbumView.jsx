@@ -88,7 +88,7 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="flex flex-col md:flex-row items-end gap-6">
+        <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
           <div className="flex-shrink-0 shadow-2xl shadow-black/60">
             {!imgError ? (
               <img

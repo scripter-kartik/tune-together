@@ -12,6 +12,7 @@ import { useUser } from "@clerk/nextjs";
 export default function Page() {
   const { user, isSignedIn } = useUser();
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [songs, setSongs] = useState([]);
   const [visibleCount, setVisibleCount] = useState(20);
   const [currentSongIndex, setCurrentSongIndex] = useState(null);
@@ -243,8 +244,29 @@ export default function Page() {
     }
   };
 
+  // Live search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    // Only trigger if we actually have a debounced query
+    if (debouncedQuery.trim() !== "") {
+      fetchSongs(debouncedQuery, true);
+    } else if (isSearchQuery) {
+      // If query is cleared, go back to home feed
+      setIsSearchQuery(false);
+      fetchHomeFeed(randomTerms);
+    }
+  }, [debouncedQuery]);
+
   const handleSearch = () => {
-    if (query.trim() !== "") fetchSongs(query, true);
+    if (query.trim() !== "") {
+      fetchSongs(query, true);
+    }
   };
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 20);
@@ -271,14 +293,15 @@ export default function Page() {
     
     if (urlQuery) {
       setQuery(urlQuery);
-      fetchSongs(urlQuery, true);
+      setDebouncedQuery(urlQuery);
     } else if (browseQuery) {
       setQuery(browseQuery);
-      fetchSongs(browseQuery, true);
+      setDebouncedQuery(browseQuery);
       sessionStorage.removeItem('browseQuery');
     } else {
       fetchHomeFeed(randomTerms);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [randomTerms]);
 
   const fetchHistory = async () => {

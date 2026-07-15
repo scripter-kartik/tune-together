@@ -362,6 +362,7 @@ export default function Home({
           currentSongId={currentSongId}
           isPlaying={isPlaying}
           onOpenAlbum={onOpenAlbum}
+          onOpenArtist={onOpenArtist}
         />
       );
     }

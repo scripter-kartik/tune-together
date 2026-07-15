@@ -37,13 +37,30 @@ export async function GET(req) {
       artist: { name: artist.name }
     }));
 
+    // Format top singles
+    const topSingles = (artist.topSingles || []).map(item => ({
+      id: item.albumId,
+      title: item.name,
+      cover_medium: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/icon2.png",
+      artist: { name: artist.name }
+    }));
+
+    // Format similar artists
+    const similarArtists = (artist.similarArtists || []).map(item => ({
+      id: item.artistId,
+      name: item.name,
+      picture_medium: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/icon2.png"
+    }));
+
     return Response.json({
       id: artist.artistId,
       name: artist.name,
       picture_xl: artist.thumbnails?.[artist.thumbnails.length - 1]?.url || "/icon2.png",
-      nb_fan: artist.subscribers,
+      nb_fan: artist.subscribers || null,
       topSongs,
-      topAlbums
+      topAlbums,
+      topSingles,
+      similarArtists
     });
   } catch (error) {
     console.error("YTMusic artist error:", error);
