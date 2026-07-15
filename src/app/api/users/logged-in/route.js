@@ -18,7 +18,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const filter = searchParams.get('filter') || 'all';
 
-    let query = {};
+    let query = { clerkId: { $ne: user.id } };
     
     if (filter === 'online') {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);

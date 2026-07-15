@@ -253,6 +253,22 @@ app.prepare().then(() => {
         }
       });
     });
+
+    socket.on("get-public-rooms", () => {
+      const publicRooms = [];
+      rooms.forEach((room, roomId) => {
+        if (room.users.size > 0 && room.currentSong) {
+          publicRooms.push({
+            roomId,
+            userCount: room.users.size,
+            currentSong: room.currentSong
+          });
+        }
+      });
+      // Sort by user count descending
+      publicRooms.sort((a, b) => b.userCount - a.userCount);
+      socket.emit("public-rooms", publicRooms.slice(0, 10)); // return top 10
+    });
   });
 
   httpServer

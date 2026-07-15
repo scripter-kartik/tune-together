@@ -32,6 +32,7 @@ export default function Page() {
   const [isSearchQuery, setIsSearchQuery] = useState(false);
   const [topArtists, setTopArtists] = useState([]);
   const [historySongs, setHistorySongs] = useState([]);
+  const [inviteToast, setInviteToast] = useState(null);
   const socketRef = useRef(null);
 
   const songsRef = useRef([]);
@@ -50,6 +51,27 @@ export default function Page() {
   }, [currentSong]);
   
   useChat();
+
+  useEffect(() => {
+    const handleInvite = (e) => {
+      const data = e.detail;
+      const urlMatch = data.message?.match(/(https?:\/\/[^\s]+)/);
+      const link = urlMatch ? urlMatch[0] : null;
+      if (link) {
+        setInviteToast({
+          senderName: data.senderName,
+          senderImage: data.senderImage,
+          link: link,
+          id: Date.now()
+        });
+        setTimeout(() => {
+          setInviteToast(null);
+        }, 10000);
+      }
+    };
+    window.addEventListener('tt-invite', handleInvite);
+    return () => window.removeEventListener('tt-invite', handleInvite);
+  }, []);
 
   const terms = [
     "sad", "chill", "lofi", "funny", "happy", "romantic", "energetic", "dark", "pop", "rap",
@@ -83,6 +105,20 @@ export default function Page() {
       window.history.replaceState({}, "", `?room=${room}`);
     }
     setRoomId(room);
+
+    const handleJoinRoom = (e) => {
+      const newRoom = e.detail;
+      window.history.pushState({}, "", `?room=${newRoom}`);
+      setRoomId(newRoom);
+      setIsRoomHost(false);
+      // Reset state for new room
+      setCurrentSong(null);
+      setQueue([]);
+      setIsPlaying(false);
+    };
+
+    window.addEventListener("tt-join-room", handleJoinRoom);
+    return () => window.removeEventListener("tt-join-room", handleJoinRoom);
   }, []);
 
   useEffect(() => {
@@ -469,6 +505,37 @@ export default function Page() {
           hasSongs={songs.length > 0}
         />
       </footer>
+
+      {/* Global Invite Toast */}
+      {inviteToast && (
+        <div className="fixed top-6 right-6 z-[999] max-w-sm w-full bg-[#121212] border border-white/10 rounded-xl shadow-2xl p-4 flex gap-4 animate-fade-up">
+          <img 
+            src={inviteToast.senderImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(inviteToast.senderName || 'user')}`} 
+            alt="avatar" 
+            className="w-12 h-12 rounded-full object-cover bg-neutral-800 flex-shrink-0" 
+          />
+          <div className="flex-1 min-w-0">
+            <h4 className="text-white font-bold text-sm truncate">{inviteToast.senderName}</h4>
+            <p className="text-neutral-400 text-xs mt-0.5 mb-3 line-clamp-2">🎵 invited you to listen together on Tune Together!</p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  window.location.href = inviteToast.link;
+                }}
+                className="bg-green-500 hover:bg-green-400 text-black font-bold text-xs px-4 py-1.5 rounded-full transition-colors flex-1"
+              >
+                Join Room
+              </button>
+              <button 
+                onClick={() => setInviteToast(null)}
+                className="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-4 py-1.5 rounded-full transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,9 +15,12 @@ function getInitials(name) {
 
 const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-red-500'];
 
-export default function PlaylistSidebar({ onOpenChat, onOpenPlaylist }) {
+export default function PlaylistSidebar({ onOpenChat, onOpenPlaylist, externalView, onExternalViewChange }) {
   const { isSignedIn, isLoaded } = useUser();
-  const [view, setView] = useState('library'); // 'library' | 'messages'
+  const [internalView, setInternalView] = useState('library'); // 'library' | 'messages'
+  const view = externalView || internalView;
+  const setView = onExternalViewChange || setInternalView;
+
   const [chatUsers, setChatUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -61,33 +64,45 @@ export default function PlaylistSidebar({ onOpenChat, onOpenPlaylist }) {
 
       {/* Header */}
       <div className="flex-shrink-0 px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => setView(view === 'library' ? 'messages' : 'library')}
-            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors"
-          >
-            {view === 'messages' ? (
-              <>
-                <ArrowLeft className="w-5 h-5" />
-                <span className="font-bold text-white">Messages</span>
-              </>
-            ) : (
-              <>
-                <Library className="w-5 h-5" />
-                <span className="font-bold text-white">Your Library</span>
-              </>
-            )}
-          </button>
-          {view === 'library' && isLoaded && isSignedIn && (
+        {/* We hide this header completely if controlled externally (since rail does it) */}
+        {!externalView && (
+          <div className="flex items-center justify-between mb-4">
             <button
-              onClick={() => setView('messages')}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
-              title="Messages"
+              onClick={() => setView(view === 'library' ? 'messages' : 'library')}
+              className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors"
             >
-              <MessageCircle className="w-5 h-5" />
+              {view === 'messages' ? (
+                <>
+                  <ArrowLeft className="w-5 h-5" />
+                  <span className="font-bold text-white">Friends</span>
+                </>
+              ) : (
+                <>
+                  <Library className="w-5 h-5" />
+                  <span className="font-bold text-white">Your Library</span>
+                </>
+              )}
             </button>
-          )}
-        </div>
+            {view === 'library' && isLoaded && isSignedIn && (
+              <button
+                onClick={() => setView('messages')}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+                title="Friends"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        )}
+        
+        {/* Title for controlled view */}
+        {externalView && (
+          <div className="mb-4 mt-2">
+            <h2 className="text-white font-black text-xl tracking-tight px-1">
+              {view === 'messages' ? 'Direct Messages' : 'Library'}
+            </h2>
+          </div>
+        )}
 
         {view === 'messages' && (
           <div className="flex gap-1 mb-3">

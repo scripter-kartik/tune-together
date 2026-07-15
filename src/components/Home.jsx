@@ -10,7 +10,8 @@ import ArtistView from "./ArtistView";
 import AlbumView from "./AlbumView";
 import CollectionView from "./CollectionView";
 import PlaylistView from "./PlaylistView";
-import { Menu, X, Play, Shuffle, Music4 } from "lucide-react";
+import SidebarRail from "./SidebarRail";
+import { Menu, X, Play, Shuffle, Music4, Plus, Compass } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { coverPlaceholder } from "../lib/coverPlaceholder";
 
@@ -292,6 +293,7 @@ export default function Home({
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
+  const [activeSidebarView, setActiveSidebarView] = useState('library');
 
   // Open a sidebar playlist in-app and close the mobile drawer.
   const openPlaylist = (pl) => {
@@ -364,6 +366,31 @@ export default function Home({
           onOpenAlbum={onOpenAlbum}
           onOpenArtist={onOpenArtist}
         />
+      );
+    }
+
+    if (activeSidebarView === 'explore') {
+      return (
+        <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-gradient-to-b from-[#1a1a2e] to-[#121212]">
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2">Explore Rooms</h1>
+          <p className="text-neutral-400 mb-8">Discover live listening sessions happening right now.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div 
+              onClick={() => { window.dispatchEvent(new CustomEvent("tt-join-room", { detail: crypto.randomUUID() })); }}
+              className="group h-40 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:border-green-500/50"
+            >
+              <div className="w-12 h-12 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <Plus className="w-6 h-6" />
+              </div>
+              <p className="text-white font-bold">Start a New Room</p>
+            </div>
+            {/* Real public rooms appear on the rail, but this serves as a placeholder grid */}
+            <div className="h-40 bg-gradient-to-br from-indigo-900/40 to-black/40 rounded-2xl border border-white/5 flex flex-col items-center justify-center p-6 text-center">
+               <Compass className="w-8 h-8 text-indigo-400 mb-2 opacity-50" />
+               <p className="text-neutral-300 text-sm font-semibold">Active public rooms appear on the left rail automatically!</p>
+            </div>
+          </div>
+        </div>
       );
     }
 
@@ -531,9 +558,19 @@ export default function Home({
         </button>
       </div>
 
+      {/* Left rail - desktop */}
+      <div className="hidden lg:flex flex-shrink-0 h-full rounded-l-xl overflow-hidden">
+        <SidebarRail activeView={activeSidebarView} onTabChange={setActiveSidebarView} />
+      </div>
+
       {/* Left sidebar - desktop */}
-      <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
-        <PlaylistSidebar onOpenChat={onOpenChat} onOpenPlaylist={openPlaylist} />
+      <div className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 bg-[#121212] rounded-r-xl overflow-hidden flex-col h-full">
+        <PlaylistSidebar 
+          onOpenChat={onOpenChat} 
+          onOpenPlaylist={openPlaylist} 
+          externalView={activeSidebarView} 
+          onExternalViewChange={setActiveSidebarView} 
+        />
       </div>
 
       {/* Mobile / tablet left drawer */}

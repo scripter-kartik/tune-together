@@ -48,16 +48,20 @@ export default function RightPanel({
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {tab === "chat" && <ChatSidebar roomId={roomId} socketRef={socketRef} />}
-        {tab === "queue" && (
+      <div className="flex-1 min-h-0 overflow-hidden relative">
+        <div className={`absolute inset-0 w-full h-full ${tab === "chat" ? "flex" : "hidden"}`}>
+          <ChatSidebar roomId={roomId} socketRef={socketRef} />
+        </div>
+        <div className={`absolute inset-0 w-full h-full ${tab === "queue" ? "flex flex-col" : "hidden"}`}>
           <QueueList
             queue={queue}
             onRemove={onRemoveFromQueue}
             onClear={onClearQueue}
           />
-        )}
-        {tab === "community" && <ListeningUsers />}
+        </div>
+        <div className={`absolute inset-0 w-full h-full ${tab === "community" ? "flex flex-col" : "hidden"}`}>
+          <ListeningUsers />
+        </div>
       </div>
     </div>
   );

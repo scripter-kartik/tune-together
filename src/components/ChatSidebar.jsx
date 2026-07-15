@@ -91,6 +91,7 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
 
     const msg = {
       user: username,
+      senderId: socketRef.current.id,
       text: input.trim(),
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
@@ -129,11 +130,13 @@ export default function ChatSidebar({ roomId, socketRef: externalSocketRef }) {
         )}
 
         {messages.map((msg, idx) => {
-          const isMe = msg.user === username;
+          // Use senderId if available, fallback to username
+          const isMe = msg.senderId ? msg.senderId === socketRef.current?.id : msg.user === username;
+          
           return (
             <div
               key={idx}
-              className={`flex items-end gap-2 ${isMe ? "justify-end" : "justify-start"}`}
+              className={`flex items-end gap-2 w-full ${isMe ? "justify-end" : "justify-start"}`}
             >
               {!isMe && (
                 <div className="bg-neutral-800 text-neutral-400 rounded-full w-7 h-7 flex items-center justify-center font-bold text-[10px] flex-shrink-0 shadow-sm border border-neutral-700">
