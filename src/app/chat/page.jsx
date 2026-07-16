@@ -175,7 +175,7 @@ function ChatPageInner() {
 
   if (!isLoaded) {
     return (
-      <div className="h-screen bg-[#0e0e0e] flex items-center justify-center">
+      <div className="h-[100dvh] bg-[#0e0e0e] flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-400" />
       </div>
     );
@@ -193,7 +193,7 @@ function ChatPageInner() {
   );
 
   return (
-    <div className="h-screen bg-[#0e0e0e] flex overflow-hidden text-white">
+    <div className="h-[100dvh] bg-[#0e0e0e] flex overflow-hidden text-white">
       {/* ── Left sidebar: conversations ── */}
       <div
         className={`w-full sm:w-72 flex-shrink-0 bg-[#111111] border-r border-white/5 flex-col ${
@@ -344,51 +344,44 @@ function ChatPageInner() {
 
       {/* ── Main pane ── */}
       <div className={`flex-1 min-w-0 ${active ? "flex" : "hidden sm:flex"}`}>
-        {/* Mobile back button lives inside panes via header; simple approach: */}
         {active?.type === "dm" ? (
-          <div className="flex-1 flex flex-col min-w-0">
-            <button
-              onClick={() => setActive(null)}
-              className="sm:hidden flex items-center gap-1 text-xs text-neutral-400 px-4 pt-2"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> All chats
-            </button>
-            {blocked.has(active.friend.clerkId) ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-                <Ban className="w-10 h-10 text-red-400 mb-3" />
-                <p className="text-neutral-300 font-medium">You blocked {active.friend.name}</p>
+          blocked.has(active.friend.clerkId) ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+              <Ban className="w-10 h-10 text-red-400 mb-3" />
+              <p className="text-neutral-300 font-medium">You blocked {active.friend.name}</p>
+              <div className="flex items-center gap-5 mt-3">
+                <button
+                  onClick={() => setActive(null)}
+                  className="text-sm text-neutral-400 hover:text-white sm:hidden"
+                >
+                  Back
+                </button>
                 <button
                   onClick={() => toggleBlock(active.friend)}
-                  className="mt-3 text-sm text-green-400 hover:text-green-300"
+                  className="text-sm text-green-400 hover:text-green-300"
                 >
                   Unblock
                 </button>
               </div>
-            ) : (
-              <DmPane
-                me={me}
-                friend={active.friend}
-                onJoinSession={joinSession}
-                onBlock={() => toggleBlock(active.friend)}
-              />
-            )}
-          </div>
-        ) : active?.type === "group" ? (
-          <div className="flex-1 flex flex-col min-w-0">
-            <button
-              onClick={() => setActive(null)}
-              className="sm:hidden flex items-center gap-1 text-xs text-neutral-400 px-4 pt-2"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> All chats
-            </button>
-            <GroupPane
+            </div>
+          ) : (
+            <DmPane
               me={me}
-              group={active.group}
-              onOpenSettings={() => setShowSettings(true)}
+              friend={active.friend}
               onJoinSession={joinSession}
-              onGroupChanged={loadGroups}
+              onBlock={() => toggleBlock(active.friend)}
+              onBack={() => setActive(null)}
             />
-          </div>
+          )
+        ) : active?.type === "group" ? (
+          <GroupPane
+            me={me}
+            group={active.group}
+            onOpenSettings={() => setShowSettings(true)}
+            onJoinSession={joinSession}
+            onGroupChanged={loadGroups}
+            onBack={() => setActive(null)}
+          />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6 bg-[#141414]">
             <div className="w-20 h-20 bg-green-600/15 rounded-full flex items-center justify-center mb-4">
@@ -441,7 +434,7 @@ export default function ChatPage() {
   return (
     <Suspense
       fallback={
-        <div className="h-screen bg-[#0e0e0e] flex items-center justify-center">
+        <div className="h-[100dvh] bg-[#0e0e0e] flex items-center justify-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-400" />
         </div>
       }

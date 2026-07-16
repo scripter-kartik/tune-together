@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Lock, Hash, Users, Music, Settings, KeyRound } from "lucide-react";
+import { Lock, Hash, Users, Music, Settings, KeyRound, ArrowLeft, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "@/lib/socket";
 import { getGroupKey, encryptGroupMessage, decryptGroupMessage } from "@/lib/e2eeClient";
@@ -22,13 +22,14 @@ const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutra
  * A group chat pane: E2EE message thread + member sidebar + listening session
  * launcher. `group` comes hydrated from /api/groups (members[].profile).
  */
-export default function GroupPane({ me, group, onOpenSettings, onJoinSession, onGroupChanged }) {
+export default function GroupPane({ me, group, onOpenSettings, onJoinSession, onGroupChanged, onBack }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupKey, setGroupKey] = useState(null);
   const [keyStatus, setKeyStatus] = useState("loading"); // loading | ready | awaiting-admin | wrong-device
   const [typingUsers, setTypingUsers] = useState({});
   const [showMembers, setShowMembers] = useState(true);
+  const [membersDrawer, setMembersDrawer] = useState(false); // mobile slide-in
   const [replyTo, setReplyTo] = useState(null); // ui message being replied to
   const [editing, setEditing] = useState(null); // ui message being edited
   const bottomRef = useRef(null);
@@ -281,6 +282,15 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
       <div className="flex-1 flex flex-col min-w-0 bg-[#141414]">
         {/* Header */}
         <div className="h-14 flex-shrink-0 border-b border-white/5 flex items-center px-4 gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="sm:hidden p-1.5 -ml-2 text-neutral-400 hover:text-white rounded-lg active:bg-white/10 transition"
+              title="All chats"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="w-8 h-8 rounded-lg bg-green-600/20 flex items-center justify-center text-lg flex-shrink-0">
             {group.icon || <Hash className="w-4 h-4 text-green-400" />}
           </div>
@@ -293,7 +303,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
           <div className="ml-auto flex items-center gap-1">
             <button
               onClick={startSession}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
+              className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg transition ${
                 group.linkedRoomId
                   ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
                   : "bg-green-500 text-black hover:bg-green-400"
@@ -301,12 +311,22 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
               title={group.linkedRoomId ? "Join the live session" : "Start listening together"}
             >
               <Music className="w-3.5 h-3.5" />
-              {group.linkedRoomId ? "Join session" : "Listen together"}
+              <span className="hidden sm:inline">
+                {group.linkedRoomId ? "Join session" : "Listen together"}
+              </span>
+              <span className="sm:hidden">{group.linkedRoomId ? "Join" : "Listen"}</span>
             </button>
             <button
-              onClick={() => setShowMembers((s) => !s)}
-              className={`p-2 rounded-lg transition ${showMembers ? "text-white bg-white/10" : "text-neutral-400 hover:text-white"}`}
-              title="Toggle member list"
+              onClick={() => {
+                // Desktop: toggle the inline panel. Mobile: open the drawer.
+                if (window.matchMedia("(min-width: 1024px)").matches) {
+                  setShowMembers((s) => !s);
+                } else {
+                  setMembersDrawer(true);
+                }
+              }}
+              className={`p-2 rounded-lg transition ${showMembers ? "lg:text-white lg:bg-white/10 text-neutral-400" : "text-neutral-400 hover:text-white"}`}
+              title="Members"
             >
               <Users className="w-4 h-4" />
             </button>
@@ -396,59 +416,87 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
         />
       </div>
 
-      {/* Member list (Discord right panel) */}
+      {/* Member list: inline panel on desktop, slide-in drawer on mobile */}
       {showMembers && (
         <div className="w-56 flex-shrink-0 bg-[#101010] border-l border-white/5 overflow-y-auto scrollbar hidden lg:block">
-          <div className="p-4">
-            {["admin", "member"].map((role) => {
-              const members = group.members.filter((m) => m.role === role);
-              if (!members.length) return null;
+          <MemberList group={group} me={me} />
+        </div>
+      )}
+      {membersDrawer && (
+        <div className="fixed inset-0 z-[60] flex justify-end lg:hidden" onClick={() => setMembersDrawer(false)}>
+          <div className="absolute inset-0 bg-black/60" />
+          <div
+            className="relative w-72 max-w-[85vw] h-full bg-[#101010] border-l border-white/10 overflow-y-auto scrollbar animate-slide-right shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-[#101010] border-b border-white/5 h-12 flex items-center px-4 gap-2 z-10">
+              <Users className="w-4 h-4 text-green-400" />
+              <span className="text-sm font-semibold text-white">Members</span>
+              <button
+                onClick={() => setMembersDrawer(false)}
+                className="ml-auto p-1.5 text-neutral-400 hover:text-white rounded-lg active:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <MemberList group={group} me={me} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Grouped-by-role member list shared by the desktop panel and mobile drawer. */
+function MemberList({ group, me }) {
+  return (
+    <div className="p-4">
+      {["admin", "member"].map((role) => {
+        const members = group.members.filter((m) => m.role === role);
+        if (!members.length) return null;
+        return (
+          <div key={role} className="mb-4">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-2">
+              {role === "admin" ? "Admins" : "Members"} — {members.length}
+            </h4>
+            {members.map((m) => {
+              const p = m.profile;
+              const presence = presenceOf(p);
               return (
-                <div key={role} className="mb-4">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-2">
-                    {role === "admin" ? "Admins" : "Members"} — {members.length}
-                  </h4>
-                  {members.map((m) => {
-                    const p = m.profile;
-                    const presence = presenceOf(p);
-                    return (
-                      <div
-                        key={m.clerkId}
-                        className="flex items-center gap-2.5 py-1.5 px-2 -mx-2 rounded-lg hover:bg-white/5 transition"
-                      >
-                        <div className="relative flex-shrink-0">
-                          {p?.imageUrl ? (
-                            <img src={p.imageUrl} alt="" className="w-8 h-8 rounded-full" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
-                              {(p?.name || "U").charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <span
-                            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#101010] ${DOT[presence]}`}
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`text-sm truncate ${presence === "offline" ? "text-neutral-500" : "text-neutral-200"}`}>
-                            {p?.name || "Unknown"}
-                            {m.clerkId === me.id && <span className="text-neutral-500"> (you)</span>}
-                          </p>
-                          {p?.currentlyPlaying?.songTitle && (
-                            <p className="text-[11px] text-green-400 truncate flex items-center gap-1">
-                              <Music className="w-2.5 h-2.5 flex-shrink-0" />
-                              {p.currentlyPlaying.songTitle}
-                            </p>
-                          )}
-                        </div>
+                <div
+                  key={m.clerkId}
+                  className="flex items-center gap-2.5 py-1.5 px-2 -mx-2 rounded-lg hover:bg-white/5 transition"
+                >
+                  <div className="relative flex-shrink-0">
+                    {p?.imageUrl ? (
+                      <img src={p.imageUrl} alt="" className="w-8 h-8 rounded-full" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
+                        {(p?.name || "U").charAt(0).toUpperCase()}
                       </div>
-                    );
-                  })}
+                    )}
+                    <span
+                      className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#101010] ${DOT[presence]}`}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm truncate ${presence === "offline" ? "text-neutral-500" : "text-neutral-200"}`}>
+                      {p?.name || "Unknown"}
+                      {m.clerkId === me.id && <span className="text-neutral-500"> (you)</span>}
+                    </p>
+                    {p?.currentlyPlaying?.songTitle && (
+                      <p className="text-[11px] text-green-400 truncate flex items-center gap-1">
+                        <Music className="w-2.5 h-2.5 flex-shrink-0" />
+                        {p.currentlyPlaying.songTitle}
+                      </p>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
-      )}
+        );
+      })}
     </div>
   );
 }

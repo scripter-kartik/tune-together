@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Lock, Ban, MessageCircle } from "lucide-react";
+import { Lock, Ban, MessageCircle, ArrowLeft } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import { encryptDmTo, decryptDmRow } from "@/lib/e2eeClient";
 import MessageList from "./MessageList";
@@ -11,7 +11,7 @@ import MessageInput from "./MessageInput";
  * A 1:1 E2EE DM thread. `friend` is a public profile { clerkId, name,
  * username, imageUrl }. `me` is the Clerk user object.
  */
-export default function DmPane({ me, friend, onJoinSession, onBlock }) {
+export default function DmPane({ me, friend, onJoinSession, onBlock, onBack }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
@@ -257,6 +257,15 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
     <div className="flex-1 flex flex-col min-w-0 bg-[#141414]">
       {/* Header */}
       <div className="h-14 flex-shrink-0 border-b border-white/5 flex items-center px-4 gap-3">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="sm:hidden p-1.5 -ml-2 text-neutral-400 hover:text-white rounded-lg active:bg-white/10 transition"
+            title="All chats"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        )}
         {friend.imageUrl ? (
           <img src={friend.imageUrl} alt={friend.name} className="w-8 h-8 rounded-full" />
         ) : (

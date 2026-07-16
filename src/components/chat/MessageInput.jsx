@@ -54,7 +54,7 @@ export default function MessageInput({
   };
 
   return (
-    <div className="px-4 pb-4 pt-1 relative">
+    <div className="px-4 pb-[max(env(safe-area-inset-bottom),16px)] sm:pb-4 pt-1 relative">
       {(replyTo || editing) && (
         <div className="flex items-center gap-2 bg-[#1a1a1a] border border-white/10 border-b-0 rounded-t-xl px-4 py-2 text-xs">
           {editing ? (
@@ -117,7 +117,7 @@ export default function MessageInput({
           maxLength={2000}
           disabled={disabled}
           placeholder={disabled ? disabledHint || "You can't send messages here" : placeholder}
-          className="flex-1 bg-transparent py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none disabled:cursor-not-allowed"
+          className="flex-1 bg-transparent py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none disabled:cursor-not-allowed"
         />
         <button
           onClick={() => setShowEmojis((s) => !s)}
