@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Lock, Hash, Users, Music, Settings, KeyRound, ArrowLeft, X } from "lucide-react";
+import { Lock, Hash, Users, Music, Settings, KeyRound, Menu, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "@/lib/socket";
 import { getGroupKey, encryptGroupMessage, decryptGroupMessage } from "@/lib/e2eeClient";
@@ -22,7 +22,7 @@ const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutra
  * A group chat pane: E2EE message thread + member sidebar + listening session
  * launcher. `group` comes hydrated from /api/groups (members[].profile).
  */
-export default function GroupPane({ me, group, onOpenSettings, onJoinSession, onGroupChanged, onBack }) {
+export default function GroupPane({ me, group, onOpenSettings, onJoinSession, onGroupChanged, onBack, backBadge = 0 }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupKey, setGroupKey] = useState(null);
@@ -279,16 +279,21 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
 
   return (
     <div className="flex-1 flex min-w-0">
-      <div className="flex-1 flex flex-col min-w-0 bg-[#141414]">
+      <div className="flex-1 flex flex-col min-w-0 bg-transparent">
         {/* Header */}
-        <div className="h-14 flex-shrink-0 border-b border-white/5 flex items-center px-4 gap-3">
+        <div className="h-14 flex-shrink-0 border-b border-white/[0.05] bg-white/[0.02] backdrop-blur-xl flex items-center px-4 gap-3">
           {onBack && (
             <button
               onClick={onBack}
-              className="sm:hidden p-1.5 -ml-2 text-neutral-400 hover:text-white rounded-lg active:bg-white/10 transition"
+              className="sm:hidden relative p-1.5 -ml-2 text-neutral-400 hover:text-white rounded-lg active:bg-white/10 transition"
               title="All chats"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <Menu className="w-5 h-5" />
+              {backBadge > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-black text-[9px] font-bold rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-0.5">
+                  {backBadge > 99 ? "99+" : backBadge}
+                </span>
+              )}
             </button>
           )}
           <div className="w-8 h-8 rounded-lg bg-green-600/20 flex items-center justify-center text-lg flex-shrink-0">
@@ -418,18 +423,18 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
 
       {/* Member list: inline panel on desktop, slide-in drawer on mobile */}
       {showMembers && (
-        <div className="w-56 flex-shrink-0 bg-[#101010] border-l border-white/5 overflow-y-auto scrollbar hidden lg:block">
+        <div className="w-56 flex-shrink-0 bg-white/[0.02] backdrop-blur-2xl border-l border-white/[0.05] overflow-y-auto scrollbar hidden lg:block shadow-inner">
           <MemberList group={group} me={me} />
         </div>
       )}
       {membersDrawer && (
         <div className="fixed inset-0 z-[60] flex justify-end lg:hidden" onClick={() => setMembersDrawer(false)}>
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
-            className="relative w-72 max-w-[85vw] h-full bg-[#101010] border-l border-white/10 overflow-y-auto scrollbar animate-slide-right shadow-2xl"
+            className="relative w-72 max-w-[85vw] h-full bg-black/40 backdrop-blur-2xl border-l border-white/[0.1] overflow-y-auto scrollbar animate-slide-right shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-[#101010] border-b border-white/5 h-12 flex items-center px-4 gap-2 z-10">
+            <div className="sticky top-0 bg-transparent backdrop-blur-xl border-b border-white/[0.05] h-12 flex items-center px-4 gap-2 z-10">
               <Users className="w-4 h-4 text-green-400" />
               <span className="text-sm font-semibold text-white">Members</span>
               <button

@@ -5,7 +5,16 @@ import { Home, Users, Compass, Plus, Disc, Radio, MessageCircle } from "lucide-r
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "../lib/socket";
 
-export default function SidebarRail({ activeView, onTabChange }) {
+/**
+ * Discord-style leftmost icon rail. On desktop it's a static column; on
+ * mobile it's embedded inside the library drawer (rail + panel side by side).
+ * `onNavigate` fires on taps that leave the drawer context (chat page, join /
+ * create room, friends) so the drawer can close; plain tab switches (Home,
+ * Explore) render inside the adjacent panel and keep it open.
+ * `onOpenFriends` overrides the Friends tab (mobile opens the right drawer
+ * instead of the desktop right panel).
+ */
+export default function SidebarRail({ activeView, onTabChange, onNavigate, onOpenFriends }) {
   const [publicRooms, setPublicRooms] = useState([]);
 
   useEffect(() => {
@@ -35,6 +44,7 @@ export default function SidebarRail({ activeView, onTabChange }) {
 
   const createRoom = () => {
     window.dispatchEvent(new CustomEvent("tt-join-room", { detail: uuidv4() }));
+    onNavigate?.();
   };
 
   const tabs = [
@@ -47,7 +57,7 @@ export default function SidebarRail({ activeView, onTabChange }) {
   return (
     <div className="w-[72px] flex-shrink-0 bg-[#000000] flex flex-col items-center py-4 gap-4 h-full border-r border-white/5">
       {/* App Icon */}
-      <div 
+      <div
         onClick={() => onTabChange('library')}
         className="w-12 h-12 rounded-[16px] bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition-all mb-2"
       >
@@ -67,7 +77,9 @@ export default function SidebarRail({ activeView, onTabChange }) {
             <button
               onClick={() => {
                 if (tab.id === 'messages') {
-                  window.dispatchEvent(new CustomEvent("tt-open-dms"));
+                  if (onOpenFriends) onOpenFriends();
+                  else window.dispatchEvent(new CustomEvent("tt-open-dms"));
+                  onNavigate?.();
                 } else if (tab.id === 'chat') {
                   window.location.href = '/chat';
                 } else {
@@ -108,7 +120,10 @@ export default function SidebarRail({ activeView, onTabChange }) {
             <div key={room.roomId} className="relative group flex items-center justify-center w-full">
               <div className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-300 h-0 group-hover:h-5`} />
               <button
-                onClick={() => { window.dispatchEvent(new CustomEvent("tt-join-room", { detail: room.roomId })); }}
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("tt-join-room", { detail: room.roomId }));
+                  onNavigate?.();
+                }}
                 className="w-12 h-12 rounded-[24px] overflow-hidden flex items-center justify-center bg-[#181818] hover:rounded-[16px] transition-all duration-300 ring-2 ring-transparent hover:ring-green-500 relative"
                 title={`${room.userCount} listening to ${room.currentSong?.title || "Music"}`}
               >

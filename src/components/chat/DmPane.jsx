@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Lock, Ban, MessageCircle, ArrowLeft } from "lucide-react";
+import { Lock, Ban, MessageCircle, Menu } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import { encryptDmTo, decryptDmRow } from "@/lib/e2eeClient";
 import MessageList from "./MessageList";
@@ -11,7 +11,7 @@ import MessageInput from "./MessageInput";
  * A 1:1 E2EE DM thread. `friend` is a public profile { clerkId, name,
  * username, imageUrl }. `me` is the Clerk user object.
  */
-export default function DmPane({ me, friend, onJoinSession, onBlock, onBack }) {
+export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, backBadge = 0 }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
@@ -254,16 +254,21 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack }) {
     socketRef.current?.emit("typing", { recipientId: friend.clerkId, isTyping });
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-[#141414]">
+    <div className="flex-1 flex flex-col min-w-0 bg-transparent">
       {/* Header */}
-      <div className="h-14 flex-shrink-0 border-b border-white/5 flex items-center px-4 gap-3">
+      <div className="h-14 flex-shrink-0 border-b border-white/[0.05] bg-white/[0.02] backdrop-blur-xl flex items-center px-4 gap-3">
         {onBack && (
           <button
             onClick={onBack}
-            className="sm:hidden p-1.5 -ml-2 text-neutral-400 hover:text-white rounded-lg active:bg-white/10 transition"
+            className="sm:hidden relative p-1.5 -ml-2 text-neutral-400 hover:text-white rounded-lg active:bg-white/10 transition"
             title="All chats"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <Menu className="w-5 h-5" />
+            {backBadge > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-black text-[9px] font-bold rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-0.5">
+                {backBadge > 99 ? "99+" : backBadge}
+              </span>
+            )}
           </button>
         )}
         {friend.imageUrl ? (

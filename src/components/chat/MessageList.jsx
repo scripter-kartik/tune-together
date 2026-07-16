@@ -15,20 +15,20 @@ import {
 } from "lucide-react";
 
 /**
- * Shared message list rendering for DM + group panes (Discord-style rows:
- * avatar, name, timestamp, grouped consecutive messages, day dividers) with
- * WhatsApp-style actions: react, reply, edit, delete-for-everyone.
+ * iOS-style bubble message list shared by DM + group panes.
+ * Mine: right-aligned green bubbles. Theirs: left-aligned dark bubbles.
+ * Timestamps + ticks live inside the bubble (bottom-right, WhatsApp style);
+ * consecutive messages cluster with tightened inner corners.
  *
- * Desktop: hover action bar. Mobile: long-press opens a bottom action sheet,
- * swipe-right on a message replies to it.
+ * Desktop: hover action bar. Mobile: long-press opens a floating action
+ * sheet, swipe-right on a bubble replies to it.
  *
  * Messages: { id, senderId, senderName, senderImage, text, type, roomId,
  *             timestamp (Date), encrypted (bool), failed (bool),
  *             reactions [{emoji,userId}], replyToId, edited (bool),
  *             deleted (bool), delivered (bool) }
  *
- * Handlers (all optional — actions hide when absent):
- *   onReact(msg, emoji), onReply(msg), onEdit(msg), onDelete(msg)
+ * `isGroup` shows sender names + avatars on incoming bubbles.
  * `canDelete(msg)` decides delete visibility (e.g. group admins).
  * `showTicks` renders sent/delivered checks on own messages (DMs).
  */
@@ -38,6 +38,24 @@ const REACT_EMOJIS = ["❤️", "😂", "🔥", "🎵", "😮", "😭", "👍", 
 const LONG_PRESS_MS = 420;
 const SWIPE_REPLY_PX = 56; // drag distance that commits a reply
 const SWIPE_MAX_PX = 72;
+
+// Stable per-sender name colors for group chats.
+const NAME_COLORS = [
+  "text-emerald-400",
+  "text-sky-400",
+  "text-violet-400",
+  "text-orange-400",
+  "text-pink-400",
+  "text-amber-400",
+  "text-cyan-400",
+  "text-rose-400",
+];
+
+function nameColorOf(senderId) {
+  let h = 0;
+  for (let i = 0; i < (senderId || "").length; i++) h = (h * 31 + senderId.charCodeAt(i)) | 0;
+  return NAME_COLORS[Math.abs(h) % NAME_COLORS.length];
+}
 
 function sameDay(a, b) {
   return (
@@ -56,6 +74,10 @@ function dayLabel(d) {
   return d.toLocaleDateString([], { day: "numeric", month: "long", year: "numeric" });
 }
 
+function timeLabel(d) {
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 function groupReactions(reactions, myId) {
   const byEmoji = new Map();
   for (const r of reactions || []) {
@@ -67,13 +89,29 @@ function groupReactions(reactions, myId) {
   return [...byEmoji.values()];
 }
 
-/** One text-message row: hover bar (desktop) + long-press/swipe (mobile). */
+// Two text messages cluster when same sender, close in time, and the newer
+// one isn't a reply (replies always show their quote block on a fresh bubble).
+function clusters(a, b) {
+  return (
+    a &&
+    b &&
+    a.type === "text" &&
+    b.type === "text" &&
+    a.senderId === b.senderId &&
+    sameDay(a.timestamp, b.timestamp) &&
+    !b.replyToId &&
+    b.timestamp - a.timestamp < 5 * 60 * 1000
+  );
+}
+
+/** One bubble row: hover bar (desktop) + long-press/swipe (mobile). */
 function MessageRow({
   msg,
-  grouped,
   mine,
+  isGroup,
+  groupedPrev,
+  groupedNext,
   replyTarget,
-  myReaction,
   handlers,
   showTicks,
   pickerOpen,
@@ -145,9 +183,27 @@ function MessageRow({
     clearTouch();
   };
 
+  // ── Bubble shape: 20px corners, 6px on cluster-inner corners ──
+  const shape = mine
+    ? `rounded-[20px] ${groupedPrev ? "rounded-tr-[6px]" : ""} ${groupedNext ? "rounded-br-[6px]" : ""}`
+    : `rounded-[20px] ${groupedPrev ? "rounded-tl-[6px]" : ""} ${groupedNext ? "rounded-bl-[6px]" : ""}`;
+
+  const skin = msg.deleted
+    ? "bg-transparent border border-white/10 text-neutral-500"
+    : mine
+      ? "bg-green-500/80 backdrop-blur-xl border border-green-400/30 text-white shadow-md"
+      : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.05] text-neutral-100 shadow-md";
+
+  // Invisible trailing spacer reserves room for the in-bubble meta row.
+  const metaWidth =
+    52 + (msg.edited ? 38 : 0) + (showTicks && mine && !msg.deleted ? 20 : 0);
+
+  const showName = isGroup && !mine && !groupedPrev && msg.senderName;
+  const showAvatar = isGroup && !mine;
+
   return (
     <div
-      className={`group/msg relative px-4 hover:bg-white/[0.02] ${grouped ? "py-0.5" : "pt-3 pb-0.5"} [@media(hover:none)]:select-none [@media(hover:none)]:[-webkit-touch-callout:none]`}
+      className={`group/msg relative px-3 ${groupedPrev ? "mt-[3px]" : "mt-3"} [@media(hover:none)]:select-none [@media(hover:none)]:[-webkit-touch-callout:none]`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -160,7 +216,7 @@ function MessageRow({
       {/* Swipe-to-reply affordance */}
       {dragX > 0 && (
         <div
-          className="absolute left-1 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full bg-green-500/20 transition-opacity"
+          className="absolute left-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full bg-green-500/20 transition-opacity"
           style={{ opacity: Math.min(dragX / SWIPE_REPLY_PX, 1) }}
         >
           <Reply className="w-4 h-4 text-green-400" />
@@ -169,7 +225,11 @@ function MessageRow({
 
       {/* Hover action bar (desktop / pointer devices only) */}
       {actionable && (
-        <div className="absolute -top-3 right-4 z-10 hidden [@media(hover:hover)]:group-hover/msg:flex items-center bg-[#1e1e1e] border border-white/10 rounded-lg shadow-xl overflow-visible">
+        <div
+          className={`absolute -top-3.5 z-20 hidden [@media(hover:hover)]:group-hover/msg:flex items-center bg-black/40 backdrop-blur-xl border border-white/[0.1] rounded-full shadow-xl px-0.5 ${
+            mine ? "right-3" : showAvatar ? "left-12" : "left-3"
+          }`}
+        >
           {onReact && (
             <div className="relative">
               <button
@@ -180,7 +240,11 @@ function MessageRow({
                 <SmilePlus className="w-4 h-4" />
               </button>
               {pickerOpen && (
-                <div className="absolute top-full right-0 mt-1 bg-[#1e1e1e] border border-white/10 rounded-xl p-1.5 flex gap-0.5 shadow-2xl z-20">
+                <div
+                  className={`absolute top-full mt-1.5 bg-black/60 backdrop-blur-2xl border border-white/[0.1] rounded-full p-1.5 flex gap-0.5 shadow-2xl z-30 ${
+                    mine ? "right-0" : "left-0"
+                  }`}
+                >
                   {REACT_EMOJIS.map((e) => (
                     <button
                       key={e}
@@ -228,94 +292,106 @@ function MessageRow({
       )}
 
       <div
-        className="flex gap-3 transition-transform duration-75"
+        className={`relative flex ${mine ? "justify-end" : "justify-start"} ${showAvatar ? "pl-10" : ""} transition-transform duration-75`}
         style={dragX ? { transform: `translateX(${dragX}px)` } : undefined}
       >
-        <div className="w-10 flex-shrink-0">
-          {!grouped &&
-            (msg.senderImage ? (
-              <img src={msg.senderImage} alt={msg.senderName} className="w-10 h-10 rounded-full" />
+        {/* Avatar on the last bubble of an incoming cluster (groups) */}
+        {showAvatar && !groupedNext && (
+          <div className="absolute left-0 bottom-0">
+            {msg.senderImage ? (
+              <img src={msg.senderImage} alt="" className="w-8 h-8 rounded-full" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-semibold">
+              <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
                 {msg.senderName?.charAt(0)?.toUpperCase() || "U"}
               </div>
-            ))}
-        </div>
-        <div className="flex-1 min-w-0">
-          {!grouped && (
-            <div className="flex items-baseline gap-2">
-              <span className={`text-sm font-semibold ${mine ? "text-green-400" : "text-white"}`}>
-                {msg.senderName}
-              </span>
-              <span className="text-[11px] text-neutral-500">
-                {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </span>
-              {msg.encrypted && !msg.deleted && (
-                <Lock className="w-3 h-3 text-neutral-600" title="End-to-end encrypted" />
-              )}
-            </div>
+            )}
+          </div>
+        )}
+
+        <div className={`flex flex-col max-w-[80%] sm:max-w-[65%] ${mine ? "items-end" : "items-start"}`}>
+          {showName && (
+            <span className={`text-[11px] font-semibold mb-0.5 px-3 ${nameColorOf(msg.senderId)}`}>
+              {msg.senderName}
+            </span>
           )}
 
-          {/* Quoted reply preview */}
-          {msg.replyToId && !msg.deleted && (
-            <div className="mt-0.5 mb-1 pl-2 border-l-2 border-green-500/50 text-xs text-neutral-400 truncate">
-              <span className="font-semibold text-neutral-300">
-                {replyTarget ? replyTarget.senderName : "Message"}
-              </span>{" "}
-              {replyTarget
-                ? replyTarget.deleted
-                  ? "— deleted message"
-                  : replyTarget.failed
-                    ? "— 🔒 can't decrypt"
-                    : `— ${replyTarget.text.slice(0, 80)}`
-                : "— unavailable"}
-            </div>
-          )}
+          <div className={`relative px-3 py-1.5 ${shape} ${skin}`}>
+            {/* Quoted reply preview */}
+            {msg.replyToId && !msg.deleted && (
+              <div
+                className={`mt-1 mb-1.5 px-2.5 py-1.5 rounded-xl border-l-2 text-xs ${
+                  mine
+                    ? "bg-black/20 border-white/50"
+                    : "bg-white/[0.06] border-green-500/70"
+                }`}
+              >
+                <p className={`font-semibold truncate ${mine ? "text-white/90" : "text-green-400"}`}>
+                  {replyTarget ? replyTarget.senderName : "Message"}
+                </p>
+                <p className={`truncate ${mine ? "text-white/60" : "text-neutral-400"}`}>
+                  {replyTarget
+                    ? replyTarget.deleted
+                      ? "deleted message"
+                      : replyTarget.failed
+                        ? "🔒 can't decrypt"
+                        : replyTarget.text.slice(0, 90)
+                    : "unavailable"}
+                </p>
+              </div>
+            )}
 
-          {msg.deleted ? (
-            <p className="text-sm text-neutral-500 italic flex items-center gap-1.5">
-              <Ban className="w-3.5 h-3.5" /> This message was deleted
-            </p>
-          ) : msg.failed ? (
-            <p className="text-sm text-neutral-500 italic">
-              🔒 Can't decrypt — sent to another device's keys
-            </p>
-          ) : (
-            <p className="text-sm text-neutral-200 break-words whitespace-pre-wrap">
-              {msg.text}
-              {msg.edited && (
-                <span className="text-[10px] text-neutral-500 ml-1.5">(edited)</span>
-              )}
-              {showTicks && mine && (
+            {msg.deleted ? (
+              <p className="text-[13.5px] italic flex items-center gap-1.5 py-0.5">
+                <Ban className="w-3.5 h-3.5" /> This message was deleted
+              </p>
+            ) : msg.failed ? (
+              <p className="text-[13.5px] italic text-neutral-400 py-0.5">
+                🔒 Can't decrypt — sent to another device's keys
+              </p>
+            ) : (
+              <>
+                <p className="text-[15px] leading-[1.35] break-words whitespace-pre-wrap">
+                  {msg.text}
+                  <span
+                    className="inline-block h-px align-middle"
+                    style={{ width: metaWidth }}
+                  />
+                </p>
+                {/* In-bubble meta: edited · time · ticks */}
                 <span
-                  className="inline-flex ml-1.5 align-middle"
-                  title={msg.delivered ? "Delivered" : "Sent"}
+                  className={`absolute bottom-[5px] right-2.5 flex items-center gap-1 text-[10px] leading-none ${
+                    mine ? "text-white/60" : "text-neutral-500"
+                  }`}
                 >
-                  {msg.delivered ? (
-                    <CheckCheck className="w-3.5 h-3.5 text-green-400" />
-                  ) : (
-                    <Check className="w-3.5 h-3.5 text-neutral-500" />
-                  )}
+                  {msg.edited && <span>edited</span>}
+                  <span>{timeLabel(msg.timestamp)}</span>
+                  {showTicks &&
+                    mine &&
+                    (msg.delivered ? (
+                      <CheckCheck className="w-3.5 h-3.5 text-[#9ff0c0]" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-white/60" />
+                    ))}
                 </span>
-              )}
-            </p>
-          )}
+              </>
+            )}
+          </div>
 
-          {/* Reaction pills */}
+          {/* Reaction pills, tucked under the bubble edge */}
           {reactions.length > 0 && !msg.deleted && (
-            <div className="flex flex-wrap gap-1 mt-1">
+            <div className={`flex flex-wrap gap-1 -mt-1.5 z-10 ${mine ? "pr-2" : "pl-2"}`}>
               {reactions.map((r) => (
                 <button
                   key={r.emoji}
                   onClick={() => onReact?.(msg, r.emoji)}
-                  className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition ${
+                  className={`flex items-center gap-1 text-[11px] px-1.5 py-[3px] rounded-full border shadow-md transition ${
                     r.mine
-                      ? "bg-green-500/20 border-green-500/50 text-green-300"
-                      : "bg-white/5 border-white/10 text-neutral-300 hover:border-white/30"
+                      ? "bg-green-900/60 backdrop-blur-md border-green-500/60 text-green-300"
+                      : "bg-black/40 backdrop-blur-md border-white/10 text-neutral-300 hover:border-white/30"
                   }`}
                 >
                   <span>{r.emoji}</span>
-                  <span className="font-semibold">{r.count}</span>
+                  {r.count > 1 && <span className="font-semibold">{r.count}</span>}
                 </button>
               ))}
             </div>
@@ -326,7 +402,7 @@ function MessageRow({
   );
 }
 
-/** WhatsApp-style bottom action sheet for touch devices. */
+/** iOS-style floating action sheet for touch devices. */
 function ActionSheet({ msg, myReaction, handlers, onClose }) {
   const { onReact, onReply, onEdit, onDelete, allowEdit, allowDelete } = handlers;
 
@@ -335,29 +411,31 @@ function ActionSheet({ msg, myReaction, handlers, onClose }) {
     fn();
   };
 
+  const Row = ({ icon: Icon, label, danger, onClick }) => (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center justify-between px-5 py-3.5 text-[15px] active:bg-white/5 transition ${
+        danger ? "text-red-400" : "text-neutral-100"
+      }`}
+    >
+      {label}
+      <Icon className={`w-5 h-5 ${danger ? "" : "text-neutral-400"}`} />
+    </button>
+  );
+
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col justify-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60" />
-      <div
-        className="relative bg-[#1a1a1a] border-t border-white/10 rounded-t-2xl pb-[max(env(safe-area-inset-bottom),12px)] animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-2.5 mb-1" />
+    <div className="fixed inset-0 z-[70] flex flex-col justify-end p-2.5 pb-[max(env(safe-area-inset-bottom),10px)]" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
 
-        {/* Quoted message being acted on */}
-        <div className="mx-4 mt-2 mb-3 px-3 py-2 bg-white/5 rounded-xl border-l-2 border-green-500/50">
-          <p className="text-xs font-semibold text-green-400">{msg.senderName}</p>
-          <p className="text-xs text-neutral-400 truncate">{msg.text || "…"}</p>
-        </div>
-
-        {/* Reaction row */}
+      <div className="relative animate-slide-up" onClick={(e) => e.stopPropagation()}>
+        {/* Reaction bar — floats above the sheet, iMessage style */}
         {onReact && (
-          <div className="flex justify-between px-4 pb-3">
+          <div className="mb-2 mx-auto w-fit max-w-full bg-white/[0.05] backdrop-blur-3xl border border-white/[0.1] rounded-full px-2 py-1.5 flex gap-0.5 shadow-2xl overflow-x-auto">
             {REACT_EMOJIS.map((e) => (
               <button
                 key={e}
                 onClick={() => act(() => onReact(msg, e))}
-                className={`text-[26px] p-1.5 rounded-full active:scale-90 transition-transform ${
+                className={`text-[24px] leading-none p-1.5 rounded-full active:scale-90 transition-transform ${
                   myReaction === e ? "bg-green-500/25 ring-1 ring-green-500/50" : ""
                 }`}
               >
@@ -367,40 +445,33 @@ function ActionSheet({ msg, myReaction, handlers, onClose }) {
           </div>
         )}
 
-        <div className="h-px bg-white/10 mx-4 mb-1" />
+        <div className="bg-white/[0.05] backdrop-blur-3xl border border-white/[0.1] rounded-[22px] overflow-hidden shadow-2xl">
+          {/* Quoted message being acted on */}
+          <div className="px-5 pt-3.5 pb-3 border-b border-white/[0.07]">
+            <p className="text-xs font-semibold text-green-400">{msg.senderName}</p>
+            <p className="text-[13px] text-neutral-400 truncate mt-0.5">{msg.text || "…"}</p>
+          </div>
 
-        {onReply && (
-          <button
-            onClick={() => act(() => onReply(msg))}
-            className="w-full flex items-center gap-4 px-6 py-3.5 text-sm text-neutral-200 active:bg-white/5"
-          >
-            <Reply className="w-5 h-5 text-neutral-400" /> Reply
-          </button>
-        )}
-        {msg.text && !msg.deleted && (
-          <button
-            onClick={() => act(() => navigator.clipboard?.writeText(msg.text))}
-            className="w-full flex items-center gap-4 px-6 py-3.5 text-sm text-neutral-200 active:bg-white/5"
-          >
-            <Copy className="w-5 h-5 text-neutral-400" /> Copy
-          </button>
-        )}
-        {allowEdit && (
-          <button
-            onClick={() => act(() => onEdit(msg))}
-            className="w-full flex items-center gap-4 px-6 py-3.5 text-sm text-neutral-200 active:bg-white/5"
-          >
-            <Pencil className="w-5 h-5 text-neutral-400" /> Edit
-          </button>
-        )}
-        {allowDelete && (
-          <button
-            onClick={() => act(() => onDelete(msg))}
-            className="w-full flex items-center gap-4 px-6 py-3.5 text-sm text-red-400 active:bg-red-500/10"
-          >
-            <Trash2 className="w-5 h-5" /> Delete for everyone
-          </button>
-        )}
+          <div className="divide-y divide-white/[0.05]">
+            {onReply && <Row icon={Reply} label="Reply" onClick={() => act(() => onReply(msg))} />}
+            {msg.text && !msg.deleted && (
+              <Row
+                icon={Copy}
+                label="Copy"
+                onClick={() => act(() => navigator.clipboard?.writeText(msg.text))}
+              />
+            )}
+            {allowEdit && <Row icon={Pencil} label="Edit" onClick={() => act(() => onEdit(msg))} />}
+            {allowDelete && (
+              <Row
+                icon={Trash2}
+                label="Delete for everyone"
+                danger
+                onClick={() => act(() => onDelete(msg))}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -409,6 +480,7 @@ function ActionSheet({ msg, myReaction, handlers, onClose }) {
 export default function MessageList({
   messages,
   myId,
+  isGroup,
   onJoinSession,
   onReact,
   onReply,
@@ -437,53 +509,45 @@ export default function MessageList({
   };
 
   const rows = [];
-  let prev = null;
 
-  for (const msg of messages) {
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    const prev = messages[i - 1] || null;
+    const next = messages[i + 1] || null;
     const showDivider = !prev || !sameDay(prev.timestamp, msg.timestamp);
-    // Group consecutive messages from the same sender within 5 minutes.
-    // Replies always show the full header so the quote block reads clearly.
-    const grouped =
-      !showDivider &&
-      prev &&
-      prev.senderId === msg.senderId &&
-      prev.type === "text" &&
-      msg.type === "text" &&
-      !msg.replyToId &&
-      msg.timestamp - prev.timestamp < 5 * 60 * 1000;
 
     if (showDivider) {
       rows.push(
-        <div key={`div-${msg.id}`} className="flex items-center gap-3 my-4 px-4">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-[11px] font-semibold text-neutral-500">
+        <div key={`div-${msg.id}`} className="flex justify-center my-4">
+          <span className="text-[11px] font-semibold text-neutral-300 bg-black/40 backdrop-blur-md border border-white/[0.1] px-3.5 py-1 rounded-full shadow-sm">
             {dayLabel(msg.timestamp)}
           </span>
-          <div className="flex-1 h-px bg-white/10" />
         </div>
       );
     }
 
     if (msg.type === "system") {
       rows.push(
-        <div key={msg.id} className="px-4 py-1 text-center">
-          <span className="text-xs text-neutral-500">{msg.text}</span>
+        <div key={msg.id} className="flex justify-center py-1.5 px-6">
+          <span className="text-[11.5px] text-neutral-500 bg-white/[0.04] px-3 py-1 rounded-full text-center">
+            {msg.text}
+          </span>
         </div>
       );
     } else if (msg.type === "session-invite") {
       rows.push(
         <div key={msg.id} className="px-4 py-2">
-          <div className="max-w-md mx-auto bg-gradient-to-r from-green-900/40 to-green-800/20 border border-green-700/40 rounded-xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+          <div className="max-w-sm mx-auto bg-gradient-to-b from-[#123524] to-[#0d2a1c] border border-green-500/25 rounded-[20px] p-4 flex items-center gap-3 shadow-lg">
+            <div className="w-11 h-11 rounded-full bg-green-500/15 border border-green-500/30 flex items-center justify-center flex-shrink-0">
               <Music className="w-5 h-5 text-green-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white font-medium truncate">{msg.text}</p>
-              <p className="text-xs text-neutral-400">Listen together in real time</p>
+              <p className="text-sm text-white font-semibold truncate">{msg.text}</p>
+              <p className="text-xs text-neutral-400 mt-0.5">Listen together in real time</p>
             </div>
             <button
               onClick={() => onJoinSession?.(msg.roomId)}
-              className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition flex-shrink-0"
+              className="bg-green-500 hover:bg-green-400 active:scale-95 text-black text-sm font-bold px-4 py-2 rounded-full transition flex-shrink-0"
             >
               Join
             </button>
@@ -495,8 +559,10 @@ export default function MessageList({
         <MessageRow
           key={msg.id}
           msg={msg}
-          grouped={grouped}
           mine={msg.senderId === myId}
+          isGroup={!!isGroup}
+          groupedPrev={!showDivider && clusters(prev, msg)}
+          groupedNext={next ? sameDay(msg.timestamp, next.timestamp) && clusters(msg, next) : false}
           replyTarget={msg.replyToId ? byId.get(String(msg.replyToId)) : null}
           handlers={handlersFor(msg)}
           showTicks={showTicks}
@@ -506,8 +572,6 @@ export default function MessageList({
         />
       );
     }
-
-    prev = msg;
   }
 
   return (

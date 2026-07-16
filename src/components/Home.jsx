@@ -565,19 +565,35 @@ export default function Home({
         />
       </div>
 
-      {/* Mobile / tablet left drawer */}
+      {/* Mobile / tablet left drawer: Discord-style rail + library panel */}
       {showLeft && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowLeft(false)} />
-          <div className="absolute left-0 top-0 bottom-0 w-[85%] max-w-xs bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-left">
-            <div className="flex items-center justify-between p-4 border-b border-neutral-800">
-              <h3 className="text-white font-bold">Your Library</h3>
-              <button onClick={() => setShowLeft(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
-                <X size={20} className="text-white" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <PlaylistSidebar onOpenPlaylist={openPlaylist} />
+          <div className="absolute left-0 top-0 bottom-0 w-[92%] max-w-sm shadow-2xl flex z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-left">
+            {/* Icon rail (same one as desktop) */}
+            <SidebarRail
+              activeView={activeSidebarView}
+              onTabChange={setActiveSidebarView}
+              onNavigate={() => setShowLeft(false)}
+              onOpenFriends={() => {
+                window.dispatchEvent(new CustomEvent("tt-open-dms"));
+                setShowRight(true);
+              }}
+            />
+            <div className="flex-1 bg-[#121212] flex flex-col overflow-hidden min-w-0">
+              <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+                <h3 className="text-white font-bold">Your Library</h3>
+                <button onClick={() => setShowLeft(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
+                  <X size={20} className="text-white" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <PlaylistSidebar
+                  onOpenPlaylist={openPlaylist}
+                  externalView={activeSidebarView}
+                  onExternalViewChange={setActiveSidebarView}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -43,6 +43,11 @@ function ChatPageInner() {
   const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [e2eeReady, setE2eeReady] = useState(false);
+  // Mobile: the sidebar becomes a Discord-style slide-over drawer when a chat
+  // is open. Opened via the header back button or an edge swipe from the left.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const edgeSwipeRef = useRef(null); // { x, y } of a touch that started at the left edge
+  const drawerSwipeRef = useRef(null); // { x, y } of a touch on the open drawer
   const activeRef = useRef(null);
   activeRef.current = active;
 
@@ -152,11 +157,13 @@ function ChatPageInner() {
   const openDm = (friend) => {
     setActive({ type: "dm", friend });
     setUnread((u) => ({ ...u, [`dm:${friend.clerkId}`]: 0 }));
+    setDrawerOpen(false);
   };
 
   const openGroup = (group) => {
     setActive({ type: "group", group });
     setUnread((u) => ({ ...u, [`group:${group._id}`]: 0 }));
+    setDrawerOpen(false);
   };
 
   const joinSession = (roomId) => {
@@ -186,18 +193,77 @@ function ChatPageInner() {
     return null;
   }
 
+  // ── Mobile drawer gestures ────────────────────────────────────────────────
+  // Swipe in from the left screen edge (< 24px) opens the sidebar over the
+  // open chat. Edge-only so it never collides with swipe-to-reply on messages.
+  const onEdgeTouchStart = (e) => {
+    const t = e.touches[0];
+    edgeSwipeRef.current = t.clientX <= 24 ? { x: t.clientX, y: t.clientY } : null;
+  };
+  const onEdgeTouchMove = (e) => {
+    const s = edgeSwipeRef.current;
+    if (!s) return;
+    const t = e.touches[0];
+    if (Math.abs(t.clientY - s.y) > 40) {
+      edgeSwipeRef.current = null; // vertical scroll
+      return;
+    }
+    if (t.clientX - s.x > 36) {
+      edgeSwipeRef.current = null;
+      setDrawerOpen(true);
+    }
+  };
+  // Swipe the open drawer left to dismiss it.
+  const onDrawerTouchStart = (e) => {
+    const t = e.touches[0];
+    drawerSwipeRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onDrawerTouchMove = (e) => {
+    const s = drawerSwipeRef.current;
+    if (!s) return;
+    const t = e.touches[0];
+    if (Math.abs(t.clientY - s.y) > 40) {
+      drawerSwipeRef.current = null;
+      return;
+    }
+    if (s.x - t.clientX > 48) {
+      drawerSwipeRef.current = null;
+      setDrawerOpen(false);
+    }
+  };
+
   const q = filter.toLowerCase();
+  const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
   const filteredGroups = groups.filter((g) => g.name.toLowerCase().includes(q));
   const filteredFriends = friends.filter(
     (f) => f.name?.toLowerCase().includes(q) || f.username?.toLowerCase().includes(q)
   );
 
   return (
-    <div className="h-[100dvh] bg-[#0e0e0e] flex overflow-hidden text-white">
-      {/* ── Left sidebar: conversations ── */}
+    <div className="h-[100dvh] bg-[#0e0e0e] relative overflow-hidden text-white">
+      {/* Background blobs for glassy effect */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-green-500/10 rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-pulse pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative z-10 flex w-full h-full">
+      {/* ── Left sidebar: conversation list ──
+          Desktop: static column. Mobile with a chat open: hidden, but slides
+          over the chat as a Discord-style drawer (drawerOpen). */}
+      {drawerOpen && active && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[64] sm:hidden"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
       <div
-        className={`w-full sm:w-72 flex-shrink-0 bg-[#111111] border-r border-white/5 flex-col ${
-          active ? "hidden sm:flex" : "flex"
+        onTouchStart={onDrawerTouchStart}
+        onTouchMove={onDrawerTouchMove}
+        className={`bg-white/[0.02] backdrop-blur-2xl border-r border-white/5 flex-col ${
+          active
+            ? drawerOpen
+              ? "fixed inset-y-0 left-0 z-[65] w-[85vw] max-w-[320px] flex animate-slide-left shadow-2xl sm:static sm:z-auto sm:w-72 sm:max-w-none sm:animate-none sm:shadow-none sm:flex sm:flex-shrink-0"
+              : "hidden sm:flex sm:w-72 sm:flex-shrink-0"
+            : "flex w-full sm:w-72 flex-shrink-0"
         }`}
       >
         {/* Top bar */}
@@ -220,7 +286,7 @@ function ChatPageInner() {
 
         {/* Search */}
         <div className="p-3">
-          <div className="flex items-center gap-2 bg-[#1a1a1a] rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md border border-white/5 rounded-xl px-3 py-2 shadow-inner">
             <Search className="w-4 h-4 text-neutral-500 flex-shrink-0" />
             <input
               value={filter}
@@ -257,8 +323,8 @@ function ChatPageInner() {
               <button
                 key={g._id}
                 onClick={() => openGroup(g)}
-                className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition text-left ${
-                  isActive ? "bg-white/10" : "hover:bg-white/5"
+                className={`w-full flex items-center gap-3 px-2 py-2 rounded-xl transition text-left ${
+                  isActive ? "bg-white/10 backdrop-blur-md shadow-sm border border-white/[0.05]" : "hover:bg-white/5 border border-transparent"
                 }`}
               >
                 <div className="w-9 h-9 rounded-lg bg-green-600/20 flex items-center justify-center text-base flex-shrink-0">
@@ -302,8 +368,8 @@ function ChatPageInner() {
               <button
                 key={f.clerkId}
                 onClick={() => openDm(f)}
-                className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition text-left ${
-                  isActive ? "bg-white/10" : "hover:bg-white/5"
+                className={`w-full flex items-center gap-3 px-2 py-2 rounded-xl transition text-left ${
+                  isActive ? "bg-white/10 backdrop-blur-md shadow-sm border border-white/[0.05]" : "hover:bg-white/5 border border-transparent"
                 } ${isBlocked ? "opacity-50" : ""}`}
               >
                 <div className="relative flex-shrink-0">
@@ -343,7 +409,11 @@ function ChatPageInner() {
       </div>
 
       {/* ── Main pane ── */}
-      <div className={`flex-1 min-w-0 ${active ? "flex" : "hidden sm:flex"}`}>
+      <div
+        className={`flex-1 min-w-0 ${active ? "flex" : "hidden sm:flex"}`}
+        onTouchStart={onEdgeTouchStart}
+        onTouchMove={onEdgeTouchMove}
+      >
         {active?.type === "dm" ? (
           blocked.has(active.friend.clerkId) ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
@@ -351,7 +421,7 @@ function ChatPageInner() {
               <p className="text-neutral-300 font-medium">You blocked {active.friend.name}</p>
               <div className="flex items-center gap-5 mt-3">
                 <button
-                  onClick={() => setActive(null)}
+                  onClick={() => setDrawerOpen(true)}
                   className="text-sm text-neutral-400 hover:text-white sm:hidden"
                 >
                   Back
@@ -370,7 +440,8 @@ function ChatPageInner() {
               friend={active.friend}
               onJoinSession={joinSession}
               onBlock={() => toggleBlock(active.friend)}
-              onBack={() => setActive(null)}
+              onBack={() => setDrawerOpen(true)}
+              backBadge={totalUnread}
             />
           )
         ) : active?.type === "group" ? (
@@ -380,10 +451,11 @@ function ChatPageInner() {
             onOpenSettings={() => setShowSettings(true)}
             onJoinSession={joinSession}
             onGroupChanged={loadGroups}
-            onBack={() => setActive(null)}
+            onBack={() => setDrawerOpen(true)}
+            backBadge={totalUnread}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 bg-[#141414]">
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 bg-transparent">
             <div className="w-20 h-20 bg-green-600/15 rounded-full flex items-center justify-center mb-4">
               <MessageCircle className="w-10 h-10 text-green-400" />
             </div>
@@ -425,6 +497,7 @@ function ChatPageInner() {
           }}
         />
       )}
+      </div>
     </div>
   );
 }

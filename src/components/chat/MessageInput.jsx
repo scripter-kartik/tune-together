@@ -56,7 +56,7 @@ export default function MessageInput({
   return (
     <div className="px-4 pb-[max(env(safe-area-inset-bottom),16px)] sm:pb-4 pt-1 relative">
       {(replyTo || editing) && (
-        <div className="flex items-center gap-2 bg-[#1a1a1a] border border-white/10 border-b-0 rounded-t-xl px-4 py-2 text-xs">
+        <div className="flex items-center gap-2 bg-white/[0.03] backdrop-blur-xl border border-white/[0.1] border-b-0 rounded-t-xl px-4 py-2 text-xs">
           {editing ? (
             <Pencil className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
           ) : (
@@ -83,7 +83,7 @@ export default function MessageInput({
         </div>
       )}
       {showEmojis && (
-        <div className="absolute bottom-full right-6 mb-1 bg-[#1e1e1e] border border-white/10 rounded-xl p-2 flex gap-1 shadow-xl z-10">
+        <div className="absolute bottom-full right-6 mb-1 bg-white/[0.08] backdrop-blur-2xl border border-white/[0.1] rounded-xl p-2 flex gap-1 shadow-2xl z-10">
           {QUICK_EMOJIS.map((e) => (
             <button
               key={e}
@@ -96,7 +96,7 @@ export default function MessageInput({
         </div>
       )}
       <div
-        className={`flex items-center gap-2 bg-[#1e1e1e] border border-white/10 px-4 py-1 focus-within:border-green-500/50 transition ${
+        className={`flex items-center gap-2 bg-white/[0.05] backdrop-blur-xl border border-white/[0.1] shadow-lg px-4 py-1 focus-within:border-green-500/50 transition ${
           replyTo || editing ? "rounded-b-xl" : "rounded-xl"
         }`}
       >
