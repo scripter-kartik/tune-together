@@ -5,7 +5,6 @@ import MusicCards from "./MusicCards";
 import FeaturedCards from "./FeaturedCards";
 import PlaylistSidebar from "./PlaylistSidebar";
 import RightPanel from "./RightPanel";
-import ChatView from "./ChatView";
 import ArtistView from "./ArtistView";
 import AlbumView from "./AlbumView";
 import CollectionView from "./CollectionView";
@@ -596,8 +595,6 @@ export default function Home({
       {/* Right panel - desktop */}
       <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
         <RightPanel
-          roomId={roomId}
-          socketRef={socketRef}
           queue={queue}
           onRemoveFromQueue={onRemoveFromQueue}
           onClearQueue={onClearQueue}
@@ -617,8 +614,6 @@ export default function Home({
             </div>
             <div className="flex-1 overflow-hidden">
               <RightPanel
-                roomId={roomId}
-                socketRef={socketRef}
                 queue={queue}
                 onRemoveFromQueue={onRemoveFromQueue}
                 onClearQueue={onClearQueue}

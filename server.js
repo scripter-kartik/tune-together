@@ -82,14 +82,10 @@ app.prepare().then(() => {
       io.to(roomId).emit("user-count", room.users.size);
     });
 
-    socket.on("chat message", ({ roomId, msg }) => {
-      socket.to(roomId).emit("chat message", msg);
-    });
-
     // DMs are E2E-encrypted: `ciphertext`/`iv` are opaque blobs the server
     // just relays. Legacy plaintext `message` still passes through for old
     // clients. Persistence happens via /api/chat/send in parallel.
-    socket.on("send-dm", ({ recipientId, message, ciphertext, iv, senderName, senderImage }) => {
+    socket.on("send-dm", ({ recipientId, message, ciphertext, iv, replyToId, messageId, senderName, senderImage }) => {
       if (!socketRateOk(socket)) return;
       const recipientSocketId = userSockets.get(recipientId);
 
@@ -101,20 +97,27 @@ app.prepare().then(() => {
           message,
           ciphertext,
           iv,
+          replyToId,
+          messageId,
           timestamp: new Date(),
         });
 
-        socket.emit("dm-sent", {
-          recipientId,
+        // Single tick → double tick: tell the sender it reached a device.
+        socket.emit("dm-delivered", { recipientId, messageId });
+      }
+      // Recipient offline is NOT an error — the message is already persisted
+      // and will be delivered from history when they come online.
+    });
+
+    // Relay a reaction/edit/delete on a DM to the other participant. The row
+    // was already updated via /api/chat/message/[id]; this is display-only.
+    socket.on("dm-message-updated", ({ recipientId, message }) => {
+      if (!socketRateOk(socket)) return;
+      const recipientSocketId = userSockets.get(recipientId);
+      if (recipientSocketId && message) {
+        io.to(recipientSocketId).emit("dm-message-updated", {
+          senderId: socket.clerkId,
           message,
-          ciphertext,
-          iv,
-          timestamp: new Date(),
-        });
-      } else {
-        socket.emit("dm-error", {
-          recipientId,
-          error: "User is offline",
         });
       }
     });
@@ -142,6 +145,14 @@ app.prepare().then(() => {
       if (typeof groupId !== "string" || !message) return;
       if (!socket.rooms.has(`group:${groupId}`)) return; // members only
       socket.to(`group:${groupId}`).emit("group-message", { groupId, message });
+    });
+
+    // Relay an already-persisted reaction/edit/delete on a group message.
+    socket.on("group-message-updated", ({ groupId, message }) => {
+      if (!socketRateOk(socket)) return;
+      if (typeof groupId !== "string" || !message) return;
+      if (!socket.rooms.has(`group:${groupId}`)) return; // members only
+      socket.to(`group:${groupId}`).emit("group-message-updated", { groupId, message });
     });
 
     // Membership / rename / key-rotation changed — tell members to refetch.

@@ -17,6 +17,8 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
   const [typing, setTyping] = useState(false);
   const [peerHasKeys, setPeerHasKeys] = useState(true);
   const [error, setError] = useState(null);
+  const [replyTo, setReplyTo] = useState(null); // ui message being replied to
+  const [editing, setEditing] = useState(null); // ui message being edited
   const bottomRef = useRef(null);
   const socketRef = useRef(null);
 
@@ -26,16 +28,22 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
   const toUiMessage = useCallback(
     async (row) => {
       const otherId = friend.clerkId;
-      const text = await decryptDmRow(me.id, otherId, row);
+      const deleted = !!row.deletedForEveryone;
+      const text = deleted ? "" : await decryptDmRow(me.id, otherId, row);
       return {
-        id: row._id || `${row.senderId}-${+new Date(row.createdAt || row.timestamp)}`,
+        id: row._id || row.messageId || `${row.senderId}-${+new Date(row.createdAt || row.timestamp)}`,
         senderId: row.senderId,
         senderName: row.senderId === me.id ? me.fullName || "You" : row.senderName,
         senderImage: row.senderId === me.id ? me.imageUrl : row.senderImage,
         text: text ?? "",
-        failed: text === null,
+        failed: !deleted && text === null,
         encrypted: !!row.ciphertext,
         type: "text",
+        replyToId: row.replyToId || null,
+        reactions: row.reactions || [],
+        edited: !!row.edited,
+        deleted,
+        delivered: !!row.delivered || !!row.read,
         timestamp: new Date(row.createdAt || row.timestamp || Date.now()),
       };
     },
@@ -47,6 +55,8 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setReplyTo(null);
+    setEditing(null);
 
     (async () => {
       try {
@@ -79,18 +89,47 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
       setTyping(data.isTyping);
       if (data.isTyping) setTimeout(() => setTyping(false), 3000);
     };
+    // Single → double tick: our message reached the peer's device.
+    const onDelivered = ({ recipientId, messageId }) => {
+      if (recipientId !== friend.clerkId || !messageId) return;
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, delivered: true } : m))
+      );
+    };
+    // Peer reacted / edited / deleted a message; re-render that row.
+    const onUpdated = async ({ senderId, message }) => {
+      if (senderId !== friend.clerkId || !message?._id) return;
+      const ui = await toUiMessage(message);
+      setMessages((prev) => prev.map((m) => (m.id === message._id ? ui : m)));
+    };
 
     socket.on("receive-dm", onReceive);
     socket.on("user-typing", onTyping);
+    socket.on("dm-delivered", onDelivered);
+    socket.on("dm-message-updated", onUpdated);
     return () => {
       cancelled = true;
       socket.off("receive-dm", onReceive);
       socket.off("user-typing", onTyping);
+      socket.off("dm-delivered", onDelivered);
+      socket.off("dm-message-updated", onUpdated);
     };
   }, [friend.clerkId, toUiMessage]);
 
   const sendMessage = async (text) => {
     setError(null);
+
+    // Edit mode: PATCH the existing message instead of creating a new one.
+    if (editing) {
+      const target = editing;
+      setEditing(null);
+      await patchMessage(target, "edit", { text });
+      return;
+    }
+
+    const reply = replyTo;
+    setReplyTo(null);
+
     try {
       const encrypted = await encryptDmTo(me.id, friend.clerkId, text);
       if (!encrypted) {
@@ -100,16 +139,19 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
       }
 
       // Optimistic append (we know our own plaintext).
+      const tmpId = `tmp-${Date.now()}-${text.length}`;
       setMessages((prev) => [
         ...prev,
         {
-          id: `tmp-${prev.length}-${text.length}`,
+          id: tmpId,
           senderId: me.id,
           senderName: me.fullName || "You",
           senderImage: me.imageUrl,
           text,
           encrypted: true,
           type: "text",
+          replyToId: reply?.id || null,
+          reactions: [],
           timestamp: new Date(),
         },
       ]);
@@ -118,23 +160,93 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
       const res = await fetch("/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipientId: friend.clerkId, ...encrypted }),
+        body: JSON.stringify({
+          recipientId: friend.clerkId,
+          ...encrypted,
+          replyToId: reply?.id || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Failed to send");
+        setMessages((prev) => prev.filter((m) => m.id !== tmpId));
         return;
+      }
+
+      // Swap the temp id for the real one so actions/ticks target it.
+      const realId = data.message?._id;
+      if (realId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tmpId ? { ...m, id: realId, replyToId: data.message.replyToId || null } : m
+          )
+        );
       }
 
       socketRef.current?.emit("send-dm", {
         recipientId: friend.clerkId,
         ...encrypted,
+        replyToId: data.message?.replyToId || null,
+        messageId: realId,
         senderName: me.fullName || "User",
         senderImage: me.imageUrl,
       });
     } catch (e) {
       console.error("Error sending DM:", e);
       setError("Failed to send message");
+    }
+  };
+
+  // Shared PATCH runner for react / edit / delete, then sync peer via socket.
+  const patchMessage = async (msg, action, extra = {}) => {
+    try {
+      const body = { action };
+      if (action === "react") body.emoji = extra.emoji;
+      if (action === "edit") {
+        const encrypted = await encryptDmTo(me.id, friend.clerkId, extra.text);
+        if (!encrypted) return;
+        body.ciphertext = encrypted.ciphertext;
+        body.iv = encrypted.iv;
+      }
+
+      const res = await fetch(`/api/chat/message/${msg.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Action failed");
+        return;
+      }
+
+      // Locally we keep our plaintext for edits (row ciphertext is for the peer).
+      const row = data.message;
+      const patched = {
+        replyToId: row.replyToId || null,
+        reactions: row.reactions || [],
+        edited: !!row.edited,
+        deleted: !!row.deletedForEveryone,
+      };
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msg.id
+            ? {
+                ...m,
+                ...patched,
+                text: action === "edit" ? extra.text : action === "delete" ? "" : m.text,
+              }
+            : m
+        )
+      );
+
+      socketRef.current?.emit("dm-message-updated", {
+        recipientId: friend.clerkId,
+        message: row,
+      });
+    } catch (e) {
+      console.error(`Error on DM ${action}:`, e);
+      setError("Action failed");
     }
   };
 
@@ -194,7 +306,22 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
             </p>
           </div>
         ) : (
-          <MessageList messages={messages} myId={me.id} onJoinSession={onJoinSession} />
+          <MessageList
+            messages={messages}
+            myId={me.id}
+            onJoinSession={onJoinSession}
+            showTicks
+            onReact={(msg, emoji) => patchMessage(msg, "react", { emoji })}
+            onReply={(msg) => {
+              setEditing(null);
+              setReplyTo(msg);
+            }}
+            onEdit={(msg) => {
+              setReplyTo(null);
+              setEditing(msg);
+            }}
+            onDelete={(msg) => patchMessage(msg, "delete")}
+          />
         )}
         <div ref={bottomRef} />
       </div>
@@ -212,6 +339,12 @@ export default function DmPane({ me, friend, onJoinSession, onBlock }) {
         onTyping={emitTyping}
         disabled={!peerHasKeys}
         disabledHint={`${friend.name} hasn't set up secure chat yet`}
+        replyTo={replyTo ? { senderName: replyTo.senderName, text: replyTo.text.slice(0, 60) } : null}
+        editing={editing ? { text: editing.text } : null}
+        onCancelContext={() => {
+          setReplyTo(null);
+          setEditing(null);
+        }}
       />
     </div>
   );

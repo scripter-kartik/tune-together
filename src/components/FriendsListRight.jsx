@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, Circle, ArrowLeft, Search } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import ChatView from "./ChatView";
+import { useRouter } from "next/navigation";
 
 function getInitials(name) {
   if (!name) return '?';
@@ -16,16 +16,16 @@ const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orang
 
 export default function FriendsListRight() {
   const { isSignedIn, isLoaded } = useUser();
+  const router = useRouter();
   const [chatUsers, setChatUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
-    if (isSignedIn && !selectedUser) {
+    if (isSignedIn) {
       fetchChatUsers();
     }
-  }, [isSignedIn, filter, selectedUser]);
+  }, [isSignedIn, filter]);
 
   const fetchChatUsers = async () => {
     setLoading(true);
@@ -50,14 +50,6 @@ export default function FriendsListRight() {
     if (user.onlineStatus === 'idle') return { text: `Active ${user.minutesSinceActive}m ago`, color: 'text-yellow-400', dot: 'bg-yellow-500' };
     return { text: 'Offline', color: 'text-neutral-500', dot: 'bg-neutral-600' };
   };
-
-  if (selectedUser) {
-    return (
-      <div className="absolute inset-0 z-50 bg-[#121212] flex flex-col">
-        <ChatView user={selectedUser} onClose={() => setSelectedUser(null)} />
-      </div>
-    );
-  }
 
   const onlineCount = chatUsers.filter(u => u.onlineStatus === 'online').length;
   const recentCount = chatUsers.filter(u => u.onlineStatus === 'online' || u.onlineStatus === 'idle').length;
@@ -102,7 +94,7 @@ export default function FriendsListRight() {
             return (
               <div
                 key={user.clerkId}
-                onClick={() => setSelectedUser(user)}
+                onClick={() => router.push(`/chat?dm=${user.clerkId}`)}
                 className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-white/5 transition-all duration-200 cursor-pointer group"
               >
                 <div className="relative flex-shrink-0">

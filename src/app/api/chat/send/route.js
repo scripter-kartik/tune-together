@@ -1,10 +1,11 @@
 import { currentUser } from "@clerk/nextjs/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import ChatMessage from "@/lib/models/ChatMessage";
 import { areFriends, rateLimit } from "@/lib/chatGuards";
 import { isBlockedEitherWay } from "@/lib/models/Block";
 
-// Send an E2E-encrypted DM: { recipientId, ciphertext, iv }.
+// Send an E2E-encrypted DM: { recipientId, ciphertext, iv, replyToId? }.
 // (Legacy plaintext `message` still accepted while old clients drain.)
 // Safety: friends only, blocks enforced, rate limited.
 export async function POST(req) {
@@ -19,7 +20,7 @@ export async function POST(req) {
       return Response.json({ error: "Sending too fast, slow down" }, { status: 429 });
     }
 
-    const { recipientId, message, ciphertext, iv } = await req.json();
+    const { recipientId, message, ciphertext, iv, replyToId } = await req.json();
 
     const hasEncrypted = ciphertext && iv;
     const hasPlain = typeof message === "string" && message.trim();
@@ -48,6 +49,17 @@ export async function POST(req) {
 
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'User';
 
+    // Replies must point at a message in this same 1:1 thread.
+    let replyTo = null;
+    if (replyToId && mongoose.isValidObjectId(replyToId)) {
+      const target = await ChatMessage.findById(replyToId).lean();
+      const inThread =
+        target &&
+        ((target.senderId === user.id && target.recipientId === recipientId) ||
+          (target.senderId === recipientId && target.recipientId === user.id));
+      if (inThread) replyTo = target._id;
+    }
+
     const chatMessage = await ChatMessage.create({
       senderId: user.id,
       senderName: fullName,
@@ -56,6 +68,7 @@ export async function POST(req) {
       message: hasEncrypted ? null : message.trim(),
       ciphertext: hasEncrypted ? ciphertext : null,
       iv: hasEncrypted ? iv : null,
+      replyToId: replyTo,
     });
 
     return Response.json({

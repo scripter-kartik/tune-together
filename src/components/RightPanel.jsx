@@ -1,19 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
-import { MessageCircle, Users, ListMusic } from "lucide-react";
-import ChatSidebar from "./ChatSidebar";
-import ListeningUsers from "./ListeningUsers";
+import { Users, ListMusic } from "lucide-react";
 import QueueList from "./QueueList";
 import FriendsListRight from "./FriendsListRight";
 
 export default function RightPanel({
-  roomId,
-  socketRef,
   queue = [],
   onRemoveFromQueue,
   onClearQueue,
 }) {
-  const [tab, setTab] = useState("community");
+  const [tab, setTab] = useState("dms");
 
   // The player footer's Queue button opens this panel's Queue tab.
   useEffect(() => {
@@ -39,10 +35,6 @@ export default function RightPanel({
   return (
     <div className="w-full h-full flex flex-col bg-[#121212] overflow-hidden">
       <div className="flex gap-1 p-1.5 m-3 bg-[#1e1e1e] rounded-full border border-neutral-800 flex-shrink-0 shadow-inner">
-        <button onClick={() => setTab("chat")} className={tabClass(tab === "chat")}>
-          <MessageCircle className="w-4 h-4" />
-          Room
-        </button>
         <button onClick={() => setTab("dms")} className={tabClass(tab === "dms")}>
           <Users className="w-4 h-4" />
           Friends
@@ -54,9 +46,6 @@ export default function RightPanel({
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden relative">
-        <div className={`absolute inset-0 w-full h-full ${tab === "chat" ? "flex" : "hidden"}`}>
-          <ChatSidebar roomId={roomId} socketRef={socketRef} />
-        </div>
         <div className={`absolute inset-0 w-full h-full ${tab === "dms" ? "flex flex-col" : "hidden"}`}>
           <FriendsListRight />
         </div>

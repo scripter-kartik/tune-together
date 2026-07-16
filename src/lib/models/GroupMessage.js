@@ -53,6 +53,27 @@ const groupMessageSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // WhatsApp-style features (mirrors ChatMessage).
+    replyToId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GroupMessage",
+      default: null,
+    },
+    reactions: [
+      {
+        _id: false,
+        emoji: { type: String, maxlength: 16 },
+        userId: { type: String },
+      },
+    ],
+    edited: {
+      type: Boolean,
+      default: false,
+    },
+    deletedForEveryone: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

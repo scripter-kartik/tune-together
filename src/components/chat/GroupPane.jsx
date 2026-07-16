@@ -29,6 +29,8 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
   const [keyStatus, setKeyStatus] = useState("loading"); // loading | ready | awaiting-admin | wrong-device
   const [typingUsers, setTypingUsers] = useState({});
   const [showMembers, setShowMembers] = useState(true);
+  const [replyTo, setReplyTo] = useState(null); // ui message being replied to
+  const [editing, setEditing] = useState(null); // ui message being edited
   const bottomRef = useRef(null);
   const socketRef = useRef(null);
   const keyRef = useRef(null);
@@ -38,9 +40,10 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
 
   const toUiMessage = useCallback(
     async (row, key) => {
+      const deleted = !!row.deletedForEveryone;
       let text = row.systemText || "";
       let failed = false;
-      if (row.type === "text") {
+      if (row.type === "text" && !deleted) {
         text = key ? await decryptGroupMessage(key, row.ciphertext, row.iv) : null;
         failed = text === null;
         text = text ?? "";
@@ -50,11 +53,15 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
         senderId: row.senderId,
         senderName: row.senderId === me.id ? me.fullName || "You" : row.senderName,
         senderImage: row.senderId === me.id ? me.imageUrl : row.senderImage,
-        text,
+        text: deleted ? "" : text,
         failed,
         encrypted: row.type === "text",
         type: row.type,
         roomId: row.roomId,
+        replyToId: row.replyToId || null,
+        reactions: row.reactions || [],
+        edited: !!row.edited,
+        deleted,
         timestamp: new Date(row.createdAt || Date.now()),
       };
     },
@@ -67,6 +74,8 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
     setLoading(true);
     setMessages([]);
     setKeyStatus("loading");
+    setReplyTo(null);
+    setEditing(null);
 
     (async () => {
       try {
@@ -121,34 +130,57 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
     const onGroupUpdated = ({ groupId }) => {
       if (groupId === group._id) onGroupChanged?.();
     };
+    // A member reacted / edited / deleted a message; re-render that row.
+    const onMessageUpdated = async ({ groupId, message }) => {
+      if (groupId !== group._id || !message?._id) return;
+      const ui = await toUiMessage(message, keyRef.current);
+      setMessages((prev) => prev.map((m) => (m.id === message._id ? ui : m)));
+    };
 
     socket.on("group-message", onGroupMessage);
     socket.on("group-typing", onGroupTyping);
     socket.on("group-updated", onGroupUpdated);
+    socket.on("group-message-updated", onMessageUpdated);
     return () => {
       cancelled = true;
       socket.off("group-message", onGroupMessage);
       socket.off("group-typing", onGroupTyping);
       socket.off("group-updated", onGroupUpdated);
+      socket.off("group-message-updated", onMessageUpdated);
     };
     // group.keyVersion in deps: re-run unwrap after a rotation.
   }, [group._id, group.keyVersion, me.id, toUiMessage]);
 
   const sendMessage = async (text) => {
     if (!keyRef.current) return;
+
+    // Edit mode: PATCH the existing message instead of creating a new one.
+    if (editing) {
+      const target = editing;
+      setEditing(null);
+      await patchMessage(target, "edit", { text });
+      return;
+    }
+
+    const reply = replyTo;
+    setReplyTo(null);
+
     try {
       const { ciphertext, iv } = await encryptGroupMessage(keyRef.current, text);
 
+      const tmpId = `tmp-${Date.now()}-${text.length}`;
       setMessages((prev) => [
         ...prev,
         {
-          id: `tmp-${prev.length}-${text.length}`,
+          id: tmpId,
           senderId: me.id,
           senderName: me.fullName || "You",
           senderImage: me.imageUrl,
           text,
           encrypted: true,
           type: "text",
+          replyToId: reply?.id || null,
+          reactions: [],
           timestamp: new Date(),
         },
       ]);
@@ -157,17 +189,64 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
       const res = await fetch(`/api/groups/${group._id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ciphertext, iv, keyVersion: group.keyVersion }),
+        body: JSON.stringify({
+          ciphertext,
+          iv,
+          keyVersion: group.keyVersion,
+          replyToId: reply?.id || null,
+        }),
       });
       const data = await res.json();
       if (res.ok && data.message) {
+        // Swap the temp id for the real one so actions target it.
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tmpId
+              ? { ...m, id: data.message._id, replyToId: data.message.replyToId || null }
+              : m
+          )
+        );
         socketRef.current?.emit("group-message", {
           groupId: group._id,
           message: data.message,
         });
+      } else if (!res.ok) {
+        setMessages((prev) => prev.filter((m) => m.id !== tmpId));
       }
     } catch (e) {
       console.error("Error sending group message:", e);
+    }
+  };
+
+  // Shared PATCH runner for react / edit / delete, then sync members via socket.
+  const patchMessage = async (msg, action, extra = {}) => {
+    try {
+      const body = { action };
+      if (action === "react") body.emoji = extra.emoji;
+      if (action === "edit") {
+        if (!keyRef.current) return;
+        const { ciphertext, iv } = await encryptGroupMessage(keyRef.current, extra.text);
+        body.ciphertext = ciphertext;
+        body.iv = iv;
+      }
+
+      const res = await fetch(`/api/groups/${group._id}/messages/${msg.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+
+      const ui = await toUiMessage(data.message, keyRef.current);
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? ui : m)));
+
+      socketRef.current?.emit("group-message-updated", {
+        groupId: group._id,
+        message: data.message,
+      });
+    } catch (e) {
+      console.error(`Error on group ${action}:`, e);
     }
   };
 
@@ -195,6 +274,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
 
   const typingNames = Object.values(typingUsers);
   const online = group.members.filter((m) => presenceOf(m.profile) === "online");
+  const iAmAdmin = group.members.some((m) => m.clerkId === me.id && m.role === "admin");
 
   return (
     <div className="flex-1 flex min-w-0">
@@ -275,7 +355,22 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
               </p>
             </div>
           ) : (
-            <MessageList messages={messages} myId={me.id} onJoinSession={onJoinSession} />
+            <MessageList
+              messages={messages}
+              myId={me.id}
+              onJoinSession={onJoinSession}
+              onReact={(msg, emoji) => patchMessage(msg, "react", { emoji })}
+              onReply={(msg) => {
+                setEditing(null);
+                setReplyTo(msg);
+              }}
+              onEdit={(msg) => {
+                setReplyTo(null);
+                setEditing(msg);
+              }}
+              onDelete={(msg) => patchMessage(msg, "delete")}
+              canDelete={(msg) => msg.senderId === me.id || iAmAdmin}
+            />
           )}
           <div ref={bottomRef} />
         </div>
@@ -292,6 +387,12 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
           onTyping={emitTyping}
           disabled={keyStatus !== "ready"}
           disabledHint="Encryption key unavailable on this device"
+          replyTo={replyTo ? { senderName: replyTo.senderName, text: replyTo.text.slice(0, 60) } : null}
+          editing={editing ? { text: editing.text } : null}
+          onCancelContext={() => {
+            setReplyTo(null);
+            setEditing(null);
+          }}
         />
       </div>
 

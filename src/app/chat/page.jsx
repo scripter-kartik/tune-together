@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   MessageCircle,
   Plus,
@@ -29,9 +29,10 @@ function presence(lastActive) {
 
 const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutral-600" };
 
-export default function ChatPage() {
+function ChatPageInner() {
   const { user: me, isLoaded } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [friends, setFriends] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -56,7 +57,15 @@ export default function ChatPage() {
     const socket = getSocket();
     socket.emit("register-user", me.id);
 
-    loadFriends();
+    // ?dm=<clerkId> deep-links straight into that DM (e.g. from the home
+    // page's friends panel).
+    const dmTarget = searchParams.get("dm");
+    loadFriends().then((fs) => {
+      if (dmTarget) {
+        const friend = fs.find((f) => f.clerkId === dmTarget);
+        if (friend) setActive({ type: "dm", friend });
+      }
+    });
     loadGroups();
     loadBlocked();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,9 +75,12 @@ export default function ChatPage() {
     try {
       const res = await fetch("/api/friends");
       const data = await res.json();
-      setFriends(data.friends || []);
+      const fs = data.friends || [];
+      setFriends(fs);
+      return fs;
     } catch (e) {
       console.error(e);
+      return [];
     }
   }, []);
 
@@ -421,5 +433,20 @@ export default function ChatPage() {
         />
       )}
     </div>
+  );
+}
+
+// useSearchParams requires a Suspense boundary during prerender.
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen bg-[#0e0e0e] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-400" />
+        </div>
+      }
+    >
+      <ChatPageInner />
+    </Suspense>
   );
 }

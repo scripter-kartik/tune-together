@@ -43,6 +43,30 @@ const chatMessageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // WhatsApp-style features. Reactions are one-per-user (re-reacting
+    // replaces the emoji). replyToId points at another ChatMessage in the
+    // same thread — the client resolves the preview from decrypted history.
+    replyToId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ChatMessage",
+      default: null,
+    },
+    reactions: [
+      {
+        _id: false,
+        emoji: { type: String, maxlength: 16 },
+        userId: { type: String },
+      },
+    ],
+    edited: {
+      type: Boolean,
+      default: false,
+    },
+    // "Delete for everyone": ciphertext is wiped, a tombstone row remains.
+    deletedForEveryone: {
+      type: Boolean,
+      default: false,
+    },
     deletedBySender: {
       type: Boolean,
       default: false,

@@ -1,4 +1,5 @@
 import { currentUser } from "@clerk/nextjs/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import Group from "@/lib/models/Group";
 import GroupMessage from "@/lib/models/GroupMessage";
@@ -48,7 +49,7 @@ export async function POST(req, { params }) {
     }
 
     const { id } = await params;
-    const { ciphertext, iv, keyVersion } = await req.json();
+    const { ciphertext, iv, keyVersion, replyToId } = await req.json();
     if (!ciphertext || !iv || typeof ciphertext !== "string" || ciphertext.length > 8192) {
       return Response.json({ error: "Invalid message" }, { status: 400 });
     }
@@ -60,6 +61,14 @@ export async function POST(req, { params }) {
     }
 
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "User";
+
+    // Replies must point at a message in this group.
+    let replyTo = null;
+    if (replyToId && mongoose.isValidObjectId(replyToId)) {
+      const target = await GroupMessage.findOne({ _id: replyToId, groupId: group._id }).lean();
+      if (target) replyTo = target._id;
+    }
+
     const message = await GroupMessage.create({
       groupId: group._id,
       senderId: user.id,
@@ -69,6 +78,7 @@ export async function POST(req, { params }) {
       ciphertext,
       iv,
       keyVersion: keyVersion || group.keyVersion,
+      replyToId: replyTo,
     });
 
     // Bump group activity so the sidebar sorts by recency.
