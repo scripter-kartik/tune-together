@@ -12,8 +12,19 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 const rooms = new Map();
-const userSockets = new Map(); 
+const userSockets = new Map();
 const now = () => Date.now();
+
+// Per-socket message rate limit: 25 events / 10s. The API layer enforces the
+// real limits; this just stops a rogue client from flooding the relay.
+const socketRateOk = (socket) => {
+  const t = now();
+  if (!socket._rl || t > socket._rl.resetAt) {
+    socket._rl = { count: 1, resetAt: t + 10_000 };
+    return true;
+  }
+  return ++socket._rl.count <= 25;
+};
 
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
@@ -75,21 +86,29 @@ app.prepare().then(() => {
       socket.to(roomId).emit("chat message", msg);
     });
 
-    socket.on("send-dm", ({ recipientId, message, senderName, senderImage }) => {
+    // DMs are E2E-encrypted: `ciphertext`/`iv` are opaque blobs the server
+    // just relays. Legacy plaintext `message` still passes through for old
+    // clients. Persistence happens via /api/chat/send in parallel.
+    socket.on("send-dm", ({ recipientId, message, ciphertext, iv, senderName, senderImage }) => {
+      if (!socketRateOk(socket)) return;
       const recipientSocketId = userSockets.get(recipientId);
-      
+
       if (recipientSocketId) {
         io.to(recipientSocketId).emit("receive-dm", {
           senderId: socket.clerkId,
           senderName,
           senderImage,
           message,
+          ciphertext,
+          iv,
           timestamp: new Date(),
         });
-        
+
         socket.emit("dm-sent", {
           recipientId,
           message,
+          ciphertext,
+          iv,
           timestamp: new Date(),
         });
       } else {
@@ -98,6 +117,52 @@ app.prepare().then(() => {
           error: "User is offline",
         });
       }
+    });
+
+    // ── Group chat ─────────────────────────────────────────────────────────
+    // Clients join a socket channel per group after fetching /api/groups, so
+    // messages/updates reach every online member instantly.
+    socket.on("join-group-channels", (groupIds) => {
+      if (!Array.isArray(groupIds)) return;
+      for (const id of groupIds.slice(0, 200)) {
+        if (typeof id === "string" && /^[a-f0-9]{24}$/.test(id)) {
+          socket.join(`group:${id}`);
+        }
+      }
+    });
+
+    socket.on("leave-group-channel", (groupId) => {
+      if (typeof groupId === "string") socket.leave(`group:${groupId}`);
+    });
+
+    // Relay an already-persisted group message (ciphertext passthrough — the
+    // server can't read it). Sender emits after /api/groups/[id]/messages OKs.
+    socket.on("group-message", ({ groupId, message }) => {
+      if (!socketRateOk(socket)) return;
+      if (typeof groupId !== "string" || !message) return;
+      if (!socket.rooms.has(`group:${groupId}`)) return; // members only
+      socket.to(`group:${groupId}`).emit("group-message", { groupId, message });
+    });
+
+    // Membership / rename / key-rotation changed — tell members to refetch.
+    socket.on("group-updated", ({ groupId, type }) => {
+      if (typeof groupId !== "string") return;
+      io.to(`group:${groupId}`).emit("group-updated", {
+        groupId,
+        type: type || "update",
+        from: socket.clerkId,
+      });
+    });
+
+    socket.on("group-typing", ({ groupId, isTyping, senderName }) => {
+      if (typeof groupId !== "string") return;
+      if (!socket.rooms.has(`group:${groupId}`)) return;
+      socket.to(`group:${groupId}`).emit("group-typing", {
+        groupId,
+        senderId: socket.clerkId,
+        senderName,
+        isTyping,
+      });
     });
 
     socket.on("mark-read", ({ senderId }) => {

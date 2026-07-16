@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Users, Compass, Plus, Disc, Radio } from "lucide-react";
+import { Home, Users, Compass, Plus, Disc, Radio, MessageCircle } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "../lib/socket";
 
@@ -39,6 +39,7 @@ export default function SidebarRail({ activeView, onTabChange }) {
 
   const tabs = [
     { id: 'library', icon: Home, label: 'Home' },
+    { id: 'chat', icon: MessageCircle, label: 'Chats' },
     { id: 'messages', icon: Users, label: 'Friends' },
     { id: 'explore', icon: Compass, label: 'Explore Rooms' },
   ];
@@ -67,6 +68,8 @@ export default function SidebarRail({ activeView, onTabChange }) {
               onClick={() => {
                 if (tab.id === 'messages') {
                   window.dispatchEvent(new CustomEvent("tt-open-dms"));
+                } else if (tab.id === 'chat') {
+                  window.location.href = '/chat';
                 } else {
                   onTabChange(tab.id);
                 }

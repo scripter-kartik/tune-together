@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Minimize2, Maximize2 } from 'lucide-react';
 import { useUser } from '@clerk/nextjs';
 import { getSocket } from '@/lib/socket';
+import { ensureIdentityPublished, encryptDmTo, decryptDmRow } from '@/lib/e2eeClient';
 
 export default function ChatWindow({ user, onClose }) {
   const { user: currentUser } = useUser();
@@ -16,16 +17,20 @@ export default function ChatWindow({ user, onClose }) {
   const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
+    // Ensure this device's E2EE keys exist + are published before chatting.
+    ensureIdentityPublished().catch((e) => console.error('E2EE setup failed:', e));
+
     fetchChatHistory();
 
     const socket = getSocket();
     socketRef.current = socket;
 
-    socket.on('receive-dm', (data) => {
+    socket.on('receive-dm', async (data) => {
       if (data.senderId === user.clerkId) {
+        const text = await decryptDmRow(currentUser?.id, user.clerkId, data);
         const newMessage = {
           id: Date.now(),
-          text: data.message,
+          text: text ?? "🔒 Can't decrypt — sent to another device's keys",
           sender: 'them',
           timestamp: new Date(data.timestamp),
           senderName: data.senderName,
@@ -62,14 +67,20 @@ export default function ChatWindow({ user, onClose }) {
       const response = await fetch(`/api/chat/history?userId=${user.clerkId}`);
       if (response.ok) {
         const data = await response.json();
-        const formattedMessages = data.messages.map(msg => ({
-          id: msg._id,
-          text: msg.message,
-          sender: msg.senderId === currentUser?.id ? 'me' : 'them',
-          timestamp: new Date(msg.createdAt),
-          senderName: msg.senderName,
-          senderImage: msg.senderImage,
-        }));
+        const formattedMessages = await Promise.all(
+          data.messages.map(async (msg) => {
+            const otherId = msg.senderId === currentUser?.id ? msg.recipientId : msg.senderId;
+            const text = await decryptDmRow(currentUser?.id, otherId, msg);
+            return {
+              id: msg._id,
+              text: text ?? "🔒 Can't decrypt — sent to another device's keys",
+              sender: msg.senderId === currentUser?.id ? 'me' : 'them',
+              timestamp: new Date(msg.createdAt),
+              senderName: msg.senderName,
+              senderImage: msg.senderImage,
+            };
+          })
+        );
         setMessages(formattedMessages);
         scrollToBottom();
       }
@@ -100,22 +111,37 @@ export default function ChatWindow({ user, onClose }) {
     scrollToBottom();
 
     try {
+      // Encrypt on-device; the server only ever sees ciphertext.
+      const encrypted = await encryptDmTo(currentUser?.id, user.clerkId, message);
+      if (!encrypted) {
+        setMessages(prev => [
+          ...prev.filter(m => m.id !== tempMessage.id),
+          {
+            id: Date.now(),
+            text: `${user.name} hasn't opened the new chat yet — ask them to sign in once.`,
+            sender: 'them',
+            timestamp: new Date(),
+          },
+        ]);
+        return;
+      }
+
       await fetch('/api/chat/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           recipientId: user.clerkId,
-          message,
+          ...encrypted,
         }),
       });
 
       const fullName = [currentUser?.firstName, currentUser?.lastName]
         .filter(Boolean)
         .join(' ') || 'User';
-      
+
       socketRef.current?.emit('send-dm', {
         recipientId: user.clerkId,
-        message,
+        ...encrypted,
         senderName: fullName,
         senderImage: currentUser?.imageUrl,
       });
