@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, MicVocal, ListMusic, Heart } from "lucide-react";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
+import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 const fmt = (t) => {
   if (isNaN(t)) return "0:00";
@@ -48,12 +49,13 @@ export default function NowPlayingView({
 
   if (!isOpen || !mounted || !song) return null;
 
-  const cover =
+  const cover = resolveCover(
     song.album?.cover_xl ||
-    song.album?.cover_big ||
-    song.album?.cover_medium ||
-    song.album?.cover_small ||
-    "/icon2.png";
+      song.album?.cover_big ||
+      song.album?.cover_medium ||
+      song.album?.cover_small,
+    song.title || song.id
+  );
   const pct = (currentTime / (duration || 30)) * 100;
 
   const overlay = (
@@ -107,9 +109,7 @@ export default function NowPlayingView({
             src={cover}
             alt={song.title}
             className="w-full max-w-[min(80vw,22rem)] aspect-square object-cover rounded-2xl shadow-2xl shadow-black/70"
-            onError={(e) => {
-              e.target.src = "/icon2.png";
-            }}
+            onError={coverError(song.title || song.id)}
           />
         </div>
 

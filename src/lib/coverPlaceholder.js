@@ -38,3 +38,23 @@ export function coverPlaceholder(seed) {
 </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
+
+// Single gate for every cover slot in the app: give it whatever URL the API
+// handed back plus a stable seed (title/name/id), and it guarantees something
+// cover-shaped comes out. The app logo ("/icon2.png") is treated as "no
+// artwork" — it should never appear inside a cover slot.
+export function resolveCover(url, seed) {
+  if (!url || typeof url !== "string" || url === "/icon2.png") {
+    return coverPlaceholder(seed);
+  }
+  return url;
+}
+
+// onError handler for cover <img> tags: swaps in the generated placeholder
+// when a remote thumbnail 404s or is blocked, and can't itself fail (data URI).
+export function coverError(seed) {
+  return (e) => {
+    e.target.onerror = null;
+    e.target.src = coverPlaceholder(seed);
+  };
+}

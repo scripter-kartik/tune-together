@@ -1,13 +1,14 @@
 "use client";
 import { X, Play, Plus } from "lucide-react";
 import { hiResCover } from "../lib/coverArt";
+import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpenArtist }) {
   if (!song) return null;
 
   const rawCover =
     song.album?.cover_xl || song.album?.cover_big || song.album?.cover_medium;
-  const cover = rawCover ? hiResCover(rawCover, 800) : "/icon2.png";
+  const cover = rawCover ? hiResCover(rawCover, 800) : resolveCover(null, song.title || song.id);
 
   const formatTime = (seconds) => {
     if (!seconds) return "0:00";
@@ -28,7 +29,7 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
             src={cover}
             alt={song.title}
             className="w-full h-full object-cover"
-            onError={e => { e.target.src = '/icon2.png'; }}
+            onError={coverError(song.title || song.id)}
           />
           <button 
             onClick={onClose}
@@ -53,7 +54,7 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
                 }}
               >
                 {song.artist?.picture_small && (
-                  <img src={song.artist.picture_small} alt={song.artist.name} className="w-6 h-6 rounded-full" />
+                  <img src={song.artist.picture_small} alt={song.artist.name} className="w-6 h-6 rounded-full" onError={coverError(song.artist.name)} />
                 )}
                 <span className="font-semibold text-white group-hover:text-green-400 transition-colors">{song.artist?.name}</span>
               </div>

@@ -120,7 +120,7 @@ export default function Header({ query, setQuery, handleSearch, roomId }) {
   return (
     <div className="bg-black px-4 md:px-6 py-2.5 md:py-3">
       {/* Top row */}
-      <div className="flex items-center justify-between gap-3 md:gap-4">
+      <div className="relative flex items-center justify-between gap-3 md:gap-4">
 
         {/* Left - Logo */}
         <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
@@ -139,8 +139,8 @@ export default function Header({ query, setQuery, handleSearch, roomId }) {
           </Link>
         </div>
 
-        {/* Center - Nav + Search (desktop / tablet only) */}
-        <div className="hidden md:flex items-center gap-2 flex-1 max-w-3xl">
+        {/* Center - Nav + Search (desktop / tablet only), truly centered in the header */}
+        <div className="hidden md:flex items-center gap-2 absolute left-1/2 -translate-x-1/2 w-full max-w-[400px] lg:max-w-xl xl:max-w-2xl px-2">
           <Link href="/" className="flex-shrink-0">
             <div className="w-12 h-12 bg-[#242424] hover:bg-[#2a2a2a] rounded-full flex items-center justify-center transition-colors cursor-pointer">
               <Home className="w-5 h-5 text-white" />

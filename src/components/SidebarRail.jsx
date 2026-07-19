@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Home, Users, Compass, Plus, Disc, Radio, MessageCircle } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "../lib/socket";
+import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 /**
  * Discord-style leftmost icon rail. On desktop it's a static column; on
@@ -115,7 +116,7 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate, onOpe
       {/* Active Rooms */}
       <div className="flex flex-col gap-2 mt-2 w-full">
         {publicRooms.map((room) => {
-          const cover = room.currentSong?.album?.cover_medium || room.currentSong?.album?.cover_small || "https://api.dicebear.com/7.x/shapes/svg?seed=" + room.roomId;
+          const cover = resolveCover(room.currentSong?.album?.cover_medium || room.currentSong?.album?.cover_small, room.currentSong?.title || room.roomId);
           return (
             <div key={room.roomId} className="relative group flex items-center justify-center w-full">
               <div className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-300 h-0 group-hover:h-5`} />
@@ -127,7 +128,7 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate, onOpe
                 className="w-12 h-12 rounded-[24px] overflow-hidden flex items-center justify-center bg-[#181818] hover:rounded-[16px] transition-all duration-300 ring-2 ring-transparent hover:ring-green-500 relative"
                 title={`${room.userCount} listening to ${room.currentSong?.title || "Music"}`}
               >
-                <img src={cover} alt="Room" className="w-full h-full object-cover" />
+                <img src={cover} alt="Room" className="w-full h-full object-cover" onError={coverError(room.currentSong?.title || room.roomId)} />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Radio className="w-5 h-5 text-white" />
                 </div>

@@ -117,6 +117,159 @@ input[type="range"]::-webkit-slider-thumb {
   50% { height: 14px; }
 }
 
+/* Friends empty-state SVG animations */
+@keyframes tt-sway3d {
+  0%, 100% { transform: perspective(500px) rotateY(-5deg) rotateX(2deg); }
+  50% { transform: perspective(500px) rotateY(5deg) rotateX(-2deg); }
+}
+
+@keyframes tt-vinyl-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes tt-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes tt-counter-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes tt-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+
+@keyframes tt-eq {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes tt-ripple {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes tt-twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50% { opacity: 0.8; transform: scale(1.25); }
+}
+
+/* Label thumps on the beat, in time with the EQ bars */
+@keyframes tt-beat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+}
+
+/* Notes bubble up out of the equalizer and fade away */
+@keyframes tt-rise {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  15% { opacity: 0.9; }
+  75% { opacity: 0.5; }
+  100% { transform: translateY(-52px) scale(1.1); opacity: 0; }
+}
+
+/* Tonearm gently rocks as it tracks the groove */
+@keyframes tt-arm {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(3deg); }
+}
+
+/* Light sheen sweeping around the vinyl surface */
+@keyframes tt-sheen {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+.tt-empty-svg {
+  animation: tt-sway3d 8s ease-in-out infinite;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 12px 24px rgba(34, 197, 94, 0.18));
+}
+
+.tt-empty-vinyl {
+  animation: tt-vinyl-spin 6s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.tt-empty-orbit {
+  animation: tt-orbit 10s linear infinite;
+  transform-origin: 100px 78px;
+}
+
+/* Counter-rotate so the orbiting notes stay upright while circling */
+.tt-empty-orbit-item {
+  animation: tt-counter-orbit 10s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.tt-empty-glow {
+  animation: tt-glow 4s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.tt-empty-eq {
+  animation: tt-eq 0.9s ease-in-out infinite;
+  transform-origin: center bottom;
+  transform-box: fill-box;
+}
+
+.tt-empty-ripple {
+  animation: tt-ripple 3s ease-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.tt-empty-twinkle {
+  animation: tt-twinkle 2.8s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.tt-empty-beat {
+  animation: tt-beat 0.9s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.tt-empty-rise {
+  animation: tt-rise 3.2s ease-out infinite;
+  transform-box: fill-box;
+}
+
+.tt-empty-arm {
+  animation: tt-arm 5s ease-in-out infinite;
+  transform-origin: 156px 30px;
+}
+
+.tt-empty-sheen {
+  animation: tt-sheen 4s linear infinite;
+  transform-origin: 100px 78px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-empty-svg,
+  .tt-empty-vinyl,
+  .tt-empty-orbit,
+  .tt-empty-orbit-item,
+  .tt-empty-glow,
+  .tt-empty-eq,
+  .tt-empty-ripple,
+  .tt-empty-twinkle,
+  .tt-empty-beat,
+  .tt-empty-rise,
+  .tt-empty-arm,
+  .tt-empty-sheen {
+    animation: none;
+  }
+}
+
 /* Ensure no overflow on root */
 #__next, main {
   height: 100%;

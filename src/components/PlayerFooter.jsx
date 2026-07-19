@@ -5,6 +5,7 @@ import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
 import { MicVocal, ListMusic } from "lucide-react";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
+import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 import LyricsView from "./LyricsView";
 import NowPlayingView from "./NowPlayingView";
 
@@ -170,7 +171,7 @@ export default function PlayerFooter({
         name: song.artist?.name || "Unknown",
       },
       album: {
-        cover_small: song.album?.cover_small || song.album?.cover_medium || '/icon2.png',
+        cover_small: resolveCover(song.album?.cover_small || song.album?.cover_medium, song.title || song.id),
       },
     });
   }, [song, isPlaying, updateNowPlaying]);
@@ -355,10 +356,10 @@ export default function PlayerFooter({
             >
               <div className="relative flex-shrink-0 rounded flex items-center shadow-lg shadow-black/50">
                 <img
-                  src={song.album?.cover_medium || song.album?.cover_small || '/icon2.png'}
+                  src={resolveCover(song.album?.cover_medium || song.album?.cover_small, song.title || song.id)}
                   alt={song.title}
                   className="w-12 h-12 md:w-14 md:h-14 object-cover rounded shadow-md"
-                  onError={e => { e.target.src = '/icon2.png'; }}
+                  onError={coverError(song.title || song.id)}
                 />
               </div>
               <div className="flex flex-col overflow-hidden min-w-0 justify-center">

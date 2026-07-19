@@ -13,7 +13,7 @@ import ReactionOverlay from "./ReactionOverlay";
 import SidebarRail from "./SidebarRail";
 import { Menu, X, Play, Shuffle, Music4, Plus, Compass } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import { coverPlaceholder } from "../lib/coverPlaceholder";
+import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -25,11 +25,11 @@ function getGreeting() {
 }
 
 function coverOf(song) {
-  return (
+  return resolveCover(
     song?.album?.cover_medium ||
-    song?.album?.cover_big ||
-    song?.album?.cover_small ||
-    coverPlaceholder(song?.title || song?.id)
+      song?.album?.cover_big ||
+      song?.album?.cover_small,
+    song?.title || song?.id
   );
 }
 
@@ -95,7 +95,7 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
               <img
                 src={coverOf(spotlight)}
                 alt={spotlight.title}
-                onError={(e) => { e.target.src = coverPlaceholder(spotlight.title || spotlight.id); }}
+                onError={coverError(spotlight.title || spotlight.id)}
                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
               />
             </div>
@@ -225,10 +225,10 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
               >
                 <div className="relative">
                   <img
-                    src={artist.image && artist.image !== "/icon2.png" ? artist.image : coverPlaceholder(artist.name)}
+                    src={resolveCover(artist.image, artist.name)}
                     alt={artist.name}
                     className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-lg group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => { e.target.src = coverPlaceholder(artist.name); }}
+                    onError={coverError(artist.name)}
                   />
                   {artist.id && (
                     <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl shadow-green-500/30 translate-y-2 group-hover:translate-y-0">
@@ -421,9 +421,9 @@ export default function Home({
                           >
                             <div className="relative">
                               <img
-                                src={artist.picture_medium || coverPlaceholder(artist.name)}
+                                src={resolveCover(artist.picture_medium, artist.name)}
                                 className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-lg group-hover:scale-105 transition-transform duration-300"
-                                onError={e => { e.target.src = coverPlaceholder(artist.name); }}
+                                onError={coverError(artist.name)}
                               />
                               <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl shadow-green-500/30 translate-y-2 group-hover:translate-y-0">
                                 <Play className="w-4 h-4 fill-black text-black ml-0.5" />
@@ -451,9 +451,9 @@ export default function Home({
                           >
                             <div className="relative">
                               <img
-                                src={album.cover_medium || coverPlaceholder(album.title)}
+                                src={resolveCover(album.cover_medium, album.title)}
                                 className="w-full aspect-square rounded-lg shadow-lg group-hover:scale-105 transition-transform duration-300 object-cover"
-                                onError={e => { e.target.src = coverPlaceholder(album.title); }}
+                                onError={coverError(album.title)}
                               />
                               <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl shadow-green-500/30 translate-y-2 group-hover:translate-y-0">
                                 <Play className="w-4 h-4 fill-black text-black ml-0.5" />
@@ -504,9 +504,10 @@ export default function Home({
             />
           )}
 
-          {/* Inline load more - mobile: appears at the bottom of the scroll content */}
+          {/* Load more - inline at the end of the scroll content, so it only
+              appears once the user scrolls to the bottom of the feed */}
           {showLoadMore && !isSearchQuery && (
-            <div className="lg:hidden p-4 flex justify-center">
+            <div className="p-4 pb-6 flex justify-center">
               <button
                 onClick={onLoadMore}
                 className="bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-2 rounded-full transition text-sm"
@@ -516,18 +517,6 @@ export default function Home({
             </div>
           )}
         </div>
-
-        {/* Pinned load more - desktop */}
-        {showLoadMore && !isSearchQuery && (
-          <div className="hidden lg:flex flex-shrink-0 p-4 justify-center border-t border-neutral-800">
-            <button
-              onClick={onLoadMore}
-              className="bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-2 rounded-full transition text-sm"
-            >
-              Load more
-            </button>
-          </div>
-        )}
       </div>
     );
   };

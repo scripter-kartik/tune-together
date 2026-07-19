@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Copy, Check } from "lucide-react";
+import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 // Parse LRC synced lyrics ("[mm:ss.xx] text") into [{ time, text }], sorted.
 function parseLRC(lrc) {
@@ -102,8 +103,10 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
 
   if (!isOpen || !mounted) return null;
 
-  const cover =
-    song?.album?.cover_xl || song?.album?.cover_big || song?.album?.cover_medium;
+  const cover = resolveCover(
+    song?.album?.cover_xl || song?.album?.cover_big || song?.album?.cover_medium,
+    song?.title || song?.id
+  );
   const hasLyrics = status === "ready" && (synced || data?.plainLyrics);
 
   const overlay = (
@@ -130,11 +133,12 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
       >
         <div className="flex items-center gap-3 min-w-0">
-          {song?.album?.cover_small && (
+          {song && (
             <img
-              src={song.album.cover_small}
+              src={resolveCover(song.album?.cover_small, song.title || song.id)}
               alt={song.title}
               className="w-12 h-12 rounded object-cover shadow-lg"
+              onError={coverError(song.title || song.id)}
             />
           )}
           <div className="min-w-0">

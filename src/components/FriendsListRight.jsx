@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
@@ -82,10 +81,124 @@ export default function FriendsListRight() {
             <div className="w-6 h-6 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
           </div>
         ) : chatUsers.length === 0 ? (
-          <div className="flex flex-col items-center py-10 text-center px-4">
-            <MessageCircle className="w-10 h-10 text-neutral-700 mb-3" />
-            <p className="text-neutral-500 text-xs font-medium">
-              {filter === 'online' ? 'No friends online' : 'No friends found'}
+          <div className="flex flex-col items-center justify-center h-full min-h-[280px] text-center px-6 -mt-4">
+            <svg viewBox="0 0 200 160" className="w-40 h-32 mb-4 tt-empty-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="ttVinylShine" cx="35%" cy="35%" r="75%">
+                  <stop offset="0%" stopColor="#2e4436" />
+                  <stop offset="55%" stopColor="#16241b" />
+                  <stop offset="100%" stopColor="#0a120d" />
+                </radialGradient>
+                <linearGradient id="ttLabel" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#34d399" />
+                  <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+              </defs>
+
+              {/* Breathing glow + expanding sound ripples behind the vinyl */}
+              <circle cx="100" cy="78" r="58" fill="#10b981" opacity="0.08" className="tt-empty-glow" />
+              <circle cx="100" cy="78" r="40" stroke="#10b981" strokeWidth="1.5" className="tt-empty-ripple" />
+              <circle cx="100" cy="78" r="40" stroke="#10b981" strokeWidth="1.5" className="tt-empty-ripple" style={{ animationDelay: '-1.5s' }} />
+
+              {/* Vinyl record (spins) */}
+              <g className="tt-empty-vinyl">
+                <circle cx="100" cy="78" r="38" fill="url(#ttVinylShine)" stroke="#052012" strokeWidth="1" />
+                {/* Grooves */}
+                <circle cx="100" cy="78" r="32" stroke="#1f5137" strokeWidth="0.75" opacity="0.9" />
+                <circle cx="100" cy="78" r="27" stroke="#1f5137" strokeWidth="0.75" opacity="0.7" />
+                <circle cx="100" cy="78" r="22" stroke="#1f5137" strokeWidth="0.75" opacity="0.9" />
+                <circle cx="100" cy="78" r="17" stroke="#1f5137" strokeWidth="0.75" opacity="0.7" />
+                {/* Light streak so the spin reads */}
+                <path d="M100 44a34 34 0 0 1 24 10" stroke="#3e6b52" strokeWidth="2.5" strokeLinecap="round" opacity="0.8" />
+                <path d="M76 102a34 34 0 0 1-10-24" stroke="#2e5440" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+              </g>
+
+              {/* Light sheen sweeping over the surface (counter-rotates for depth) */}
+              <g className="tt-empty-sheen" opacity="0.35">
+                <path d="M100 42a36 36 0 0 1 30 16" stroke="#6ee7b7" strokeWidth="5" strokeLinecap="round" opacity="0.25" />
+                <path d="M100 42a36 36 0 0 1 30 16" stroke="#a7f3d0" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+              </g>
+
+              {/* Center label thumps on the beat */}
+              <g className="tt-empty-beat">
+                <circle cx="100" cy="78" r="12" fill="url(#ttLabel)" />
+                <circle cx="100" cy="78" r="2.5" fill="#06281a" />
+                {/* Tiny note on the label */}
+                <path d="M97.5 82v-6l5-1.5v6" stroke="#06281a" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </g>
+
+              {/* Tonearm resting on the record, rocking as it tracks */}
+              <g className="tt-empty-arm">
+                <path d="M156 30 L156 46 Q156 52 151 55 L132 66" stroke="#134e33" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+                <path d="M156 30 L156 46 Q156 52 151 55 L132 66" stroke="#34d399" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.6" />
+                {/* Headshell + stylus */}
+                <rect x="126" y="62" width="10" height="7" rx="2" transform="rotate(-30 131 65.5)" fill="#059669" />
+                {/* Pivot base */}
+                <circle cx="156" cy="30" r="5.5" fill="#134e33" />
+                <circle cx="156" cy="30" r="2.5" fill="#34d399" />
+              </g>
+
+              {/* Music notes orbiting the record (counter-rotated to stay upright) */}
+              <g className="tt-empty-orbit">
+                <g className="tt-empty-orbit-item">
+                  <path d="M100 22v-9l8-2.5v9" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="98" cy="22" r="3" fill="#10b981" />
+                  <circle cx="106" cy="19.5" r="3" fill="#10b981" />
+                </g>
+                <g className="tt-empty-orbit-item">
+                  <path d="M152 90v-8l6-2v8" stroke="#34d399" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="150.5" cy="90" r="2.5" fill="#34d399" />
+                  <circle cx="156.5" cy="88" r="2.5" fill="#34d399" />
+                </g>
+                <g className="tt-empty-orbit-item">
+                  <path d="M52 100v-7" stroke="#6ee7b7" strokeWidth="1.8" strokeLinecap="round" />
+                  <circle cx="50" cy="100" r="2.5" fill="#6ee7b7" />
+                </g>
+              </g>
+
+              {/* Equalizer bars dancing under the record */}
+              <g>
+                <rect x="70" y="126" width="5" height="18" rx="2.5" fill="#10b981" className="tt-empty-eq" />
+                <rect x="80" y="126" width="5" height="18" rx="2.5" fill="#34d399" className="tt-empty-eq" style={{ animationDelay: '-0.2s' }} />
+                <rect x="90" y="126" width="5" height="18" rx="2.5" fill="#10b981" className="tt-empty-eq" style={{ animationDelay: '-0.55s' }} />
+                <rect x="100" y="126" width="5" height="18" rx="2.5" fill="#34d399" className="tt-empty-eq" style={{ animationDelay: '-0.35s' }} />
+                <rect x="110" y="126" width="5" height="18" rx="2.5" fill="#10b981" className="tt-empty-eq" style={{ animationDelay: '-0.7s' }} />
+                <rect x="120" y="126" width="5" height="18" rx="2.5" fill="#34d399" className="tt-empty-eq" style={{ animationDelay: '-0.1s' }} />
+              </g>
+
+              {/* Notes bubbling up out of the equalizer */}
+              <g>
+                <g className="tt-empty-rise">
+                  <path d="M74 124v-6l4.5-1.4v6" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="72.7" cy="124" r="2" fill="#34d399" />
+                  <circle cx="78.5" cy="122.3" r="2" fill="#34d399" />
+                </g>
+                <g className="tt-empty-rise" style={{ animationDelay: '-1.2s' }}>
+                  <path d="M99 122v-6" stroke="#6ee7b7" strokeWidth="1.5" strokeLinecap="round" />
+                  <circle cx="97.3" cy="122" r="2" fill="#6ee7b7" />
+                </g>
+                <g className="tt-empty-rise" style={{ animationDelay: '-2.3s' }}>
+                  <path d="M121 123v-6l4.5-1.4v6" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="119.7" cy="123" r="2" fill="#10b981" />
+                  <circle cx="125.5" cy="121.3" r="2" fill="#10b981" />
+                </g>
+              </g>
+
+              {/* Twinkling sparkles */}
+              <circle cx="34" cy="36" r="2" fill="#10b981" className="tt-empty-twinkle" />
+              <circle cx="168" cy="32" r="2.5" fill="#10b981" className="tt-empty-twinkle" style={{ animationDelay: '-0.7s' }} />
+              <circle cx="176" cy="118" r="2" fill="#10b981" className="tt-empty-twinkle" style={{ animationDelay: '-1.4s' }} />
+              <circle cx="26" cy="120" r="2.5" fill="#10b981" className="tt-empty-twinkle" style={{ animationDelay: '-2.1s' }} />
+              <path d="M40 66l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#34d399" className="tt-empty-twinkle" style={{ animationDelay: '-1s' }} />
+              <path d="M162 62l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#34d399" className="tt-empty-twinkle" style={{ animationDelay: '-1.8s' }} />
+            </svg>
+            <p className="text-white text-sm font-bold mb-1">
+              {filter === 'online' ? 'No friends online' : 'No friends yet'}
+            </p>
+            <p className="text-neutral-500 text-xs font-medium leading-relaxed">
+              {filter === 'online'
+                ? 'Your friends will show up here when they hop on.'
+                : 'Add friends to see who’s listening and vibe together.'}
             </p>
           </div>
         ) : (

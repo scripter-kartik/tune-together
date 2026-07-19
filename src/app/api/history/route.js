@@ -71,7 +71,9 @@ export async function GET() {
       .map((r) => ({
         id: r.artistId,
         name: r._id,
-        image: r.image || "/icon2.png",
+        // Never hand the app logo to the UI as an "artist image" — the
+        // frontend swaps null for a generated placeholder.
+        image: r.image && r.image !== "/icon2.png" ? r.image : null,
         count: r.count,
       }));
 
@@ -88,20 +90,26 @@ export async function GET() {
         { $limit: 30 },
       ]);
 
-      songs = songRows.map(({ doc }) => ({
-        id: doc.songId,
-        title: doc.title,
-        artist: { name: doc.artistName, id: doc.artistId || null },
-        album: {
-          id: null,
-          title: "",
-          cover_medium: doc.albumArt,
-          cover_small: doc.albumArt,
-          cover_big: doc.albumArt,
-        },
-        duration: 0,
-        youtubeId: doc.songId,
-      }));
+      songs = songRows.map(({ doc }) => {
+        // Stored albumArt URLs can go stale/expire; songId is a YouTube video
+        // id, and mqdefault.jpg exists for virtually every video forever, so
+        // derive the cover fresh instead of trusting the frozen copy.
+        const cover = `https://i.ytimg.com/vi/${doc.songId}/mqdefault.jpg`;
+        return {
+          id: doc.songId,
+          title: doc.title,
+          artist: { name: doc.artistName, id: doc.artistId || null },
+          album: {
+            id: null,
+            title: "",
+            cover_medium: cover,
+            cover_small: cover,
+            cover_big: cover,
+          },
+          duration: 0,
+          youtubeId: doc.songId,
+        };
+      });
     }
 
     return Response.json({ topArtists, songs });

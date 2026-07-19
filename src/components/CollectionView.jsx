@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft, Play, Plus, Check, Music2, ListMusic } from "lucide-react";
+import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 function formatTime(seconds) {
   if (!seconds) return "";
@@ -24,7 +25,7 @@ export default function CollectionView({
   if (!collection) return null;
 
   const tracks = collection.songs || [];
-  const coverUrl = collection.cover || "/icon2.png";
+  const coverUrl = resolveCover(collection.cover, collection.title || collection.id);
 
   const handleQueue = (song) => {
     onQueue?.(song);
@@ -55,7 +56,7 @@ export default function CollectionView({
               src={coverUrl}
               alt={collection.title}
               className="w-44 h-44 md:w-56 md:h-56 rounded shadow-2xl object-cover"
-              onError={(e) => { e.target.src = "/icon2.png"; }}
+              onError={coverError(collection.title || collection.id)}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -115,10 +116,10 @@ export default function CollectionView({
                   </span>
                   <div className="flex items-center gap-3 min-w-0">
                     <img
-                      src={track.album?.cover_small || track.album?.cover_medium || "/icon2.png"}
+                      src={resolveCover(track.album?.cover_small || track.album?.cover_medium, track.title || track.id)}
                       alt=""
                       className="w-10 h-10 rounded object-cover flex-shrink-0"
-                      onError={(e) => { e.target.src = "/icon2.png"; }}
+                      onError={coverError(track.title || track.id)}
                     />
                     <div className="min-w-0">
                       <p className={`font-semibold text-sm truncate ${isActive ? "text-green-400" : "text-white"}`}>

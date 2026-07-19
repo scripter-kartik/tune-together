@@ -2,14 +2,14 @@
 
 import { useMemo } from "react";
 import { Play } from "lucide-react";
-import { coverPlaceholder } from "../lib/coverPlaceholder";
+import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 function coverOf(song) {
-  return (
+  return resolveCover(
     song?.album?.cover_medium ||
-    song?.album?.cover_big ||
-    song?.album?.cover_small ||
-    coverPlaceholder(song?.title || song?.id)
+      song?.album?.cover_big ||
+      song?.album?.cover_small,
+    song?.title || song?.id
   );
 }
 
@@ -80,7 +80,7 @@ export default function FeaturedCards({ songs, onPlay, onQueue, onOpenCollection
           <img
             src={tile.cover}
             alt={tile.title}
-            onError={(e) => { e.target.src = coverPlaceholder(tile.title); }}
+            onError={coverError(tile.title)}
             className="h-full aspect-square object-cover flex-shrink-0"
           />
           <span className="flex-1 min-w-0 pr-14 text-white font-bold text-sm md:text-base leading-tight line-clamp-2">

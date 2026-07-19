@@ -1,6 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import User from "@/lib/models/User";
+import Friendship from "@/lib/models/Friendship";
 
 export async function GET(req) {
   try {
@@ -18,7 +19,20 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const filter = searchParams.get('filter') || 'all';
 
-    let query = { clerkId: { $ne: user.id } };
+    // Only show accepted friends — never the whole user base.
+    const friendships = await Friendship.find({
+      status: "accepted",
+      $or: [{ requesterId: user.id }, { recipientId: user.id }],
+    }).lean();
+    const friendIds = friendships.map((f) =>
+      f.requesterId === user.id ? f.recipientId : f.requesterId
+    );
+
+    if (friendIds.length === 0) {
+      return Response.json({ success: true, users: [], count: 0 });
+    }
+
+    let query = { clerkId: { $in: friendIds } };
     
     if (filter === 'online') {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -29,7 +43,7 @@ export async function GET(req) {
     }
 
     const users = await User.find(query)
-      .select('clerkId name email imageUrl currentlyPlaying lastActive status socketId')
+      .select('clerkId name username imageUrl currentlyPlaying lastActive status')
       .sort({ lastActive: -1 })
       .limit(100); 
 

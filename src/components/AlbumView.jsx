@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ArrowLeft, Play, Plus, Music2, Disc } from "lucide-react";
+import { resolveCover } from "../lib/coverPlaceholder";
 
 export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSongId, isPlaying, onOpenArtist }) {
   const [album, setAlbum] = useState(null);
@@ -59,7 +60,7 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
   };
 
   const tracks = album.songs || [];
-  const coverUrl = album.cover_xl || album.cover_big || album.cover_medium || '/icon2.png';
+  const coverUrl = resolveCover(album.cover_xl || album.cover_big || album.cover_medium, album.title || album.id);
 
   const getFullTrack = (track) => ({
     ...track,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ArrowLeft, Play, Plus, Music2, Users, Check, BadgeCheck } from "lucide-react";
+import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 export default function ArtistView({ artistId, onClose, onPlay, onQueue, currentSongId, isPlaying, onOpenAlbum, onOpenArtist }) {
   const [artist, setArtist] = useState(null);
@@ -75,7 +76,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const artistImg = artist.picture_xl || artist.picture_big || artist.picture_medium || '/icon2.png';
+  const artistImg = resolveCover(artist.picture_xl || artist.picture_big || artist.picture_medium, artist.name || artist.id);
 
   const AlbumGrid = ({ items, title }) => {
     if (!items || items.length === 0) return null;
@@ -91,10 +92,10 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
             >
               <div className="relative w-full aspect-square mb-4">
                 <img
-                  src={item.cover_medium || '/icon2.png'}
+                  src={resolveCover(item.cover_medium, item.title || item.id)}
                   alt={item.title}
                   className="w-full h-full object-cover rounded-md shadow-[0_8px_24px_rgba(0,0,0,0.5)] group-hover:shadow-[0_12px_32px_rgba(0,0,0,0.6)] transition-all duration-300"
-                  onError={e => { e.target.src = '/icon2.png'; }}
+                  onError={coverError(item.title || item.id)}
                 />
                 <div className="absolute bottom-2 right-2 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 shadow-xl hover:bg-green-400 hover:scale-105">
                   <Play className="w-5 h-5 fill-black text-black ml-1" />
@@ -184,7 +185,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
             <div className="flex flex-col gap-1">
               {topTracks.map((track, idx) => {
                 const isActive = currentSongId === track.id;
-                const cover = track.album?.cover_medium || track.album?.cover_small || '/icon2.png';
+                const cover = resolveCover(track.album?.cover_medium || track.album?.cover_small, track.title || track.id);
                 return (
                   <div
                     key={track.id || idx}
@@ -206,7 +207,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                         src={cover}
                         alt={track.title}
                         className="w-10 h-10 rounded-sm object-cover flex-shrink-0"
-                        onError={e => { e.target.src = '/icon2.png'; }}
+                        onError={coverError(track.title || track.id)}
                       />
                       <div className="min-w-0 pr-4">
                         <p className={`font-semibold text-base truncate ${isActive ? 'text-green-500' : 'text-white'}`}>
@@ -248,10 +249,10 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                 >
                   <div className="relative w-full aspect-square mb-4 overflow-hidden rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
                     <img
-                      src={simArtist.picture_medium || '/icon2.png'}
+                      src={resolveCover(simArtist.picture_medium, simArtist.name || simArtist.id)}
                       alt={simArtist.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      onError={e => { e.target.src = '/icon2.png'; }}
+                      onError={coverError(simArtist.name || simArtist.id)}
                     />
                   </div>
                   <h3 className="font-semibold text-white text-base truncate mb-1">{simArtist.name}</h3>
