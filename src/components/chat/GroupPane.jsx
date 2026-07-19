@@ -5,6 +5,7 @@ import { Lock, Hash, Users, Music, Settings, KeyRound, Menu, X } from "lucide-re
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "@/lib/socket";
 import { getGroupKey, encryptGroupMessage, decryptGroupMessage } from "@/lib/e2eeClient";
+import { encodeSongMessage, withMediaEnvelopes, encodeGifMessage, encodeStickerMessage } from "@/lib/songEnvelope";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
@@ -21,8 +22,10 @@ const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutra
 /**
  * A group chat pane: E2EE message thread + member sidebar + listening session
  * launcher. `group` comes hydrated from /api/groups (members[].profile).
+ * `nowPlaying` (optional) is the currently playing song for the "share what's
+ * playing" chip in the song picker.
  */
-export default function GroupPane({ me, group, onOpenSettings, onJoinSession, onGroupChanged, onBack, backBadge = 0 }) {
+export default function GroupPane({ me, group, onOpenSettings, onJoinSession, onGroupChanged, onBack, backBadge = 0, nowPlaying }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupKey, setGroupKey] = useState(null);
@@ -32,12 +35,17 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
   const [membersDrawer, setMembersDrawer] = useState(false); // mobile slide-in
   const [replyTo, setReplyTo] = useState(null); // ui message being replied to
   const [editing, setEditing] = useState(null); // ui message being edited
-  const bottomRef = useRef(null);
+  const listRef = useRef(null);
   const socketRef = useRef(null);
   const keyRef = useRef(null);
 
+  // Scroll only the messages container (scrollIntoView would also scroll
+  // ancestor containers / the page, making the whole screen jump).
   const scrollToBottom = () =>
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+    setTimeout(() => {
+      const el = listRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }, 80);
 
   const toUiMessage = useCallback(
     async (row, key) => {
@@ -49,7 +57,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
         failed = text === null;
         text = text ?? "";
       }
-      return {
+      const base = {
         id: row._id || `live-${row.senderId}-${+new Date(row.createdAt)}`,
         senderId: row.senderId,
         senderName: row.senderId === me.id ? me.fullName || "You" : row.senderName,
@@ -65,6 +73,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
         deleted,
         timestamp: new Date(row.createdAt || Date.now()),
       };
+      return withMediaEnvelopes(base);
     },
     [me.id, me.fullName, me.imageUrl]
   );
@@ -170,21 +179,19 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
       const { ciphertext, iv } = await encryptGroupMessage(keyRef.current, text);
 
       const tmpId = `tmp-${Date.now()}-${text.length}`;
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: tmpId,
-          senderId: me.id,
-          senderName: me.fullName || "You",
-          senderImage: me.imageUrl,
-          text,
-          encrypted: true,
-          type: "text",
-          replyToId: reply?.id || null,
-          reactions: [],
-          timestamp: new Date(),
-        },
-      ]);
+      const optimistic = withMediaEnvelopes({
+        id: tmpId,
+        senderId: me.id,
+        senderName: me.fullName || "You",
+        senderImage: me.imageUrl,
+        text,
+        encrypted: true,
+        type: "text",
+        replyToId: reply?.id || null,
+        reactions: [],
+        timestamp: new Date(),
+      });
+      setMessages((prev) => [...prev, optimistic]);
       scrollToBottom();
 
       const res = await fetch(`/api/groups/${group._id}/messages`, {
@@ -217,6 +224,19 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
     } catch (e) {
       console.error("Error sending group message:", e);
     }
+  };
+
+  const sendSong = async (song, note) => {
+    const payload = encodeSongMessage(song, note);
+    await sendMessage(payload);
+  };
+
+  const sendGif = async (url) => {
+    await sendMessage(encodeGifMessage(url));
+  };
+
+  const sendSticker = async (url) => {
+    await sendMessage(encodeStickerMessage(url));
   };
 
   // Shared PATCH runner for react / edit / delete, then sync members via socket.
@@ -257,6 +277,14 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
       isTyping,
       senderName: me.firstName || me.fullName || "Someone",
     });
+
+  const handlePlaySong = (song) => {
+    window.dispatchEvent(new CustomEvent("tt-play-song", { detail: song }));
+  };
+
+  const handleQueueSong = (song) => {
+    window.dispatchEvent(new CustomEvent("tt-queue-song", { detail: song }));
+  };
 
   // Start (or join) a listening session for this group.
   const startSession = async () => {
@@ -346,7 +374,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto py-2 scrollbar">
+        <div ref={listRef} className="flex-1 overflow-y-auto py-2 scrollbar">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400" />
@@ -395,9 +423,10 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
               }}
               onDelete={(msg) => patchMessage(msg, "delete")}
               canDelete={(msg) => msg.senderId === me.id || iAmAdmin}
+              onPlaySong={handlePlaySong}
+              onQueueSong={handleQueueSong}
             />
           )}
-          <div ref={bottomRef} />
         </div>
 
         {typingNames.length > 0 && (
@@ -409,6 +438,10 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
         <MessageInput
           placeholder={`Message ${group.name}`}
           onSend={sendMessage}
+          onSendSong={sendSong}
+          onSendGif={sendGif}
+          onSendSticker={sendSticker}
+          nowPlaying={nowPlaying}
           onTyping={emitTyping}
           disabled={keyStatus !== "ready"}
           disabledHint="Encryption key unavailable on this device"

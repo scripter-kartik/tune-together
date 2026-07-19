@@ -37,8 +37,10 @@ const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutra
  *
  * `initialDm` is `{ id, ts }` — ts makes each request unique so clicking the
  * same friend twice still re-opens that DM after the user navigated away.
+ * `nowPlaying` is the currently playing song for the "share what's playing"
+ * chip in the song picker.
  */
-export default function ChatHub({ initialDm = null, embedded = false, onExit, onJoinSession }) {
+export default function ChatHub({ initialDm = null, embedded = false, onExit, onJoinSession, nowPlaying }) {
   const { user: me, isLoaded } = useUser();
   const router = useRouter();
 
@@ -483,6 +485,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
             <DmPane
               me={me}
               friend={active.friend}
+              nowPlaying={nowPlaying}
               onJoinSession={joinSession}
               onBlock={() => toggleBlock(active.friend)}
               onBack={() => setDrawerOpen(true)}
@@ -493,6 +496,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
           <GroupPane
             me={me}
             group={active.group}
+            nowPlaying={nowPlaying}
             onOpenSettings={() => setShowSettings(true)}
             onJoinSession={joinSession}
             onGroupChanged={loadGroups}

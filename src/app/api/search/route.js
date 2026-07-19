@@ -17,13 +17,16 @@ export async function GET(req) {
     // one mixes types and only returns a handful of songs, whereas searchSongs
     // returns a full page (~20). Run them in parallel; a failure in one
     // category shouldn't sink the whole response.
-    const [songResults, artistResults, albumResults] = await Promise.all([
+    const [songResults, videoResults, artistResults, albumResults] = await Promise.all([
       ytmusic.searchSongs(q).catch(() => []),
+      ytmusic.searchVideos(q).catch(() => []),
       ytmusic.searchArtists(q).catch(() => []),
       ytmusic.searchAlbums(q).catch(() => []),
     ]);
 
-    const songs = (songResults || []).map(item => ({
+    const allSongsAndVideos = [...(songResults || []), ...(videoResults || [])];
+
+    const songs = allSongsAndVideos.map(item => ({
       id: item.videoId,
       title: item.name,
       artist: {

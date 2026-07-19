@@ -286,7 +286,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
 
 export default function Home({
   songs, artists = [], albums = [], topArtists = [], historySongs = [], isSearchQuery = false,
-  onLoadMore, showLoadMore, onPlay, onQueue, currentSongId, isPlaying,
+  onLoadMore, showLoadMore, onPlay, onQueue, currentSongId, currentSong, isPlaying,
   queue, onRemoveFromQueue, onClearQueue, isLoading, error, roomId, socketRef,
   selectedArtistId, onOpenArtist, selectedAlbumId, onOpenAlbum,
   selectedPlaylist, onOpenPlaylist,
@@ -331,6 +331,7 @@ export default function Home({
         <ChatHub
           embedded
           initialDm={chatDm}
+          nowPlaying={currentSong}
           onExit={() => setActiveSidebarView('library')}
           onJoinSession={(newRoomId) => {
             // Join the friend's listening room without leaving the page.

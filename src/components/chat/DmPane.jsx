@@ -1,17 +1,22 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Lock, Ban, MessageCircle, Menu } from "lucide-react";
+import { Lock, Ban, MessageCircle, Menu, Music as MusicIcon } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import { encryptDmTo, decryptDmRow } from "@/lib/e2eeClient";
+import { encodeSongMessage, withMediaEnvelopes, encodeGifMessage, encodeStickerMessage } from "@/lib/songEnvelope";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
 /**
  * A 1:1 E2EE DM thread. `friend` is a public profile { clerkId, name,
  * username, imageUrl }. `me` is the Clerk user object.
+ * `nowPlaying` (optional) is the currently playing song for the "share what's
+ * playing" chip in the song picker.
  */
-export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, backBadge = 0 }) {
+export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, backBadge = 0, nowPlaying }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
@@ -19,18 +24,83 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
   const [error, setError] = useState(null);
   const [replyTo, setReplyTo] = useState(null); // ui message being replied to
   const [editing, setEditing] = useState(null); // ui message being edited
-  const bottomRef = useRef(null);
+  const listRef = useRef(null);
   const socketRef = useRef(null);
+  
+  const searchParams = useSearchParams();
+  const currentRoomId = searchParams?.get("room") || null;
 
+  const sendSessionInvite = async () => {
+    if (!currentRoomId) return;
+    try {
+      const encrypted = await encryptDmTo(me.id, friend.clerkId, "Join my listening session");
+      if (!encrypted) return;
+      
+      const tmpId = `tmp-${Date.now()}-invite`;
+      const optimistic = {
+        id: tmpId,
+        senderId: me.id,
+        senderName: me.fullName || "You",
+        senderImage: me.imageUrl,
+        text: "Join my listening session",
+        encrypted: true,
+        type: "session-invite",
+        roomId: currentRoomId,
+        replyToId: null,
+        reactions: [],
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, optimistic]);
+      scrollToBottom();
+
+      const res = await fetch("/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientId: friend.clerkId,
+          ...encrypted,
+          type: "session-invite",
+          roomId: currentRoomId,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tmpId ? { ...m, id: data.message?._id } : m
+          )
+        );
+        socketRef.current?.emit("send-dm", {
+          recipientId: friend.clerkId,
+          ...encrypted,
+          type: "session-invite",
+          roomId: currentRoomId,
+          messageId: data.message?._id,
+          senderName: me.fullName || "User",
+          senderImage: me.imageUrl,
+        });
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== tmpId));
+      }
+    } catch (e) {
+      console.error("Failed to send invite", e);
+    }
+  };
+
+  // Scroll only the messages container (scrollIntoView would also scroll
+  // ancestor containers / the page, making the whole screen jump).
   const scrollToBottom = () =>
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+    setTimeout(() => {
+      const el = listRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }, 80);
 
   const toUiMessage = useCallback(
     async (row) => {
       const otherId = friend.clerkId;
       const deleted = !!row.deletedForEveryone;
       const text = deleted ? "" : await decryptDmRow(me.id, otherId, row);
-      return {
+      const base = {
         id: row._id || row.messageId || `${row.senderId}-${+new Date(row.createdAt || row.timestamp)}`,
         senderId: row.senderId,
         senderName: row.senderId === me.id ? me.fullName || "You" : row.senderName,
@@ -38,7 +108,8 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
         text: text ?? "",
         failed: !deleted && text === null,
         encrypted: !!row.ciphertext,
-        type: "text",
+        type: row.type || "text",
+        roomId: row.roomId || null,
         replyToId: row.replyToId || null,
         reactions: row.reactions || [],
         edited: !!row.edited,
@@ -46,6 +117,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
         delivered: !!row.delivered || !!row.read,
         timestamp: new Date(row.createdAt || row.timestamp || Date.now()),
       };
+      return withMediaEnvelopes(base);
     },
     [me.id, me.fullName, me.imageUrl, friend.clerkId]
   );
@@ -140,21 +212,19 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
 
       // Optimistic append (we know our own plaintext).
       const tmpId = `tmp-${Date.now()}-${text.length}`;
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: tmpId,
-          senderId: me.id,
-          senderName: me.fullName || "You",
-          senderImage: me.imageUrl,
-          text,
-          encrypted: true,
-          type: "text",
-          replyToId: reply?.id || null,
-          reactions: [],
-          timestamp: new Date(),
-        },
-      ]);
+      const optimistic = withMediaEnvelopes({
+        id: tmpId,
+        senderId: me.id,
+        senderName: me.fullName || "You",
+        senderImage: me.imageUrl,
+        text,
+        encrypted: true,
+        type: "text",
+        replyToId: reply?.id || null,
+        reactions: [],
+        timestamp: new Date(),
+      });
+      setMessages((prev) => [...prev, optimistic]);
       scrollToBottom();
 
       const res = await fetch("/api/chat/send", {
@@ -195,6 +265,19 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
       console.error("Error sending DM:", e);
       setError("Failed to send message");
     }
+  };
+
+  const sendSong = async (song, note) => {
+    const payload = encodeSongMessage(song, note);
+    await sendMessage(payload);
+  };
+
+  const sendGif = async (url) => {
+    await sendMessage(encodeGifMessage(url));
+  };
+
+  const sendSticker = async (url) => {
+    await sendMessage(encodeStickerMessage(url));
   };
 
   // Shared PATCH runner for react / edit / delete, then sync peer via socket.
@@ -253,6 +336,14 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
   const emitTyping = (isTyping) =>
     socketRef.current?.emit("typing", { recipientId: friend.clerkId, isTyping });
 
+  const handlePlaySong = (song) => {
+    window.dispatchEvent(new CustomEvent("tt-play-song", { detail: song }));
+  };
+
+  const handleQueueSong = (song) => {
+    window.dispatchEvent(new CustomEvent("tt-queue-song", { detail: song }));
+  };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-transparent">
       {/* Header */}
@@ -287,6 +378,16 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {currentRoomId && (
+            <button
+              onClick={sendSessionInvite}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition bg-green-500/20 text-green-400 hover:bg-green-500/30"
+              title="Invite to listen together"
+            >
+              <MusicIcon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Listen together</span>
+            </button>
+          )}
           <div className="flex items-center gap-1.5 text-neutral-600" title="Messages are end-to-end encrypted">
             <Lock className="w-3.5 h-3.5" />
             <span className="text-[11px] hidden sm:block">End-to-end encrypted</span>
@@ -304,7 +405,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-2 scrollbar">
+      <div ref={listRef} className="flex-1 overflow-y-auto py-2 scrollbar">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400" />
@@ -335,9 +436,10 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
               setEditing(msg);
             }}
             onDelete={(msg) => patchMessage(msg, "delete")}
+            onPlaySong={handlePlaySong}
+            onQueueSong={handleQueueSong}
           />
         )}
-        <div ref={bottomRef} />
       </div>
 
       {error && (
@@ -350,6 +452,10 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
       <MessageInput
         placeholder={`Message ${friend.name}`}
         onSend={sendMessage}
+        onSendSong={sendSong}
+        onSendGif={sendGif}
+        onSendSticker={sendSticker}
+        nowPlaying={nowPlaying}
         onTyping={emitTyping}
         disabled={!peerHasKeys}
         disabledHint={`${friend.name} hasn't set up secure chat yet`}

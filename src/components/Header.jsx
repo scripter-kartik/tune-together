@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   SignedIn,
   SignedOut,
@@ -13,11 +14,37 @@ import InviteButton from "./InviteButton";
 import FriendsHub from "./FriendsHub";
 import { Search, Home, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function Header({ query, setQuery, handleSearch, roomId }) {
+function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const roomId = externalRoomId || searchParams?.get("room") || null;
+  
+  const [internalQuery, setInternalQuery] = useState("");
+  const query = externalQuery !== undefined ? externalQuery : internalQuery;
+  const setQuery = externalSetQuery !== undefined ? externalSetQuery : setInternalQuery;
+  
   const [mounted, setMounted] = useState(false);
   const [focused, setFocused] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+
+  // Sync internal query with URL if it's acting independently
+  useEffect(() => {
+    if (externalQuery === undefined) {
+      const q = searchParams?.get("q");
+      if (q) setInternalQuery(q);
+    }
+  }, [searchParams, externalQuery]);
+
+  const handleSearch = () => {
+    if (externalHandleSearch) {
+      externalHandleSearch();
+    } else {
+      if (query.trim()) {
+        router.push(`/?q=${encodeURIComponent(query)}${roomId ? `&room=${roomId}` : ""}`);
+      }
+    }
+  };
 
   useEffect(() => {
     if (!query.trim()) {
@@ -187,5 +214,18 @@ export default function Header({ query, setQuery, handleSearch, roomId }) {
         {searchBar}
       </div>
     </div>
+  );
+}
+
+export default function Header(props) {
+  return (
+    <Suspense fallback={<div className="h-14 bg-black"></div>}>
+      <HeaderContent 
+        externalQuery={props.query} 
+        externalSetQuery={props.setQuery} 
+        externalHandleSearch={props.handleSearch} 
+        externalRoomId={props.roomId} 
+      />
+    </Suspense>
   );
 }

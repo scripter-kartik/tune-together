@@ -69,8 +69,25 @@ export default function Page() {
         }, 10000);
       }
     };
+
+    const handlePlaySong = (e) => {
+      const song = e.detail;
+      if (song) handlePlay(song, [song]);
+    };
+
+    const handleQueueSong = (e) => {
+      const song = e.detail;
+      if (song) handleAddToQueue(song);
+    };
+
     window.addEventListener('tt-invite', handleInvite);
-    return () => window.removeEventListener('tt-invite', handleInvite);
+    window.addEventListener('tt-play-song', handlePlaySong);
+    window.addEventListener('tt-queue-song', handleQueueSong);
+    return () => {
+      window.removeEventListener('tt-invite', handleInvite);
+      window.removeEventListener('tt-play-song', handlePlaySong);
+      window.removeEventListener('tt-queue-song', handleQueueSong);
+    };
   }, []);
 
   const terms = [
@@ -474,6 +491,7 @@ export default function Page() {
           onPlay={handlePlay}
           onQueue={handleAddToQueue}
           currentSongId={currentSong?.id}
+          currentSong={currentSong}
           isPlaying={isPlaying}
           queue={queue}
           onRemoveFromQueue={handleRemoveFromQueue}

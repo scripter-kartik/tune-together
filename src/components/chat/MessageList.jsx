@@ -12,7 +12,10 @@ import {
   CheckCheck,
   Ban,
   Copy,
+  Play,
+  Plus,
 } from "lucide-react";
+import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
 /**
  * iOS-style bubble message list shared by DM + group panes.
@@ -78,6 +81,13 @@ function timeLabel(d) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function fmtDuration(s) {
+  if (!s) return "";
+  const m = Math.floor(s / 60);
+  const sec = String(Math.floor(s % 60)).padStart(2, "0");
+  return `${m}:${sec}`;
+}
+
 function groupReactions(reactions, myId) {
   const byEmoji = new Map();
   for (const r of reactions || []) {
@@ -117,10 +127,16 @@ function MessageRow({
   pickerOpen,
   onTogglePicker,
   onOpenSheet,
+  onPlaySong,
+  onQueueSong,
 }) {
   const { onReact, onReply, onEdit, onDelete, allowEdit, allowDelete } = handlers;
   const reactions = groupReactions(msg.reactions, handlers.myId);
   const actionable = !msg.deleted && !msg.failed && (onReact || onReply || onEdit || onDelete);
+
+  // Song messages can't be edited (the envelope format prevents partial edits).
+  const isSong = !!msg.song;
+  const canEdit = allowEdit && !isSong;
 
   // ── Touch gestures: long-press → sheet, horizontal drag → reply ──
   const [dragX, setDragX] = useState(0);
@@ -188,11 +204,14 @@ function MessageRow({
     ? `rounded-[20px] ${groupedPrev ? "rounded-tr-[6px]" : ""} ${groupedNext ? "rounded-br-[6px]" : ""}`
     : `rounded-[20px] ${groupedPrev ? "rounded-tl-[6px]" : ""} ${groupedNext ? "rounded-bl-[6px]" : ""}`;
 
+  const isMediaOnly = (msg.gif || msg.sticker) && !msg.deleted && !msg.failed;
   const skin = msg.deleted
     ? "bg-transparent border border-white/10 text-neutral-500"
-    : mine
-      ? "bg-green-500/80 backdrop-blur-xl border border-green-400/30 text-white shadow-md"
-      : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.05] text-neutral-100 shadow-md";
+    : msg.sticker && !msg.failed
+      ? "bg-transparent text-white"
+      : mine
+        ? "bg-green-500/80 backdrop-blur-xl border border-green-400/30 text-white shadow-md"
+        : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.05] text-neutral-100 shadow-md";
 
   // Invisible trailing spacer reserves room for the in-bubble meta row.
   const metaWidth =
@@ -270,7 +289,7 @@ function MessageRow({
               <Reply className="w-4 h-4" />
             </button>
           )}
-          {allowEdit && (
+          {canEdit && (
             <button
               onClick={() => onEdit(msg)}
               className="p-1.5 text-neutral-400 hover:text-white transition"
@@ -315,7 +334,7 @@ function MessageRow({
             </span>
           )}
 
-          <div className={`relative px-3 py-1.5 ${shape} ${skin}`}>
+          <div className={`relative ${isMediaOnly && !msg.sticker ? 'p-1' : 'px-3 py-1.5'} ${shape} ${skin}`}>
             {/* Quoted reply preview */}
             {msg.replyToId && !msg.deleted && (
               <div
@@ -348,6 +367,116 @@ function MessageRow({
               <p className="text-[13.5px] italic text-neutral-400 py-0.5">
                 🔒 Can't decrypt — sent to another device's keys
               </p>
+            ) : msg.song ? (
+              /* ── Song card bubble ── */
+              <div className="flex flex-col gap-2 py-1 min-w-[220px] max-w-[280px]">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-neutral-900/50">
+                    <img
+                      src={resolveCover(msg.song.album?.cover_medium, msg.song.title)}
+                      alt=""
+                      onError={coverError(msg.song.title)}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold leading-tight truncate ${mine ? "text-white" : "text-white"}`}>
+                      {msg.song.title}
+                    </p>
+                    <p className={`text-xs truncate mt-0.5 ${mine ? "text-white/70" : "text-neutral-400"}`}>
+                      {msg.song.artist?.name}
+                      {msg.song.duration ? ` · ${fmtDuration(msg.song.duration)}` : ""}
+                    </p>
+                  </div>
+                </div>
+                {msg.text && (
+                  <p className={`text-[13.5px] leading-snug ${mine ? "text-white/90" : "text-neutral-200"}`}>
+                    {msg.text}
+                  </p>
+                )}
+                {/* Action buttons: Play + Queue */}
+                {onPlaySong && onQueueSong && (
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPlaySong(msg.song);
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-semibold text-xs transition ${
+                        mine
+                          ? "bg-white/20 hover:bg-white/30 text-white"
+                          : "bg-green-500/20 hover:bg-green-500/30 text-green-400"
+                      }`}
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      Play
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onQueueSong(msg.song);
+                      }}
+                      className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-semibold text-xs transition ${
+                        mine
+                          ? "bg-white/10 hover:bg-white/20 text-white/80"
+                          : "bg-white/[0.08] hover:bg-white/[0.12] text-neutral-300"
+                      }`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Queue
+                    </button>
+                  </div>
+                )}
+                {/* In-bubble meta: time · ticks */}
+                <span
+                  className={`self-end flex items-center gap-1 text-[10px] leading-none mt-0.5 ${
+                    mine ? "text-white/60" : "text-neutral-500"
+                  }`}
+                >
+                  <span>{timeLabel(msg.timestamp)}</span>
+                  {showTicks &&
+                    mine &&
+                    (msg.delivered ? (
+                      <CheckCheck className="w-3.5 h-3.5 text-[#9ff0c0]" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-white/60" />
+                    ))}
+                </span>
+              </div>
+            ) : msg.gif ? (
+              /* ── GIF Bubble ── */
+              <div className="flex flex-col relative min-w-[120px] min-h-[120px]">
+                <img src={msg.gif} alt="GIF" className="w-full max-w-[260px] rounded-xl object-contain" />
+                <span
+                  className={`absolute bottom-1 right-1.5 bg-black/40 backdrop-blur-sm rounded px-1 flex items-center gap-1 text-[10px] leading-none py-0.5 text-white/90 shadow-sm`}
+                >
+                  <span>{timeLabel(msg.timestamp)}</span>
+                  {showTicks &&
+                    mine &&
+                    (msg.delivered ? (
+                      <CheckCheck className="w-3.5 h-3.5 text-[#9ff0c0]" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-white/60" />
+                    ))}
+                </span>
+              </div>
+            ) : msg.sticker ? (
+              /* ── Sticker Bubble ── */
+              <div className="flex flex-col relative">
+                <img src={msg.sticker} alt="Sticker" className="w-36 h-36 object-contain drop-shadow-xl" />
+                <span
+                  className={`absolute bottom-1 right-1.5 bg-black/40 backdrop-blur-sm rounded px-1 flex items-center gap-1 text-[10px] leading-none py-0.5 text-white/90 shadow-sm`}
+                >
+                  <span>{timeLabel(msg.timestamp)}</span>
+                  {showTicks &&
+                    mine &&
+                    (msg.delivered ? (
+                      <CheckCheck className="w-3.5 h-3.5 text-[#9ff0c0]" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-white/60" />
+                    ))}
+                </span>
+              </div>
             ) : (
               <>
                 <p className="text-[15px] leading-[1.35] break-words whitespace-pre-wrap">
@@ -403,13 +532,16 @@ function MessageRow({
 }
 
 /** iOS-style floating action sheet for touch devices. */
-function ActionSheet({ msg, myReaction, handlers, onClose }) {
+function ActionSheet({ msg, myReaction, handlers, onClose, onPlaySong, onQueueSong }) {
   const { onReact, onReply, onEdit, onDelete, allowEdit, allowDelete } = handlers;
 
   const act = (fn) => {
     onClose();
     fn();
   };
+
+  const isSong = !!msg.song;
+  const canEdit = allowEdit && !isSong;
 
   const Row = ({ icon: Icon, label, danger, onClick }) => (
     <button
@@ -454,6 +586,12 @@ function ActionSheet({ msg, myReaction, handlers, onClose }) {
 
           <div className="divide-y divide-white/[0.05]">
             {onReply && <Row icon={Reply} label="Reply" onClick={() => act(() => onReply(msg))} />}
+            {isSong && onPlaySong && (
+              <Row icon={Play} label="Play" onClick={() => act(() => onPlaySong(msg.song))} />
+            )}
+            {isSong && onQueueSong && (
+              <Row icon={Plus} label="Add to Queue" onClick={() => act(() => onQueueSong(msg.song))} />
+            )}
             {msg.text && !msg.deleted && (
               <Row
                 icon={Copy}
@@ -461,7 +599,7 @@ function ActionSheet({ msg, myReaction, handlers, onClose }) {
                 onClick={() => act(() => navigator.clipboard?.writeText(msg.text))}
               />
             )}
-            {allowEdit && <Row icon={Pencil} label="Edit" onClick={() => act(() => onEdit(msg))} />}
+            {canEdit && <Row icon={Pencil} label="Edit" onClick={() => act(() => onEdit(msg))} />}
             {allowDelete && (
               <Row
                 icon={Trash2}
@@ -488,6 +626,8 @@ export default function MessageList({
   onDelete,
   canDelete,
   showTicks,
+  onPlaySong,
+  onQueueSong,
 }) {
   const [pickerFor, setPickerFor] = useState(null); // message id with open desktop picker
   const [sheetMsg, setSheetMsg] = useState(null); // message with open mobile sheet
@@ -569,6 +709,8 @@ export default function MessageList({
           pickerOpen={pickerFor === msg.id}
           onTogglePicker={(id) => setPickerFor((cur) => (cur === id ? null : id))}
           onOpenSheet={setSheetMsg}
+          onPlaySong={onPlaySong}
+          onQueueSong={onQueueSong}
         />
       );
     }
@@ -583,6 +725,8 @@ export default function MessageList({
           myReaction={sheetMsg.reactions?.find((r) => r.userId === myId)?.emoji}
           handlers={handlersFor(sheetMsg)}
           onClose={() => setSheetMsg(null)}
+          onPlaySong={onPlaySong}
+          onQueueSong={onQueueSong}
         />
       )}
     </>

@@ -246,26 +246,26 @@ export default function PlayerFooter({
     onPlayPause();
   };
 
-  // Spacebar toggles play/pause globally (like every music player), unless the
-  // user is typing in a field or has a button/link focused — then let the key
-  // do its native thing instead of hijacking it.
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.code !== "Space" && e.key !== " ") return;
       const t = e.target;
       const tag = t?.tagName;
+      
+      // Only allow spacebar to type normally inside inputs and textareas
       if (
         t?.isContentEditable ||
         tag === "INPUT" ||
         tag === "TEXTAREA" ||
-        tag === "SELECT" ||
-        tag === "BUTTON" ||
-        tag === "A"
+        tag === "SELECT"
       ) {
         return;
       }
-      if (!song || isLoading) return;
+      
+      // Prevent default browser behavior (page scrolling) unconditionally
       e.preventDefault();
+      
+      if (!song || isLoading) return;
       handlePlayPauseClick();
     };
     window.addEventListener("keydown", onKeyDown);
