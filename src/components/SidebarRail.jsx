@@ -81,10 +81,11 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate, onOpe
                   if (onOpenFriends) onOpenFriends();
                   else window.dispatchEvent(new CustomEvent("tt-open-dms"));
                   onNavigate?.();
-                } else if (tab.id === 'chat') {
-                  window.location.href = '/chat';
                 } else {
+                  // 'chat' renders embedded in the main area (music keeps
+                  // playing) — plain tab switch like Home/Explore.
                   onTabChange(tab.id);
+                  if (tab.id === 'chat') onNavigate?.();
                 }
               }}
               className={`w-12 h-12 rounded-[24px] flex items-center justify-center transition-all duration-300 ${

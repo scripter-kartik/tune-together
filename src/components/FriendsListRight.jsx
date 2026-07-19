@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 
 function getInitials(name) {
   if (!name) return '?';
@@ -15,7 +14,6 @@ const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orang
 
 export default function FriendsListRight() {
   const { isSignedIn, isLoaded } = useUser();
-  const router = useRouter();
   const [chatUsers, setChatUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -207,7 +205,7 @@ export default function FriendsListRight() {
             return (
               <div
                 key={user.clerkId}
-                onClick={() => router.push(`/chat?dm=${user.clerkId}`)}
+                onClick={() => window.dispatchEvent(new CustomEvent("tt-open-chat", { detail: { dm: user.clerkId } }))}
                 className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-white/5 transition-all duration-200 cursor-pointer group"
               >
                 <div className="relative flex-shrink-0">

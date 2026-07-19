@@ -11,6 +11,7 @@ import CollectionView from "./CollectionView";
 import PlaylistView from "./PlaylistView";
 import ReactionOverlay from "./ReactionOverlay";
 import SidebarRail from "./SidebarRail";
+import ChatHub from "./chat/ChatHub";
 import { Menu, X, Play, Shuffle, Music4, Plus, Compass } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
@@ -294,6 +295,9 @@ export default function Home({
   const [showRight, setShowRight] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [activeSidebarView, setActiveSidebarView] = useState('library');
+  // DM to open inside the embedded chat view. { id, ts } — ts so re-clicking
+  // the same friend re-triggers the effect in ChatHub.
+  const [chatDm, setChatDm] = useState(null);
 
   // Open a sidebar playlist in-app and close the mobile drawer.
   const openPlaylist = (pl) => {
@@ -303,11 +307,40 @@ export default function Home({
 
   useEffect(() => {
     const openDrawer = () => setShowRight(true);
+    // Any component (e.g. the friends panel) can open a chat in-place without
+    // navigating away — the player keeps running.
+    const openChat = (e) => {
+      setChatDm(e.detail?.dm ? { id: e.detail.dm, ts: Date.now() } : null);
+      setActiveSidebarView('chat');
+      setShowLeft(false);
+      setShowRight(false);
+    };
     window.addEventListener("tt-open-queue", openDrawer);
-    return () => window.removeEventListener("tt-open-queue", openDrawer);
+    window.addEventListener("tt-open-chat", openChat);
+    return () => {
+      window.removeEventListener("tt-open-queue", openDrawer);
+      window.removeEventListener("tt-open-chat", openChat);
+    };
   }, []);
 
   const renderMain = () => {
+    // Chat takes over the main area regardless of any open sub-view — the
+    // player footer (owned by the page shell) keeps running underneath.
+    if (activeSidebarView === 'chat') {
+      return (
+        <ChatHub
+          embedded
+          initialDm={chatDm}
+          onExit={() => setActiveSidebarView('library')}
+          onJoinSession={(newRoomId) => {
+            // Join the friend's listening room without leaving the page.
+            window.dispatchEvent(new CustomEvent("tt-join-room", { detail: newRoomId }));
+            setActiveSidebarView('library');
+          }}
+        />
+      );
+    }
+
     if (selectedPlaylist) {
       return (
         <PlaylistView
