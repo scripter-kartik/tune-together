@@ -12,7 +12,7 @@ import {
 } from "@clerk/nextjs";
 import InviteButton from "./InviteButton";
 import FriendsHub from "./FriendsHub";
-import { Search, Home, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Home, LayoutGrid, ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
 
 function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId }) {
   const router = useRouter();
@@ -27,6 +27,38 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
   const [focused, setFocused] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+
+  // Spotify-style recent searches, persisted locally.
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("tt-recent-searches") || "[]");
+      if (Array.isArray(stored)) setRecentSearches(stored.slice(0, 8));
+    } catch {}
+  }, []);
+
+  const saveRecentSearch = (term) => {
+    const t = term.trim();
+    if (!t) return;
+    setRecentSearches((prev) => {
+      const updated = [t, ...prev.filter((r) => r.toLowerCase() !== t.toLowerCase())].slice(0, 8);
+      try { localStorage.setItem("tt-recent-searches", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  const removeRecentSearch = (term) => {
+    setRecentSearches((prev) => {
+      const updated = prev.filter((r) => r !== term);
+      try { localStorage.setItem("tt-recent-searches", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    try { localStorage.removeItem("tt-recent-searches"); } catch {}
+  };
 
   // Sync internal query with URL if it's acting independently
   useEffect(() => {
@@ -36,12 +68,14 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
     }
   }, [searchParams, externalQuery]);
 
-  const handleSearch = () => {
+  const handleSearch = (overrideQuery) => {
+    const q = (overrideQuery !== undefined ? overrideQuery : query).trim();
+    if (q) saveRecentSearch(q);
     if (externalHandleSearch) {
       externalHandleSearch();
     } else {
-      if (query.trim()) {
-        router.push(`/?q=${encodeURIComponent(query)}${roomId ? `&room=${roomId}` : ""}`);
+      if (q) {
+        router.push(`/?q=${encodeURIComponent(q)}${roomId ? `&room=${roomId}` : ""}`);
       }
     }
   };
@@ -110,6 +144,50 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         </Link>
       </div>
 
+      {/* Recent searches — Spotify-style, shown on focus with an empty query */}
+      {focused && !query.trim() && recentSearches.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-md shadow-2xl border border-neutral-700 overflow-hidden z-50">
+          <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
+            <p className="text-white text-sm font-bold">Recent searches</p>
+            <button
+              onMouseDown={(e) => {
+                e.preventDefault();
+                clearRecentSearches();
+              }}
+              className="text-neutral-400 hover:text-white text-xs font-semibold transition-colors"
+            >
+              Clear all
+            </button>
+          </div>
+          {recentSearches.map((term) => (
+            <div
+              key={term}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setQuery(term);
+                setFocused(false);
+                setTimeout(() => handleSearch(term), 0);
+              }}
+              className="flex items-center gap-3 px-4 py-2 hover:bg-white/10 cursor-pointer group"
+            >
+              <Clock className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+              <p className="flex-1 min-w-0 text-white text-sm font-medium truncate">{term}</p>
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  removeRecentSearch(term);
+                }}
+                className="text-neutral-500 hover:text-white transition-colors flex-shrink-0 p-1"
+                aria-label={`Remove ${term} from recent searches`}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {focused && query.trim() && (suggestions.length > 0 || isFetchingSuggestions) && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-md shadow-2xl border border-neutral-700 overflow-hidden z-50">
           {isFetchingSuggestions && suggestions.length === 0 ? (
@@ -124,7 +202,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                   setQuery(suggestionText);
                   setFocused(false);
                   setTimeout(() => {
-                    handleSearch();
+                    handleSearch(suggestionText);
                   }, 0);
                 }}
                 className="flex items-center gap-3 px-4 py-2 hover:bg-white/10 cursor-pointer"
