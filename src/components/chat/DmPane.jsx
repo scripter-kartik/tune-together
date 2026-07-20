@@ -6,6 +6,7 @@ import { getSocket } from "@/lib/socket";
 import { encryptDmTo, decryptDmRow } from "@/lib/e2eeClient";
 import { encodeSongMessage, withMediaEnvelopes } from "@/lib/songEnvelope";
 import { dmRoomId, currentRoomId } from "@/lib/room";
+import { startSyncSession, getSyncSession } from "@/lib/syncSession";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
@@ -34,12 +35,17 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
   // Track whether we're currently in this DM's room (e.g. after a reload or
   // after tapping Join on an invite bubble).
   useEffect(() => {
-    const check = () => setInSync(currentRoomId() === sharedRoomId);
+    const check = () => {
+      const syncData = getSyncSession();
+      setInSync(syncData?.roomId === sharedRoomId || currentRoomId() === sharedRoomId);
+    };
     check();
     window.addEventListener("tt-join-room", check);
+    window.addEventListener("tt-sync-status", check);
     window.addEventListener("popstate", check);
     return () => {
       window.removeEventListener("tt-join-room", check);
+      window.removeEventListener("tt-sync-status", check);
       window.removeEventListener("popstate", check);
     };
   }, [sharedRoomId]);
@@ -51,6 +57,13 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
       })
     );
     setInSync(true);
+
+    startSyncSession({
+      roomId: sharedRoomId,
+      partnerName: friend.name,
+      partnerImage: friend.imageUrl,
+      partnerId: friend.clerkId,
+    });
 
     const socket = getSocket();
     const seed = () => {

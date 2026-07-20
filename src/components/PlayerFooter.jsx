@@ -8,6 +8,8 @@ import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 import LyricsView from "./LyricsView";
 import NowPlayingView from "./NowPlayingView";
+import { getSyncSession, endSyncSession } from "@/lib/syncSession";
+import { joinRoomId } from "@/lib/room";
 
 export default function PlayerFooter({
   song,
@@ -18,6 +20,8 @@ export default function PlayerFooter({
   roomId,
   socketRef,
   hasSongs,
+  syncSession,
+  onUnsync,
 }) {
   const playerRef = useRef(null);
   const [playerUrl, setPlayerUrl] = useState(null);
@@ -34,6 +38,35 @@ export default function PlayerFooter({
   // react-player renders a <Suspense> internally, which mismatches during SSR.
   // Only mount it on the client to avoid a hydration error.
   useEffect(() => setMounted(true), []);
+
+  const [internalSyncSession, setInternalSyncSession] = useState(null);
+
+  useEffect(() => {
+    setInternalSyncSession(getSyncSession());
+    const onSyncStatus = () => setInternalSyncSession(getSyncSession());
+    window.addEventListener("tt-sync-status", onSyncStatus);
+    return () => window.removeEventListener("tt-sync-status", onSyncStatus);
+  }, []);
+
+  const activeSyncSession = syncSession !== undefined ? syncSession : internalSyncSession;
+
+  const handleUnsync = (e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    if (onUnsync) {
+      onUnsync();
+      return;
+    }
+    endSyncSession();
+    setInternalSyncSession(null);
+    const newRoom = crypto.randomUUID?.() || `r-${Date.now().toString(36)}`;
+    joinRoomId(newRoom);
+    window.dispatchEvent(
+      new CustomEvent("tt-join-room", { detail: { roomId: newRoom, carry: true } })
+    );
+  };
 
   // Player readiness + a seek we couldn't apply yet (media still loading).
   const playerReadyRef = useRef(false);
@@ -449,6 +482,15 @@ export default function PlayerFooter({
         </div>
 
         <div className="flex md:hidden items-center justify-end gap-1 flex-shrink-0 pl-2">
+          {activeSyncSession && (
+            <button
+              onClick={handleUnsync}
+              className="p-2 text-green-400 hover:text-red-400 transition"
+              title="Leave sync session"
+            >
+              <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
+            </button>
+          )}
           <button
             onClick={() => song && setShowLyrics(true)}
             className={`p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
@@ -489,6 +531,15 @@ export default function PlayerFooter({
         </div>
 
         <div className="hidden md:flex items-center justify-end gap-3 w-[30%] min-w-[220px] group">
+          {activeSyncSession && (
+            <div className="flex items-center group/sync relative mr-2">
+               <button onClick={handleUnsync} className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-[11px] font-bold hover:bg-red-500/20 hover:text-red-400 transition-colors whitespace-nowrap border border-green-500/30 hover:border-red-500/30">
+                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse group-hover/sync:bg-red-500" />
+                 <span className="group-hover/sync:hidden">Sync: {activeSyncSession.partnerName}</span>
+                 <span className="hidden group-hover/sync:inline">Leave Session</span>
+               </button>
+            </div>
+          )}
           <button
             onClick={() => song && setShowLyrics(true)}
             className={`transition-colors ${showLyrics ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'} ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}

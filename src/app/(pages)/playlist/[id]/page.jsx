@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Header from "../../../../components/Header";
-import PlayerFooter from "../../../../components/PlayerFooter";
 import { FaPlay, FaPause, FaShuffle } from "react-icons/fa6";
 import { IoMdTime } from "react-icons/io";
-import { getSocket } from "../../../../lib/socket";
-import { resolveRoomId } from "../../../../lib/room";
 import Link from "next/link";
 import { Menu, X, Plus, Check } from "lucide-react";
-import { useActivityTracker } from "../../../../hooks/useActivityTracker"; // ADD THIS IMPORT
 import { PLAYLISTS } from "../../../../lib/constants";
 
 function PlaylistSidebarContent({ currentId }) {
@@ -43,17 +39,14 @@ export default function PlaylistPage() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [songs, setSongs] = useState([]);
-  const [currentSongIndex, setCurrentSongIndex] = useState(null);
+  const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [roomId, setRoomId] = useState("");
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [showLeft, setShowLeft] = useState(false);
   const [addedId, setAddedId] = useState(null);
-  const socketRef = useRef(null);
   const router = useRouter();
 
-  // Redirect to home if user starts typing a global search
   useEffect(() => {
     if (query.trim() !== "") {
       const timer = setTimeout(() => {
@@ -67,40 +60,18 @@ export default function PlaylistPage() {
   const artist = searchParams.get("artist") || "Various Artists";
   const gradient = searchParams.get("gradient") || "from-purple-600 to-blue-600";
 
-  useActivityTracker(songs[currentSongIndex]);
-
   useEffect(() => {
-    const { roomId: room } = resolveRoomId();
-    setRoomId(room);
+    const onGlobalState = (e) => {
+      const { currentSong: gSong, isPlaying: gIsPlaying } = e.detail;
+      if (gSong !== undefined) setCurrentSong(gSong);
+      if (gIsPlaying !== undefined) setIsPlaying(gIsPlaying);
+    };
+    window.addEventListener("tt-global-state", onGlobalState);
+    window.dispatchEvent(new CustomEvent("tt-request-global-state"));
+    return () => window.removeEventListener("tt-global-state", onGlobalState);
   }, []);
 
-  useEffect(() => {
-    if (!roomId) return;
-    const socket = getSocket();
-    socketRef.current = socket;
-
-    const onConnect = () => socket.emit("join-room", roomId);
-
-    const onSyncSong = (data) => {
-      const idx = songs.findIndex((s) => s.id === data.song?.id);
-      if (idx !== -1) setCurrentSongIndex(idx);
-      setIsPlaying(!!data.isPlaying);
-    };
-    const onSyncPlay = (data) => setIsPlaying(!!data.isPlaying);
-
-    socket.on("connect", onConnect);
-    socket.on("sync-song", onSyncSong);
-    socket.on("sync-play", onSyncPlay);
-    if (socket.connected) socket.emit("join-room", roomId);
-
-    // Detach handlers on unmount, but keep the shared socket alive so playback
-    // and the room survive navigation to other pages.
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("sync-song", onSyncSong);
-      socket.off("sync-play", onSyncPlay);
-    };
-  }, [roomId, songs]);
+  const currentSongIndex = currentSong ? songs.findIndex(s => s.id === currentSong.id) : -1;
 
   useEffect(() => {
     const fetchSongs = async () => {
@@ -111,7 +82,6 @@ export default function PlaylistPage() {
         const data = await response.json();
         if (data?.songs?.length) {
           setSongs(data.songs.slice(0, 26));
-          setCurrentSongIndex(0);
         }
       } catch (err) {
         console.error("Error fetching:", err);
@@ -119,58 +89,39 @@ export default function PlaylistPage() {
         setIsLoading(false);
       }
     };
-
     fetchSongs();
   }, [artist]);
 
-  const handlePlaySong = (song, index) => {
-    setCurrentSongIndex(index);
-    setIsPlaying(true);
-    socketRef.current?.emit("change-song", { roomId, song, position: 0 });
+  const handlePlaySong = (song) => {
+    window.dispatchEvent(new CustomEvent("tt-play-song", { detail: { song, list: songs } }));
   };
 
   const handleQueue = (song) => {
-    socketRef.current?.emit("add-to-queue", { roomId, song });
+    window.dispatchEvent(new CustomEvent("tt-queue-song", { detail: song }));
     setAddedId(song.id);
     setTimeout(() => setAddedId((cur) => (cur === song.id ? null : cur)), 1200);
   };
 
-  const handlePlayAll = () => handlePlaySong(songs[0], 0);
+  const handlePlayAll = () => {
+    if (songs.length > 0) handlePlaySong(songs[0]);
+  };
   
   const handleShuffle = () => {
+    if (songs.length === 0) return;
     const i = Math.floor(Math.random() * songs.length);
-    handlePlaySong(songs[i], i);
-  };
-
-  const handleTogglePlayPause = () => {
-    setIsPlaying((prev) => !prev);
-    socketRef.current?.emit("toggle-play", { roomId, isPlaying: !isPlaying });
+    handlePlaySong(songs[i]);
   };
 
   const handleMainPlayPause = () => {
-    if (isPlaying) {
-      handleTogglePlayPause();
-    } else {
-      if (currentSongIndex !== null) {
-        handleTogglePlayPause();
-      } else {
+    if (songs.length > 0) {
+      if (currentSongIndex === -1) {
         handlePlayAll();
       }
     }
   };
 
-  const handleNext = () => {
-    const next = (currentSongIndex + 1) % songs.length;
-    handlePlaySong(songs[next], next);
-  };
-  
-  const handlePrev = () => {
-    const prev = (currentSongIndex - 1 + songs.length) % songs.length;
-    handlePlaySong(songs[prev], prev);
-  };
-
   return (
-    <div className="h-[100dvh] w-full flex flex-col bg-black overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-black overflow-hidden">
       <Header query={query} setQuery={setQuery} handleSearch={() => {
         if (query.trim() !== "") {
           router.push(`/?q=${encodeURIComponent(query)}`);
@@ -244,7 +195,7 @@ export default function PlaylistPage() {
                     onClick={handleMainPlayPause}
                     className="w-12 h-12 sm:w-14 sm:h-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-400 hover:scale-105 transition shadow-lg flex-shrink-0"
                   >
-                    {isPlaying ? (
+                    {isPlaying && currentSongIndex !== -1 ? (
                       <FaPause className="text-black text-lg sm:text-2xl" />
                     ) : (
                       <FaPlay className="text-black text-lg sm:text-2xl ml-1" />
@@ -273,7 +224,7 @@ export default function PlaylistPage() {
                         key={song.id}
                         onMouseEnter={() => setHoveredIndex(index)}
                         onMouseLeave={() => setHoveredIndex(null)}
-                        onClick={() => handlePlaySong(song, index)}
+                        onClick={() => handlePlaySong(song)}
                         className={`
                           grid 
                           grid-cols-[16px_1fr_auto]
@@ -326,19 +277,6 @@ export default function PlaylistPage() {
           </div>
         </div>
       </div>
-
-      <footer className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">
-        <PlayerFooter
-          song={songs[currentSongIndex] ?? null}
-          isPlaying={isPlaying}
-          onPlayPause={handleTogglePlayPause}
-          onNext={handleNext}
-          onPrev={handlePrev}
-          roomId={roomId}
-          socketRef={socketRef}
-          hasSongs={songs.length > 0}
-        />
-      </footer>
     </div>
   );
 }

@@ -2,10 +2,7 @@
 
 import Header from "../components/Header";
 import Home from "../components/Home";
-import PlayerFooter from "../components/PlayerFooter";
-import { useState, useEffect, useMemo, useRef } from "react";
-import { getSocket } from "../lib/socket";
-import { resolveRoomId, joinRoomId } from "../lib/room";
+import { useState, useEffect, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 
 export default function Page() {
@@ -14,13 +11,11 @@ export default function Page() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [songs, setSongs] = useState([]);
   const [visibleCount, setVisibleCount] = useState(20);
-  const [currentSongIndex, setCurrentSongIndex] = useState(null);
   const [currentSong, setCurrentSong] = useState(null);
   const [queue, setQueue] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [roomId, setRoomId] = useState("");
   const [selectedArtistId, setSelectedArtistId] = useState(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
@@ -29,40 +24,17 @@ export default function Page() {
   const [isSearchQuery, setIsSearchQuery] = useState(false);
   const [topArtists, setTopArtists] = useState([]);
   const [historySongs, setHistorySongs] = useState([]);
-  const socketRef = useRef(null);
-
-  const songsRef = useRef([]);
-  const currentSongRef = useRef(null);
-  // The ordered list the current song belongs to (album/playlist/collection/
-  // artist/feed section). Next/Prev walk THIS list, so playback follows
-  // whatever you started it from instead of always the home feed.
-  const playContextRef = useRef([]);
 
   useEffect(() => {
-    songsRef.current = songs;
-  }, [songs]);
-
-  useEffect(() => {
-    currentSongRef.current = currentSong;
-  }, [currentSong]);
-  
-  useEffect(() => {
-    const handlePlaySong = (e) => {
-      const song = e.detail;
-      if (song) handlePlay(song, [song]);
+    const onGlobalState = (e) => {
+      const { currentSong: gSong, isPlaying: gIsPlaying, queue: gQueue } = e.detail;
+      if (gSong !== undefined) setCurrentSong(gSong);
+      if (gIsPlaying !== undefined) setIsPlaying(gIsPlaying);
+      if (gQueue !== undefined && gQueue !== null) setQueue(gQueue);
     };
-
-    const handleQueueSong = (e) => {
-      const song = e.detail;
-      if (song) handleAddToQueue(song);
-    };
-
-    window.addEventListener('tt-play-song', handlePlaySong);
-    window.addEventListener('tt-queue-song', handleQueueSong);
-    return () => {
-      window.removeEventListener('tt-play-song', handlePlaySong);
-      window.removeEventListener('tt-queue-song', handleQueueSong);
-    };
+    window.addEventListener("tt-global-state", onGlobalState);
+    window.dispatchEvent(new CustomEvent("tt-request-global-state"));
+    return () => window.removeEventListener("tt-global-state", onGlobalState);
   }, []);
 
   const terms = [
@@ -88,127 +60,13 @@ export default function Page() {
     []
   );
 
-  useEffect(() => {
-    const { roomId: room } = resolveRoomId();
-    setRoomId(room);
-
-    const handleJoinRoom = (e) => {
-      // detail is either a roomId string (join + reset, e.g. accepting an
-      // invite) or { roomId, carry: true } (start a synced session and bring
-      // our current playback with us to seed the room).
-      const detail = e.detail;
-      const newRoom = typeof detail === "string" ? detail : detail?.roomId;
-      const carry = typeof detail === "object" && !!detail?.carry;
-      if (!newRoom) return;
-
-      joinRoomId(newRoom);
-      setRoomId(newRoom);
-
-      if (carry) {
-        const song = currentSongRef.current;
-        if (song) {
-          // Ask the player for its live position, then seed the new room so
-          // whoever joins next resumes exactly where we are.
-          const probe = { position: 0 };
-          window.dispatchEvent(new CustomEvent("tt-get-position", { detail: probe }));
-          const socket = getSocket();
-          const seed = () =>
-            socket.emit("change-song", { roomId: newRoom, song, position: probe.position });
-          if (socket.connected) {
-            socket.emit("join-room", newRoom);
-            seed();
-          } else {
-            socket.once("connect", () => {
-              socket.emit("join-room", newRoom);
-              seed();
-            });
-          }
-        }
-        return; // keep current song/queue — they now live in the shared room
-      }
-
-      // Reset state for new room
-      setCurrentSong(null);
-      setQueue([]);
-      setIsPlaying(false);
-    };
-
-    window.addEventListener("tt-join-room", handleJoinRoom);
-    return () => window.removeEventListener("tt-join-room", handleJoinRoom);
-  }, []);
-
-  useEffect(() => {
-    if (!roomId) return;
-    const socket = getSocket();
-    socketRef.current = socket;
-
-    const onConnect = () => {
-      socket.emit("join-room", roomId);
-    };
-
-    const applySong = (song) => {
-      if (!song) return;
-      setCurrentSong(song);
-      const idx = songsRef.current.findIndex((s) => s.id === song.id);
-      if (idx !== -1) setCurrentSongIndex(idx);
-    };
-
-    const onRoomState = (state) => {
-      applySong(state.currentSong);
-      setQueue(state.playlist || []);
-      setIsPlaying(!!state.isPlaying);
-      window.dispatchEvent(
-        new CustomEvent("tt-sync", { detail: { type: "state", ...state } })
-      );
-    };
-
-    const onSyncQueue = (data) => {
-      setQueue(data.playlist || []);
-    };
-
-    const onSyncSong = (data) => {
-      applySong(data.song);
-      setIsPlaying(!!data.isPlaying);
-      window.dispatchEvent(new CustomEvent("tt-sync", { detail: { type: "song", ...data } }));
-    };
-
-    const onSyncPlay = (data) => {
-      setIsPlaying(!!data.isPlaying);
-      window.dispatchEvent(new CustomEvent("tt-sync", { detail: { type: "play", ...data } }));
-    };
-
-    const onSyncSeek = (data) => {
-      window.dispatchEvent(new CustomEvent("tt-sync", { detail: { type: "seek", ...data } }));
-    };
-
-    socket.on("connect", onConnect);
-    socket.on("room-state", onRoomState);
-    socket.on("sync-song", onSyncSong);
-    socket.on("sync-play", onSyncPlay);
-    socket.on("sync-seek", onSyncSeek);
-    socket.on("sync-queue", onSyncQueue);
-
-    if (socket.connected) socket.emit("join-room", roomId);
-
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("room-state", onRoomState);
-      socket.off("sync-song", onSyncSong);
-      socket.off("sync-play", onSyncPlay);
-      socket.off("sync-seek", onSyncSeek);
-      socket.off("sync-queue", onSyncQueue);
-    };
-  }, [roomId]);
-
   const fetchSongs = async (searchTerm, isUserSearch = false) => {
     setIsLoading(true);
     setError(null);
     setIsSearchQuery(isUserSearch);
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
-
       if (!res.ok) throw new Error(`API Error: ${res.status} ${res.statusText}`);
-
       const data = await res.json();
       
       if (!data.songs || data.songs.length === 0) {
@@ -221,11 +79,6 @@ export default function Page() {
         setArtists(data.artists || []);
         setAlbums(data.albums || []);
         setVisibleCount(20);
-
-        if (currentSongIndex === null && !currentSongRef.current) {
-          setCurrentSongIndex(0);
-          setCurrentSong(data.songs[0]);
-        }
       }
     } catch (err) {
       console.error("Error fetching results:", err);
@@ -238,8 +91,6 @@ export default function Page() {
     }
   };
 
-  // Home feed: pull from several random topics and mix them so the
-  // fresh page isn't flooded with songs from a single genre/mood.
   const fetchHomeFeed = async (searchTerms) => {
     setIsLoading(true);
     setError(null);
@@ -266,24 +117,20 @@ export default function Page() {
         return a;
       };
 
-      const songs = shuffle(dedupe(results.flatMap((r) => r.songs || [])));
+      const mixedSongs = shuffle(dedupe(results.flatMap((r) => r.songs || [])));
       const artists = dedupe(results.flatMap((r) => r.artists || []));
       const albums = dedupe(results.flatMap((r) => r.albums || []));
 
-      if (songs.length === 0) {
+      if (mixedSongs.length === 0) {
         setError("No results found. Try a different search term.");
         setSongs([]);
         setArtists([]);
         setAlbums([]);
       } else {
-        setSongs(songs);
+        setSongs(mixedSongs);
         setArtists(artists);
         setAlbums(albums);
         setVisibleCount(20);
-        if (currentSongIndex === null && !currentSongRef.current) {
-          setCurrentSongIndex(0);
-          setCurrentSong(songs[0]);
-        }
       }
     } catch (err) {
       console.error("Error fetching home feed:", err);
@@ -296,7 +143,6 @@ export default function Page() {
     }
   };
 
-  // Live search debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
@@ -305,11 +151,9 @@ export default function Page() {
   }, [query]);
 
   useEffect(() => {
-    // Only trigger if we actually have a debounced query
     if (debouncedQuery.trim() !== "") {
       fetchSongs(debouncedQuery, true);
     } else if (isSearchQuery) {
-      // If query is cleared, go back to home feed
       setIsSearchQuery(false);
       fetchHomeFeed(randomTerms);
     }
@@ -323,9 +167,6 @@ export default function Page() {
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 20);
 
-  // Return to the home feed: close any open artist/album/chat view and, if the
-  // user had searched, drop the query and reload the mixed feed. Preserves the
-  // current room (unlike a hard navigation to "/").
   const handleGoHome = () => {
     setSelectedArtistId(null);
     setSelectedAlbumId(null);
@@ -381,7 +222,6 @@ export default function Page() {
     }
   };
 
-  // Load the user's most-listened artists on sign-in.
   useEffect(() => {
     if (isSignedIn) fetchHistory();
     else {
@@ -390,89 +230,30 @@ export default function Page() {
     }
   }, [isSignedIn]);
 
-  // `list` (optional) is the ordered list the song was played from — an album's
-  // tracks, a playlist, a feed section, etc. It becomes the context that Next/
-  // Prev traverse. Falls back to the current feed when not supplied.
   const handlePlay = (song, list) => {
-    const context = Array.isArray(list) && list.length ? list : songs;
-    playContextRef.current = context;
-    const idx = context.findIndex((s) => s.id === song.id);
-    setCurrentSong(song);
-    setCurrentSongIndex(idx !== -1 ? idx : null);
-    setIsPlaying(true);
     recordPlay(song);
-    socketRef.current?.emit("change-song", {
-      roomId,
-      song,
-      position: 0,
-    });
-  };
-
-  const handleTogglePlayPause = () => {
-    setIsPlaying((p) => !p);
+    const context = Array.isArray(list) && list.length ? list : songs;
+    window.dispatchEvent(new CustomEvent("tt-play-song", { detail: { song, list: context } }));
   };
 
   const handleAddToQueue = (song) => {
-    if (!song) return;
-    setQueue((prev) => {
-      if (prev.some((s) => s.id === song.id)) return prev;
-      return [...prev, song];
-    });
-    socketRef.current?.emit("add-to-queue", { roomId, song });
+    window.dispatchEvent(new CustomEvent("tt-queue-song", { detail: song }));
   };
 
   const handleRemoveFromQueue = (songId) => {
-    setQueue((prev) => prev.filter((s) => s.id !== songId));
-    socketRef.current?.emit("remove-from-queue", { roomId, songId });
+    window.dispatchEvent(new CustomEvent("tt-remove-from-queue", { detail: songId }));
   };
 
   const handleClearQueue = () => {
-    setQueue([]);
-    socketRef.current?.emit("clear-queue", { roomId });
-  };
-
-  // Resolve the list Next/Prev should traverse: the active playback context if
-  // we have one, otherwise the current feed.
-  const activeList = () =>
-    playContextRef.current?.length ? playContextRef.current : songs;
-
-  const handleNext = () => {
-    // An explicit user queue always takes priority (server-managed).
-    if (queue.length > 0) {
-      socketRef.current?.emit("next-song", { roomId });
-      return;
-    }
-    const list = activeList();
-    if (list.length === 0) return;
-    const cur = currentSongRef.current;
-    const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;
-    const nextIndex = curIdx === -1 ? 0 : (curIdx + 1) % list.length;
-    const nextSong = list[nextIndex];
-    setCurrentSong(nextSong);
-    setCurrentSongIndex(nextIndex);
-    setIsPlaying(true);
-    socketRef.current?.emit("next-song", { roomId, song: nextSong });
-  };
-
-  const handlePrev = () => {
-    const list = activeList();
-    if (list.length === 0) return;
-    const cur = currentSongRef.current;
-    const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;
-    const prevIndex = curIdx === -1 ? 0 : (curIdx - 1 + list.length) % list.length;
-    const prevSong = list[prevIndex];
-    setCurrentSong(prevSong);
-    setCurrentSongIndex(prevIndex);
-    setIsPlaying(true);
-    socketRef.current?.emit("prev-song", { roomId, song: prevSong });
+    window.dispatchEvent(new CustomEvent("tt-clear-queue"));
   };
 
   const getVisibleSongs = () => songs.slice(0, visibleCount);
 
   return (
-    <div className="w-full h-[100dvh] flex flex-col overflow-hidden bg-black">
+    <div className="w-full h-full flex flex-col overflow-hidden bg-black">
       <header className="flex-shrink-0 z-40 border-b border-neutral-800">
-        <Header query={query} setQuery={setQuery} handleSearch={handleSearch} roomId={roomId} />
+        <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
       </header>
       
       <main className="flex-1 overflow-hidden">
@@ -496,8 +277,6 @@ export default function Page() {
           onClearQueue={handleClearQueue}
           isLoading={isLoading}
           error={error}
-          roomId={roomId}
-          socketRef={socketRef}
           selectedArtistId={selectedArtistId}
           onOpenArtist={setSelectedArtistId}
           selectedAlbumId={selectedAlbumId}
@@ -506,19 +285,6 @@ export default function Page() {
           onOpenPlaylist={setSelectedPlaylist}
         />
       </main>
-      
-      <footer className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">
-        <PlayerFooter
-          song={currentSong}
-          isPlaying={isPlaying}
-          onPlayPause={handleTogglePlayPause}
-          onNext={handleNext}
-          onPrev={handlePrev}
-          roomId={roomId}
-          socketRef={socketRef}
-          hasSongs={songs.length > 0}
-        />
-      </footer>
     </div>
   );
 }

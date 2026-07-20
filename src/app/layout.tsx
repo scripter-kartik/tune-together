@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import GlobalPlayer from "@/components/GlobalPlayer";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -44,8 +45,11 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className="font-sans antialiased">
-          {children}
+        <body className="font-sans antialiased bg-black overflow-hidden h-[100dvh] w-full flex flex-col">
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+            {children}
+          </div>
+          <GlobalPlayer />
         </body>
       </html>
     </ClerkProvider>

@@ -155,8 +155,17 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
   // Embedded: hand the room to the host page so the player keeps running.
   // Standalone: navigate home carrying the room id.
   const joinSession = (roomId) => {
-    if (onJoinSession) onJoinSession(roomId);
-    else router.push(`/?room=${roomId}`);
+    if (onJoinSession) {
+      onJoinSession(roomId);
+    } else {
+      // Standalone /chat route: persist the room so the home page picks it
+      // up via resolveRoomId(), then navigate. We use router.push so Next.js
+      // handles it as a client-side transition when possible.
+      if (typeof window !== "undefined") {
+        localStorage.setItem("tt-room", roomId);
+      }
+      router.push(`/?room=${roomId}`);
+    }
   };
 
   const goBack = () => {

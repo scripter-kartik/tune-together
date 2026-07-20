@@ -68,7 +68,7 @@ export default function BrowsePage() {
   ];
 
   return (
-    <div className="h-[100dvh] w-full overflow-hidden flex flex-col">
+    <div className="h-full w-full overflow-hidden flex flex-col">
       <Header query={query} setQuery={setQuery} handleSearch={() => {
         if (query.trim() !== "") {
           router.push(`/?q=${encodeURIComponent(query)}`);
