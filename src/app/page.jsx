@@ -4,8 +4,8 @@ import Header from "../components/Header";
 import Home from "../components/Home";
 import PlayerFooter from "../components/PlayerFooter";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "../lib/socket";
+import { resolveRoomId, joinRoomId } from "../lib/room";
 import { useChat } from "../hooks/useChat";
 import { useUser } from "@clerk/nextjs";
 
@@ -114,18 +114,13 @@ export default function Page() {
   );
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    let room = params.get("room");
-    if (!room) {
-      room = uuidv4();
-      setIsRoomHost(true);
-      window.history.replaceState({}, "", `?room=${room}`);
-    }
+    const { roomId: room, isHost } = resolveRoomId();
+    if (isHost) setIsRoomHost(true);
     setRoomId(room);
 
     const handleJoinRoom = (e) => {
       const newRoom = e.detail;
-      window.history.pushState({}, "", `?room=${newRoom}`);
+      joinRoomId(newRoom);
       setRoomId(newRoom);
       setIsRoomHost(false);
       // Reset state for new room

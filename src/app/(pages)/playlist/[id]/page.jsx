@@ -7,7 +7,7 @@ import PlayerFooter from "../../../../components/PlayerFooter";
 import { FaPlay, FaPause, FaShuffle } from "react-icons/fa6";
 import { IoMdTime } from "react-icons/io";
 import { getSocket } from "../../../../lib/socket";
-import { v4 as uuidv4 } from "uuid";
+import { resolveRoomId } from "../../../../lib/room";
 import Link from "next/link";
 import { Menu, X, Plus, Check } from "lucide-react";
 import { useActivityTracker } from "../../../../hooks/useActivityTracker"; // ADD THIS IMPORT
@@ -70,13 +70,7 @@ export default function PlaylistPage() {
   useActivityTracker(songs[currentSongIndex]);
 
   useEffect(() => {
-    let room = searchParams.get("room");
-    if (!room) {
-      room = uuidv4();
-      const url = new URL(window.location);
-      url.searchParams.set("room", room);
-      window.history.replaceState({}, "", url);
-    }
+    const { roomId: room } = resolveRoomId();
     setRoomId(room);
   }, []);
 
@@ -84,17 +78,28 @@ export default function PlaylistPage() {
     if (!roomId) return;
     const socket = getSocket();
     socketRef.current = socket;
-    socket.emit("join-room", roomId);
 
-    socket.on("sync-song", (data) => {
+    const onConnect = () => socket.emit("join-room", roomId);
+
+    const onSyncSong = (data) => {
       const idx = songs.findIndex((s) => s.id === data.song?.id);
       if (idx !== -1) setCurrentSongIndex(idx);
       setIsPlaying(!!data.isPlaying);
-    });
+    };
+    const onSyncPlay = (data) => setIsPlaying(!!data.isPlaying);
 
-    socket.on("sync-play", (data) => setIsPlaying(!!data.isPlaying));
+    socket.on("connect", onConnect);
+    socket.on("sync-song", onSyncSong);
+    socket.on("sync-play", onSyncPlay);
+    if (socket.connected) socket.emit("join-room", roomId);
 
-    return () => socket.disconnect();
+    // Detach handlers on unmount, but keep the shared socket alive so playback
+    // and the room survive navigation to other pages.
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("sync-song", onSyncSong);
+      socket.off("sync-play", onSyncPlay);
+    };
   }, [roomId, songs]);
 
   useEffect(() => {
