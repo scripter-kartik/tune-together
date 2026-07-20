@@ -1,10 +1,13 @@
-// GIF & sticker search proxy (Giphy). Keeps the API key server-side and gives
-// the client one stable shape: { results: [{ id, url, preview, width, height }], next }.
+// GIF & sticker search proxy. Keeps the API key server-side and gives the
+// client one stable shape: { results: [{ id, url, preview, width, height }], next }.
 //
-// Works without a key too: falls back to a curated, tag-searchable set so the
-// picker is never empty. Add GIPHY_API_KEY to .env.local (free at
-// developers.giphy.com) to unlock full search + trending.
+// Provider: Tenor v2 (Google) — free key from Google Cloud Console
+// (enable "Tenor API", create an API key, set TENOR_API_KEY in .env.local).
+// Legacy: GIPHY_API_KEY still works if you have an old Giphy key.
+// No key at all? Falls back to a curated, tag-searchable set so the picker
+// is never empty.
 
+const TENOR_KEY = process.env.TENOR_API_KEY;
 const GIPHY_KEY = process.env.GIPHY_API_KEY;
 const PAGE_SIZE = 24;
 
@@ -49,7 +52,8 @@ const CURATED = {
   ],
 };
 
-function curatedResults(type, q, offset) {
+function curatedResults(type, q, pos) {
+  const offset = Math.max(0, parseInt(pos || "0", 10) || 0);
   const pool = CURATED[type] || CURATED.gifs;
   const needle = (q || "").trim().toLowerCase();
   const filtered = needle
@@ -58,21 +62,51 @@ function curatedResults(type, q, offset) {
   const page = filtered.slice(offset, offset + PAGE_SIZE);
   return {
     results: page.map((g) => ({ id: g.id, url: g.url, preview: g.url, width: 200, height: 200 })),
-    next: offset + page.length < filtered.length ? offset + page.length : null,
+    next: offset + page.length < filtered.length ? String(offset + page.length) : null,
     curated: true,
   };
 }
 
-export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type") === "stickers" ? "stickers" : "gifs";
-  const q = searchParams.get("q")?.trim() || "";
-  const offset = Math.max(0, parseInt(searchParams.get("offset") || "0", 10) || 0);
+// --- Tenor v2 -------------------------------------------------------------
 
-  if (!GIPHY_KEY) {
-    return Response.json(curatedResults(type, q, offset));
-  }
+async function tenorResults(type, q, pos) {
+  const endpoint = q ? "search" : "featured";
+  const url = new URL(`https://tenor.googleapis.com/v2/${endpoint}`);
+  url.searchParams.set("key", TENOR_KEY);
+  url.searchParams.set("limit", String(PAGE_SIZE));
+  url.searchParams.set("media_filter", "gif,tinygif");
+  url.searchParams.set("contentfilter", "medium");
+  if (q) url.searchParams.set("q", q);
+  if (pos) url.searchParams.set("pos", pos);
+  if (type === "stickers") url.searchParams.set("searchfilter", "sticker");
 
+  const res = await fetch(url, { next: { revalidate: q ? 0 : 300 } });
+  if (!res.ok) throw new Error(`Tenor ${res.status}`);
+  const data = await res.json();
+
+  const results = (data.results || [])
+    .map((g) => {
+      // tinygif keeps grid bandwidth sane; full gif goes into the message.
+      const tiny = g.media_formats?.tinygif;
+      const full = g.media_formats?.gif || tiny;
+      if (!full?.url) return null;
+      return {
+        id: g.id,
+        url: full.url,
+        preview: tiny?.url || full.url,
+        width: tiny?.dims?.[0] || 200,
+        height: tiny?.dims?.[1] || 200,
+      };
+    })
+    .filter(Boolean);
+
+  return { results, next: data.next && results.length > 0 ? data.next : null };
+}
+
+// --- Giphy (legacy, only if an old key is configured) ---------------------
+
+async function giphyResults(type, q, pos) {
+  const offset = Math.max(0, parseInt(pos || "0", 10) || 0);
   const endpoint = q ? "search" : "trending";
   const url = new URL(`https://api.giphy.com/v1/${type}/${endpoint}`);
   url.searchParams.set("api_key", GIPHY_KEY);
@@ -81,33 +115,43 @@ export async function GET(req) {
   url.searchParams.set("rating", "pg-13");
   if (q) url.searchParams.set("q", q);
 
+  const res = await fetch(url, { next: { revalidate: q ? 0 : 300 } });
+  if (!res.ok) throw new Error(`Giphy ${res.status}`);
+  const data = await res.json();
+
+  const results = (data.data || [])
+    .map((g) => {
+      const preview = g.images?.fixed_width?.url || g.images?.original?.url;
+      const full = g.images?.original?.url || preview;
+      if (!preview) return null;
+      return {
+        id: g.id,
+        url: full,
+        preview,
+        width: parseInt(g.images?.fixed_width?.width || "200", 10),
+        height: parseInt(g.images?.fixed_width?.height || "200", 10),
+      };
+    })
+    .filter(Boolean);
+
+  const total = data.pagination?.total_count ?? 0;
+  const nextOffset = offset + results.length;
+  return { results, next: nextOffset < total && results.length > 0 ? String(nextOffset) : null };
+}
+
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const type = searchParams.get("type") === "stickers" ? "stickers" : "gifs";
+  const q = searchParams.get("q")?.trim() || "";
+  // Opaque cursor: Tenor's `next` token, or a numeric offset for Giphy/curated.
+  const pos = searchParams.get("offset") || "";
+
   try {
-    const res = await fetch(url, { next: { revalidate: q ? 0 : 300 } });
-    if (!res.ok) throw new Error(`Giphy ${res.status}`);
-    const data = await res.json();
-
-    const results = (data.data || [])
-      .map((g) => {
-        // fixed_width keeps bandwidth sane in the grid; original goes in the message.
-        const preview = g.images?.fixed_width?.url || g.images?.original?.url;
-        const full = g.images?.original?.url || preview;
-        if (!preview) return null;
-        return {
-          id: g.id,
-          url: full,
-          preview,
-          width: parseInt(g.images?.fixed_width?.width || "200", 10),
-          height: parseInt(g.images?.fixed_width?.height || "200", 10),
-        };
-      })
-      .filter(Boolean);
-
-    const total = data.pagination?.total_count ?? 0;
-    const nextOffset = offset + results.length;
-    return Response.json({ results, next: nextOffset < total && results.length > 0 ? nextOffset : null });
+    if (TENOR_KEY) return Response.json(await tenorResults(type, q, pos));
+    if (GIPHY_KEY) return Response.json(await giphyResults(type, q, pos));
   } catch (err) {
     console.error("GIF proxy error:", err.message);
-    // Giphy down or key invalid — degrade to curated instead of an empty picker.
-    return Response.json(curatedResults(type, q, offset));
   }
+  // No key, provider down, or key invalid — degrade to curated instead of an empty picker.
+  return Response.json(curatedResults(type, q, pos));
 }
