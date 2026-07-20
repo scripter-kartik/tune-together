@@ -10,9 +10,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import InviteButton from "./InviteButton";
-import FriendsHub from "./FriendsHub";
-import { Search, Home, LayoutGrid, ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
+import { Search, Home, LayoutGrid, Clock, X } from "lucide-react";
 
 function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId }) {
   const router = useRouter();
@@ -254,12 +252,8 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
           {searchBar}
         </div>
 
-        {/* Right - Auth + Invite */}
+        {/* Right - Auth */}
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-          <div className="hidden md:block">
-            <InviteButton roomId={roomId} />
-          </div>
-
           {mounted && (
             <>
               <SignedOut>
@@ -277,10 +271,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                 </div>
               </SignedOut>
               <SignedIn>
-                <div className="flex items-center gap-2 md:gap-3">
-                  <FriendsHub roomId={roomId} />
-                  <UserButton />
-                </div>
+                <UserButton />
               </SignedIn>
             </>
           )}

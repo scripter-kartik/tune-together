@@ -5,7 +5,7 @@ import ChatMessage from "@/lib/models/ChatMessage";
 import { areFriends, rateLimit } from "@/lib/chatGuards";
 import { isBlockedEitherWay } from "@/lib/models/Block";
 
-// Send an E2E-encrypted DM: { recipientId, ciphertext, iv, replyToId? }.
+// Send an E2E-encrypted DM: { recipientId, ciphertext, iv, replyToId?, type?, roomId? }.
 // (Legacy plaintext `message` still accepted while old clients drain.)
 // Safety: friends only, blocks enforced, rate limited.
 export async function POST(req) {
@@ -20,7 +20,7 @@ export async function POST(req) {
       return Response.json({ error: "Sending too fast, slow down" }, { status: 429 });
     }
 
-    const { recipientId, message, ciphertext, iv, replyToId } = await req.json();
+    const { recipientId, message, ciphertext, iv, replyToId, type, roomId } = await req.json();
 
     const hasEncrypted = ciphertext && iv;
     const hasPlain = typeof message === "string" && message.trim();
@@ -35,6 +35,14 @@ export async function POST(req) {
     }
     if (recipientId === user.id) {
       return Response.json({ error: "Cannot message yourself" }, { status: 400 });
+    }
+    const messageType = type === "session-invite" ? "session-invite" : "text";
+    const sessionRoomId =
+      messageType === "session-invite" && typeof roomId === "string" && roomId.length <= 256
+        ? roomId
+        : null;
+    if (messageType === "session-invite" && !sessionRoomId) {
+      return Response.json({ error: "roomId is required for session invites" }, { status: 400 });
     }
 
     await connectDB();
@@ -69,6 +77,8 @@ export async function POST(req) {
       ciphertext: hasEncrypted ? ciphertext : null,
       iv: hasEncrypted ? iv : null,
       replyToId: replyTo,
+      type: messageType,
+      roomId: sessionRoomId,
     });
 
     return Response.json({

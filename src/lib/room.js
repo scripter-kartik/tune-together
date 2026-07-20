@@ -54,3 +54,10 @@ export function currentRoomId() {
   const url = new URL(window.location.href);
   return url.searchParams.get("room") || localStorage.getItem(KEY) || "";
 }
+
+// Deterministic shared room for a 1:1 chat: both friends compute the same id
+// from their two clerk ids, so "listen together" needs no link-passing —
+// each side lands in the same room independently.
+export function dmRoomId(a, b) {
+  return `dm-${[a, b].sort().join("_")}`;
+}

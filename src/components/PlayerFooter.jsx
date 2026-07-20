@@ -208,11 +208,19 @@ export default function PlayerFooter({
     };
     window.addEventListener("tt-sync", onTTSync);
 
+    // Synchronous position probe: dispatchers read e.detail.position after
+    // dispatch (used to carry playback into a shared room).
+    const onGetPosition = (e) => {
+      if (e.detail) e.detail.position = playerRef.current?.getCurrentTime?.() || 0;
+    };
+    window.addEventListener("tt-get-position", onGetPosition);
+
     return () => {
       socket.off("sync-play", onPlay);
       socket.off("sync-song", onSong);
       socket.off("sync-seek", onSeek);
       window.removeEventListener("tt-sync", onTTSync);
+      window.removeEventListener("tt-get-position", onGetPosition);
     };
   }, [socketRef, song?.id]);
 

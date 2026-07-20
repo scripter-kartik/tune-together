@@ -5,8 +5,6 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
   MessageCircle,
-  Plus,
-  Hash,
   ArrowLeft,
   Lock,
   Search,
@@ -15,9 +13,6 @@ import {
 import { getSocket } from "@/lib/socket";
 import { ensureIdentityPublished } from "@/lib/e2eeClient";
 import DmPane from "@/components/chat/DmPane";
-import GroupPane from "@/components/chat/GroupPane";
-import CreateGroupModal from "@/components/chat/CreateGroupModal";
-import GroupSettingsModal from "@/components/chat/GroupSettingsModal";
 
 function presence(lastActive) {
   if (!lastActive) return "offline";
@@ -30,7 +25,7 @@ function presence(lastActive) {
 const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutral-600" };
 
 /**
- * The full chat UI (sidebar + DM/group panes). Renders in two modes:
+ * The full DM chat UI (sidebar + message pane). Renders in two modes:
  *  - embedded (inside the home page's main area, above the player footer) so
  *    music keeps playing while chatting — this is the primary mode;
  *  - standalone (the /chat route) kept for deep links and old bookmarks.
@@ -45,13 +40,10 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
   const router = useRouter();
 
   const [friends, setFriends] = useState([]);
-  const [groups, setGroups] = useState([]);
   const [blocked, setBlocked] = useState(new Set());
-  const [active, setActive] = useState(null); // { type: "dm", friend } | { type: "group", group }
+  const [active, setActive] = useState(null); // { type: "dm", friend }
   const [filter, setFilter] = useState("");
-  const [unread, setUnread] = useState({}); // key ("dm:<id>" | "group:<id>") → count
-  const [showCreate, setShowCreate] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [unread, setUnread] = useState({}); // key ("dm:<id>") -> count
   const [e2eeReady, setE2eeReady] = useState(false);
   // Mobile: the sidebar becomes a Discord-style slide-over drawer when a chat
   // is open. Opened via the header back button or an edge swipe from the left.
@@ -82,7 +74,6 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
         pendingDmRef.current = null;
       }
     });
-    loadGroups();
     loadBlocked();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, me?.id]);
@@ -115,31 +106,6 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     }
   }, []);
 
-  const loadGroups = useCallback(async () => {
-    try {
-      const res = await fetch("/api/groups");
-      const data = await res.json();
-      const gs = data.groups || [];
-      setGroups(gs);
-      // Join socket channels for realtime group messages.
-      getSocket().emit(
-        "join-group-channels",
-        gs.map((g) => g._id)
-      );
-      // Keep the open group fresh (members/keyVersion may have changed).
-      const cur = activeRef.current;
-      if (cur?.type === "group") {
-        const updated = gs.find((g) => g._id === cur.group._id);
-        if (updated) setActive({ type: "group", group: updated });
-        else setActive(null); // removed from the group
-      }
-      return gs;
-    } catch (e) {
-      console.error(e);
-      return [];
-    }
-  }, []);
-
   const loadBlocked = useCallback(async () => {
     try {
       const res = await fetch("/api/blocks");
@@ -150,7 +116,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     }
   }, []);
 
-  // ── Live updates: unread badges + group refresh ───────────────────────────
+  // ── Live updates: unread badges + friend refresh ─────────────────────────
   useEffect(() => {
     if (!me) return;
     const socket = getSocket();
@@ -160,25 +126,15 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
       if (cur?.type === "dm" && cur.friend.clerkId === data.senderId) return; // pane handles it
       setUnread((u) => ({ ...u, [`dm:${data.senderId}`]: (u[`dm:${data.senderId}`] || 0) + 1 }));
     };
-    const onGroupMsg = ({ groupId }) => {
-      const cur = activeRef.current;
-      if (cur?.type === "group" && cur.group._id === groupId) return;
-      setUnread((u) => ({ ...u, [`group:${groupId}`]: (u[`group:${groupId}`] || 0) + 1 }));
-    };
-    const onGroupUpdated = () => loadGroups();
     const onFriendUpdate = () => loadFriends();
 
     socket.on("receive-dm", onDm);
-    socket.on("group-message", onGroupMsg);
-    socket.on("group-updated", onGroupUpdated);
     socket.on("friend-update", onFriendUpdate);
     return () => {
       socket.off("receive-dm", onDm);
-      socket.off("group-message", onGroupMsg);
-      socket.off("group-updated", onGroupUpdated);
       socket.off("friend-update", onFriendUpdate);
     };
-  }, [me, loadGroups, loadFriends]);
+  }, [me, loadFriends]);
 
   const openDm = (friend) => {
     setActive({ type: "dm", friend });
@@ -186,11 +142,15 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     setDrawerOpen(false);
   };
 
-  const openGroup = (group) => {
-    setActive({ type: "group", group });
-    setUnread((u) => ({ ...u, [`group:${group._id}`]: 0 }));
-    setDrawerOpen(false);
-  };
+  // Tell the global NotificationHub which thread is on screen so it doesn't
+  // banner messages the user is already reading.
+  useEffect(() => {
+    const detail = active
+      ? { type: active.type, id: active.friend.clerkId }
+      : null;
+    window.dispatchEvent(new CustomEvent("tt-active-chat", { detail }));
+    return () => window.dispatchEvent(new CustomEvent("tt-active-chat", { detail: null }));
+  }, [active]);
 
   // Embedded: hand the room to the host page so the player keeps running.
   // Standalone: navigate home carrying the room id.
@@ -281,7 +241,6 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
 
   const q = filter.toLowerCase();
   const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
-  const filteredGroups = groups.filter((g) => g.name.toLowerCase().includes(q));
   const filteredFriends = friends.filter(
     (f) => f.name?.toLowerCase().includes(q) || f.username?.toLowerCase().includes(q)
   );
@@ -345,65 +304,15 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar px-2 pb-4">
-          {/* Groups */}
-          <div className="flex items-center justify-between px-2 pt-1 pb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-              Groups
-            </span>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="p-1 text-neutral-400 hover:text-green-400 transition"
-              title="Create a group"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-          {filteredGroups.length === 0 && (
-            <p className="px-2 pb-2 text-xs text-neutral-600">
-              No groups yet — create one with your friends.
-            </p>
-          )}
-          {filteredGroups.map((g) => {
-            const isActive = active?.type === "group" && active.group._id === g._id;
-            const count = unread[`group:${g._id}`] || 0;
-            return (
-              <button
-                key={g._id}
-                onClick={() => openGroup(g)}
-                className={`w-full flex items-center gap-3 px-2 py-2 rounded-xl transition text-left ${
-                  isActive ? "bg-white/10 backdrop-blur-md shadow-sm border border-white/[0.05]" : "hover:bg-white/5 border border-transparent"
-                }`}
-              >
-                <div className="w-9 h-9 rounded-lg bg-green-600/20 flex items-center justify-center text-base flex-shrink-0">
-                  {g.icon || <Hash className="w-4 h-4 text-green-400" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm truncate ${count ? "font-semibold text-white" : "text-neutral-300"}`}>
-                    {g.name}
-                  </p>
-                  <p className="text-[11px] text-neutral-500 truncate">
-                    {g.members.length} members
-                    {g.linkedRoomId && <span className="text-green-400"> · live session</span>}
-                  </p>
-                </div>
-                {count > 0 && (
-                  <span className="bg-green-500 text-black text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                    {count > 99 ? "99+" : count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-
           {/* DMs */}
-          <div className="px-2 pt-4 pb-1.5">
+          <div className="px-2 pt-1 pb-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
               Direct messages
             </span>
           </div>
           {filteredFriends.length === 0 && (
             <p className="px-2 text-xs text-neutral-600">
-              Add friends from the home page to start chatting.
+              No chats yet.
             </p>
           )}
           {filteredFriends.map((f) => {
@@ -492,17 +401,6 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
               backBadge={totalUnread}
             />
           )
-        ) : active?.type === "group" ? (
-          <GroupPane
-            me={me}
-            group={active.group}
-            nowPlaying={nowPlaying}
-            onOpenSettings={() => setShowSettings(true)}
-            onJoinSession={joinSession}
-            onGroupChanged={loadGroups}
-            onBack={() => setDrawerOpen(true)}
-            backBadge={totalUnread}
-          />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6 bg-transparent">
             <div className="w-20 h-20 bg-green-600/15 rounded-full flex items-center justify-center mb-4">
@@ -510,8 +408,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
             </div>
             <h2 className="text-lg font-semibold text-neutral-200">Your messages</h2>
             <p className="text-sm text-neutral-500 mt-1 max-w-sm">
-              Pick a friend or group to start chatting — or create a group and
-              listen to music together while you talk.
+              Pick a friend to start chatting and sync music while you talk.
             </p>
             <p className="text-xs text-neutral-600 mt-4 flex items-center gap-1.5">
               <Lock className="w-3 h-3" /> All messages are end-to-end encrypted
@@ -520,32 +417,6 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
         )}
       </div>
 
-      {/* ── Modals ── */}
-      {showCreate && (
-        <CreateGroupModal
-          me={me}
-          onClose={() => setShowCreate(false)}
-          onCreated={async (group) => {
-            setShowCreate(false);
-            const gs = await loadGroups();
-            const fresh = gs.find((g) => g._id === group._id);
-            if (fresh) openGroup(fresh);
-          }}
-        />
-      )}
-      {showSettings && active?.type === "group" && (
-        <GroupSettingsModal
-          me={me}
-          group={active.group}
-          onClose={() => setShowSettings(false)}
-          onChanged={loadGroups}
-          onLeft={() => {
-            setShowSettings(false);
-            setActive(null);
-            loadGroups();
-          }}
-        />
-      )}
       </div>
     </div>
   );

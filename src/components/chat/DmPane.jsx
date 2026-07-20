@@ -1,12 +1,11 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Lock, Ban, MessageCircle, Menu, Music as MusicIcon } from "lucide-react";
+import { Lock, Ban, MessageCircle, Menu, Music as MusicIcon, Radio } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import { encryptDmTo, decryptDmRow } from "@/lib/e2eeClient";
 import { encodeSongMessage, withMediaEnvelopes } from "@/lib/songEnvelope";
+import { dmRoomId, currentRoomId } from "@/lib/room";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
@@ -26,16 +25,61 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
   const [editing, setEditing] = useState(null); // ui message being edited
   const listRef = useRef(null);
   const socketRef = useRef(null);
-  
-  const searchParams = useSearchParams();
-  const currentRoomId = searchParams?.get("room") || null;
+
+  // Deterministic shared room for this DM — both sides compute the same id,
+  // so syncing never depends on passing a link around.
+  const sharedRoomId = dmRoomId(me.id, friend.clerkId);
+  const [inSync, setInSync] = useState(false);
+
+  // Track whether we're currently in this DM's room (e.g. after a reload or
+  // after tapping Join on an invite bubble).
+  useEffect(() => {
+    const check = () => setInSync(currentRoomId() === sharedRoomId);
+    check();
+    window.addEventListener("tt-join-room", check);
+    window.addEventListener("popstate", check);
+    return () => {
+      window.removeEventListener("tt-join-room", check);
+      window.removeEventListener("popstate", check);
+    };
+  }, [sharedRoomId]);
+
+  const joinSharedSession = (songToSync = null) => {
+    window.dispatchEvent(
+      new CustomEvent("tt-join-room", {
+        detail: { roomId: sharedRoomId, carry: !songToSync },
+      })
+    );
+    setInSync(true);
+
+    const socket = getSocket();
+    const seed = () => {
+      socket.emit("join-room", sharedRoomId);
+      if (songToSync) {
+        socket.emit("change-song", {
+          roomId: sharedRoomId,
+          song: songToSync,
+          position: 0,
+        });
+      }
+    };
+
+    if (socket.connected) seed();
+    else socket.once("connect", seed);
+  };
+
+  // Start (or re-join) the synced session: move our player into the shared
+  // session, then drop an invite with a Join button in the chat.
+  const startSync = async () => {
+    joinSharedSession();
+    await sendSessionInvite();
+  };
 
   const sendSessionInvite = async () => {
-    if (!currentRoomId) return;
     try {
       const encrypted = await encryptDmTo(me.id, friend.clerkId, "Join my listening session");
       if (!encrypted) return;
-      
+
       const tmpId = `tmp-${Date.now()}-invite`;
       const optimistic = {
         id: tmpId,
@@ -45,7 +89,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
         text: "Join my listening session",
         encrypted: true,
         type: "session-invite",
-        roomId: currentRoomId,
+        roomId: sharedRoomId,
         replyToId: null,
         reactions: [],
         timestamp: new Date(),
@@ -60,7 +104,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
           recipientId: friend.clerkId,
           ...encrypted,
           type: "session-invite",
-          roomId: currentRoomId,
+          roomId: sharedRoomId,
         }),
       });
       if (res.ok) {
@@ -74,7 +118,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
           recipientId: friend.clerkId,
           ...encrypted,
           type: "session-invite",
-          roomId: currentRoomId,
+          roomId: sharedRoomId,
           messageId: data.message?._id,
           senderName: me.fullName || "User",
           senderImage: me.imageUrl,
@@ -336,6 +380,11 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
     window.dispatchEvent(new CustomEvent("tt-queue-song", { detail: song }));
   };
 
+  const handleSyncSong = async (song) => {
+    joinSharedSession(song);
+    if (!inSync) await sendSessionInvite();
+  };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-transparent">
       {/* Header */}
@@ -370,16 +419,18 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          {currentRoomId && (
-            <button
-              onClick={sendSessionInvite}
-              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition bg-green-500/20 text-green-400 hover:bg-green-500/30"
-              title="Invite to listen together"
-            >
-              <MusicIcon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Listen together</span>
-            </button>
-          )}
+          <button
+            onClick={startSync}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition ${
+              inSync
+                ? "bg-green-500 text-black hover:bg-green-400"
+                : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+            }`}
+            title={inSync ? "You're in sync — resend invite" : "Sync your music with " + friend.name}
+          >
+            {inSync ? <Radio className="w-3.5 h-3.5" /> : <MusicIcon className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{inSync ? "In sync" : "Listen together"}</span>
+          </button>
           <div className="flex items-center gap-1.5 text-neutral-600" title="Messages are end-to-end encrypted">
             <Lock className="w-3.5 h-3.5" />
             <span className="text-[11px] hidden sm:block">End-to-end encrypted</span>
@@ -430,6 +481,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
             onDelete={(msg) => patchMessage(msg, "delete")}
             onPlaySong={handlePlaySong}
             onQueueSong={handleQueueSong}
+            onSyncSong={handleSyncSong}
           />
         )}
       </div>

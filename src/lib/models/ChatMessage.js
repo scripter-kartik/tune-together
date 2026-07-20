@@ -75,6 +75,18 @@ const chatMessageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    type: {
+      type: String,
+      enum: ["text", "session-invite"],
+      default: "text",
+    },
+    // Internal sync session id used only for the DM "Join" button. The server
+    // never treats this as user-authored text.
+    roomId: {
+      type: String,
+      default: null,
+      maxlength: 256,
+    },
   },
   {
     timestamps: true,

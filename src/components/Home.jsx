@@ -9,10 +9,10 @@ import ArtistView from "./ArtistView";
 import AlbumView from "./AlbumView";
 import CollectionView from "./CollectionView";
 import PlaylistView from "./PlaylistView";
-import ReactionOverlay from "./ReactionOverlay";
 import SidebarRail from "./SidebarRail";
 import ChatHub from "./chat/ChatHub";
-import { Menu, X, Play, Shuffle, Music4, Plus, Compass } from "lucide-react";
+import ChatNotifications from "./chat/ChatNotifications";
+import { Menu, X, Play, Shuffle, Music4 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
@@ -74,7 +74,7 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
             {greeting}{firstName ? <span className="text-indigo-300">, {firstName}</span> : ""}
           </h1>
           <p className="text-neutral-300/80 text-sm md:text-base mt-3 max-w-md">
-            Pick up where the room left off, or press play and let the queue carry the night.
+            Pick a track, jump into chat, and keep the queue moving together.
           </p>
           {onShuffle && (
             <button
@@ -171,7 +171,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         </div>
         <h2 className="text-xl font-bold text-white">Nothing playing yet</h2>
         <p className="text-neutral-400 text-sm max-w-xs">
-          Search for a song, artist, or mood up top to fill your feed and start a listening room.
+          Search for a song, artist, or mood up top to fill your feed.
         </p>
       </div>
     );
@@ -287,7 +287,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
 export default function Home({
   songs, artists = [], albums = [], topArtists = [], historySongs = [], isSearchQuery = false,
   onLoadMore, showLoadMore, onPlay, onQueue, currentSongId, currentSong, isPlaying,
-  queue, onRemoveFromQueue, onClearQueue, isLoading, error, roomId, socketRef,
+  queue, onRemoveFromQueue, onClearQueue, isLoading, error,
   selectedArtistId, onOpenArtist, selectedAlbumId, onOpenAlbum,
   selectedPlaylist, onOpenPlaylist,
 }) {
@@ -334,7 +334,7 @@ export default function Home({
           nowPlaying={currentSong}
           onExit={() => setActiveSidebarView('library')}
           onJoinSession={(newRoomId) => {
-            // Join the friend's listening room without leaving the page.
+            // Join the friend's synced listening session without leaving the page.
             window.dispatchEvent(new CustomEvent("tt-join-room", { detail: newRoomId }));
             setActiveSidebarView('library');
           }}
@@ -393,31 +393,6 @@ export default function Home({
           onOpenAlbum={onOpenAlbum}
           onOpenArtist={onOpenArtist}
         />
-      );
-    }
-
-    if (activeSidebarView === 'explore') {
-      return (
-        <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-gradient-to-b from-[#1a1a2e] to-[#121212]">
-          <h1 className="text-3xl font-black text-white tracking-tight mb-2">Explore Rooms</h1>
-          <p className="text-neutral-400 mb-8">Discover live listening sessions happening right now.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <div 
-              onClick={() => { window.dispatchEvent(new CustomEvent("tt-join-room", { detail: crypto.randomUUID() })); }}
-              className="group h-40 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:border-green-500/50"
-            >
-              <div className="w-12 h-12 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Plus className="w-6 h-6" />
-              </div>
-              <p className="text-white font-bold">Start a New Room</p>
-            </div>
-            {/* Real public rooms appear on the rail, but this serves as a placeholder grid */}
-            <div className="h-40 bg-gradient-to-br from-indigo-900/40 to-black/40 rounded-2xl border border-white/5 flex flex-col items-center justify-center p-6 text-center">
-               <Compass className="w-8 h-8 text-indigo-400 mb-2 opacity-50" />
-               <p className="text-neutral-300 text-sm font-semibold">Active public rooms appear on the left rail automatically!</p>
-            </div>
-          </div>
-        </div>
       );
     }
 
@@ -557,6 +532,14 @@ export default function Home({
 
   return (
     <div className="w-full h-full flex flex-col lg:flex-row gap-0 lg:gap-2 p-0 lg:p-2 bg-black overflow-hidden">
+      <ChatNotifications
+        onOpenDm={(dmId) => {
+          setChatDm({ id: dmId, ts: Date.now() });
+          setActiveSidebarView("chat");
+          setShowLeft(false);
+          setShowRight(false);
+        }}
+      />
 
       {/* Mobile / tablet top bar */}
       <div className="flex lg:hidden gap-2 p-2 bg-[#121212] border-b border-neutral-800 flex-shrink-0">
@@ -598,10 +581,6 @@ export default function Home({
               activeView={activeSidebarView}
               onTabChange={setActiveSidebarView}
               onNavigate={() => setShowLeft(false)}
-              onOpenFriends={() => {
-                window.dispatchEvent(new CustomEvent("tt-open-dms"));
-                setShowRight(true);
-              }}
             />
             <div className="flex-1 bg-[#121212] flex flex-col overflow-hidden min-w-0">
               <div className="flex items-center justify-between p-4 border-b border-neutral-800">
@@ -625,10 +604,6 @@ export default function Home({
       {/* Main content */}
       <div className="flex-1 bg-gradient-to-b from-[#1a1a2e] via-[#121212] to-[#121212] rounded-xl flex flex-col min-w-0 overflow-hidden h-full">
         {renderMain()}
-
-        {roomId && (
-          <ReactionOverlay roomId={roomId} socketRef={socketRef} />
-        )}
       </div>
 
       {/* Right panel - desktop */}
@@ -646,7 +621,7 @@ export default function Home({
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowRight(false)} />
           <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-xs bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-right">
             <div className="flex items-center justify-between p-4 border-b border-neutral-800">
-              <h3 className="text-white font-bold">Queue & Room</h3>
+              <h3 className="text-white font-bold">Queue</h3>
               <button onClick={() => setShowRight(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
                 <X size={20} className="text-white" />
               </button>

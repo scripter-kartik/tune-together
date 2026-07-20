@@ -6,7 +6,6 @@ import PlayerFooter from "../components/PlayerFooter";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { getSocket } from "../lib/socket";
 import { resolveRoomId, joinRoomId } from "../lib/room";
-import { useChat } from "../hooks/useChat";
 import { useUser } from "@clerk/nextjs";
 
 export default function Page() {
@@ -22,8 +21,6 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roomId, setRoomId] = useState("");
-  const [isRoomHost, setIsRoomHost] = useState(false);
-  const [selectedChatUser, setSelectedChatUser] = useState(null);
   const [selectedArtistId, setSelectedArtistId] = useState(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
@@ -32,7 +29,6 @@ export default function Page() {
   const [isSearchQuery, setIsSearchQuery] = useState(false);
   const [topArtists, setTopArtists] = useState([]);
   const [historySongs, setHistorySongs] = useState([]);
-  const [inviteToast, setInviteToast] = useState(null);
   const socketRef = useRef(null);
 
   const songsRef = useRef([]);
@@ -50,26 +46,7 @@ export default function Page() {
     currentSongRef.current = currentSong;
   }, [currentSong]);
   
-  useChat();
-
   useEffect(() => {
-    const handleInvite = (e) => {
-      const data = e.detail;
-      const urlMatch = data.message?.match(/(https?:\/\/[^\s]+)/);
-      const link = urlMatch ? urlMatch[0] : null;
-      if (link) {
-        setInviteToast({
-          senderName: data.senderName,
-          senderImage: data.senderImage,
-          link: link,
-          id: Date.now()
-        });
-        setTimeout(() => {
-          setInviteToast(null);
-        }, 10000);
-      }
-    };
-
     const handlePlaySong = (e) => {
       const song = e.detail;
       if (song) handlePlay(song, [song]);
@@ -80,11 +57,9 @@ export default function Page() {
       if (song) handleAddToQueue(song);
     };
 
-    window.addEventListener('tt-invite', handleInvite);
     window.addEventListener('tt-play-song', handlePlaySong);
     window.addEventListener('tt-queue-song', handleQueueSong);
     return () => {
-      window.removeEventListener('tt-invite', handleInvite);
       window.removeEventListener('tt-play-song', handlePlaySong);
       window.removeEventListener('tt-queue-song', handleQueueSong);
     };
@@ -114,15 +89,44 @@ export default function Page() {
   );
 
   useEffect(() => {
-    const { roomId: room, isHost } = resolveRoomId();
-    if (isHost) setIsRoomHost(true);
+    const { roomId: room } = resolveRoomId();
     setRoomId(room);
 
     const handleJoinRoom = (e) => {
-      const newRoom = e.detail;
+      // detail is either a roomId string (join + reset, e.g. accepting an
+      // invite) or { roomId, carry: true } (start a synced session and bring
+      // our current playback with us to seed the room).
+      const detail = e.detail;
+      const newRoom = typeof detail === "string" ? detail : detail?.roomId;
+      const carry = typeof detail === "object" && !!detail?.carry;
+      if (!newRoom) return;
+
       joinRoomId(newRoom);
       setRoomId(newRoom);
-      setIsRoomHost(false);
+
+      if (carry) {
+        const song = currentSongRef.current;
+        if (song) {
+          // Ask the player for its live position, then seed the new room so
+          // whoever joins next resumes exactly where we are.
+          const probe = { position: 0 };
+          window.dispatchEvent(new CustomEvent("tt-get-position", { detail: probe }));
+          const socket = getSocket();
+          const seed = () =>
+            socket.emit("change-song", { roomId: newRoom, song, position: probe.position });
+          if (socket.connected) {
+            socket.emit("join-room", newRoom);
+            seed();
+          } else {
+            socket.once("connect", () => {
+              socket.emit("join-room", newRoom);
+              seed();
+            });
+          }
+        }
+        return; // keep current song/queue — they now live in the shared room
+      }
+
       // Reset state for new room
       setCurrentSong(null);
       setQueue([]);
@@ -326,7 +330,6 @@ export default function Page() {
     setSelectedArtistId(null);
     setSelectedAlbumId(null);
     setSelectedPlaylist(null);
-    setSelectedChatUser(null);
     if (isSearchQuery || query) {
       setQuery("");
       setIsSearchQuery(false);
@@ -495,8 +498,6 @@ export default function Page() {
           error={error}
           roomId={roomId}
           socketRef={socketRef}
-          onOpenChat={setSelectedChatUser}
-          selectedChatUser={selectedChatUser}
           selectedArtistId={selectedArtistId}
           onOpenArtist={setSelectedArtistId}
           selectedAlbumId={selectedAlbumId}
@@ -518,37 +519,6 @@ export default function Page() {
           hasSongs={songs.length > 0}
         />
       </footer>
-
-      {/* Global Invite Toast */}
-      {inviteToast && (
-        <div className="fixed top-6 right-6 z-[999] max-w-sm w-full bg-[#121212] border border-white/10 rounded-xl shadow-2xl p-4 flex gap-4 animate-fade-up">
-          <img 
-            src={inviteToast.senderImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(inviteToast.senderName || 'user')}`} 
-            alt="avatar" 
-            className="w-12 h-12 rounded-full object-cover bg-neutral-800 flex-shrink-0" 
-          />
-          <div className="flex-1 min-w-0">
-            <h4 className="text-white font-bold text-sm truncate">{inviteToast.senderName}</h4>
-            <p className="text-neutral-400 text-xs mt-0.5 mb-3 line-clamp-2">🎵 invited you to listen together on Tune Together!</p>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => {
-                  window.location.href = inviteToast.link;
-                }}
-                className="bg-green-500 hover:bg-green-400 text-black font-bold text-xs px-4 py-1.5 rounded-full transition-colors flex-1"
-              >
-                Join Room
-              </button>
-              <button 
-                onClick={() => setInviteToast(null)}
-                className="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-4 py-1.5 rounded-full transition-colors"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

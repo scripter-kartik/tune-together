@@ -6,7 +6,7 @@ const { Server } = require("socket.io");
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
-const port = 3000;
+const port = Number(process.env.PORT || 3000);
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -85,7 +85,18 @@ app.prepare().then(() => {
     // DMs are E2E-encrypted: `ciphertext`/`iv` are opaque blobs the server
     // just relays. Legacy plaintext `message` still passes through for old
     // clients. Persistence happens via /api/chat/send in parallel.
-    socket.on("send-dm", ({ recipientId, message, ciphertext, iv, replyToId, messageId, senderName, senderImage }) => {
+    socket.on("send-dm", ({
+      recipientId,
+      message,
+      ciphertext,
+      iv,
+      replyToId,
+      messageId,
+      senderName,
+      senderImage,
+      type,
+      roomId,
+    }) => {
       if (!socketRateOk(socket)) return;
       const recipientSocketId = userSockets.get(recipientId);
 
@@ -99,6 +110,8 @@ app.prepare().then(() => {
           iv,
           replyToId,
           messageId,
+          type,
+          roomId,
           timestamp: new Date(),
         });
 

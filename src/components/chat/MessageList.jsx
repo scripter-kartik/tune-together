@@ -14,6 +14,7 @@ import {
   Copy,
   Play,
   Plus,
+  Radio,
 } from "lucide-react";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
@@ -129,6 +130,7 @@ function MessageRow({
   onOpenSheet,
   onPlaySong,
   onQueueSong,
+  onSyncSong,
 }) {
   const { onReact, onReply, onEdit, onDelete, allowEdit, allowDelete } = handlers;
   const reactions = groupReactions(msg.reactions, handlers.myId);
@@ -394,37 +396,57 @@ function MessageRow({
                     {msg.text}
                   </p>
                 )}
-                {/* Action buttons: Play + Queue */}
-                {onPlaySong && onQueueSong && (
+                {/* Action buttons: Play + Queue + Sync */}
+                {(onPlaySong || onQueueSong || onSyncSong) && (
                   <div className="flex gap-2 mt-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onPlaySong(msg.song);
-                      }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-semibold text-xs transition ${
-                        mine
-                          ? "bg-white/20 hover:bg-white/30 text-white"
-                          : "bg-green-500/20 hover:bg-green-500/30 text-green-400"
-                      }`}
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      Play
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onQueueSong(msg.song);
-                      }}
-                      className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-semibold text-xs transition ${
-                        mine
-                          ? "bg-white/10 hover:bg-white/20 text-white/80"
-                          : "bg-white/[0.08] hover:bg-white/[0.12] text-neutral-300"
-                      }`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Queue
-                    </button>
+                    {onPlaySong && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPlaySong(msg.song);
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold text-xs transition ${
+                          mine
+                            ? "bg-white/20 hover:bg-white/30 text-white"
+                            : "bg-green-500/20 hover:bg-green-500/30 text-green-400"
+                        }`}
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        Play
+                      </button>
+                    )}
+                    {onQueueSong && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onQueueSong(msg.song);
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold text-xs transition ${
+                          mine
+                            ? "bg-white/10 hover:bg-white/20 text-white/80"
+                            : "bg-white/[0.08] hover:bg-white/[0.12] text-neutral-300"
+                        }`}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Queue
+                      </button>
+                    )}
+                    {onSyncSong && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSyncSong(msg.song);
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold text-xs transition ${
+                          mine
+                            ? "bg-black/20 hover:bg-black/30 text-white"
+                            : "bg-green-500 text-black hover:bg-green-400"
+                        }`}
+                      >
+                        <Radio className="w-3.5 h-3.5" />
+                        Sync
+                      </button>
+                    )}
                   </div>
                 )}
                 {/* In-bubble meta: time · ticks */}
@@ -532,7 +554,7 @@ function MessageRow({
 }
 
 /** iOS-style floating action sheet for touch devices. */
-function ActionSheet({ msg, myReaction, handlers, onClose, onPlaySong, onQueueSong }) {
+function ActionSheet({ msg, myReaction, handlers, onClose, onPlaySong, onQueueSong, onSyncSong }) {
   const { onReact, onReply, onEdit, onDelete, allowEdit, allowDelete } = handlers;
 
   const act = (fn) => {
@@ -592,6 +614,9 @@ function ActionSheet({ msg, myReaction, handlers, onClose, onPlaySong, onQueueSo
             {isSong && onQueueSong && (
               <Row icon={Plus} label="Add to Queue" onClick={() => act(() => onQueueSong(msg.song))} />
             )}
+            {isSong && onSyncSong && (
+              <Row icon={Radio} label="Sync with Friend" onClick={() => act(() => onSyncSong(msg.song))} />
+            )}
             {msg.text && !msg.deleted && (
               <Row
                 icon={Copy}
@@ -628,6 +653,7 @@ export default function MessageList({
   showTicks,
   onPlaySong,
   onQueueSong,
+  onSyncSong,
 }) {
   const [pickerFor, setPickerFor] = useState(null); // message id with open desktop picker
   const [sheetMsg, setSheetMsg] = useState(null); // message with open mobile sheet
@@ -711,6 +737,7 @@ export default function MessageList({
           onOpenSheet={setSheetMsg}
           onPlaySong={onPlaySong}
           onQueueSong={onQueueSong}
+          onSyncSong={onSyncSong}
         />
       );
     }
@@ -727,6 +754,7 @@ export default function MessageList({
           onClose={() => setSheetMsg(null)}
           onPlaySong={onPlaySong}
           onQueueSong={onQueueSong}
+          onSyncSong={onSyncSong}
         />
       )}
     </>
