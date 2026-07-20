@@ -5,7 +5,7 @@ import { Lock, Hash, Users, Music, Settings, KeyRound, Menu, X } from "lucide-re
 import { v4 as uuidv4 } from "uuid";
 import { getSocket } from "@/lib/socket";
 import { getGroupKey, encryptGroupMessage, decryptGroupMessage } from "@/lib/e2eeClient";
-import { encodeSongMessage, withMediaEnvelopes, encodeGifMessage, encodeStickerMessage } from "@/lib/songEnvelope";
+import { encodeSongMessage, withMediaEnvelopes } from "@/lib/songEnvelope";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
@@ -231,14 +231,6 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
     await sendMessage(payload);
   };
 
-  const sendGif = async (url) => {
-    await sendMessage(encodeGifMessage(url));
-  };
-
-  const sendSticker = async (url) => {
-    await sendMessage(encodeStickerMessage(url));
-  };
-
   // Shared PATCH runner for react / edit / delete, then sync members via socket.
   const patchMessage = async (msg, action, extra = {}) => {
     try {
@@ -439,8 +431,6 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
           placeholder={`Message ${group.name}`}
           onSend={sendMessage}
           onSendSong={sendSong}
-          onSendGif={sendGif}
-          onSendSticker={sendSticker}
           nowPlaying={nowPlaying}
           onTyping={emitTyping}
           disabled={keyStatus !== "ready"}

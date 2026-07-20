@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Smile, Reply, Pencil, X, Music } from "lucide-react";
 import SongPicker from "./SongPicker";
-import MediaPicker from "./MediaPicker";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
 const QUICK_EMOJIS = ["🔥", "💖", "🎵", "🤯", "😭", "👏", "😂", "❤️", "🙌", "✨"];
@@ -22,8 +21,6 @@ export default function MessageInput({
   placeholder,
   onSend,
   onSendSong,
-  onSendGif,
-  onSendSticker,
   nowPlaying,
   onTyping,
   disabled,
@@ -35,7 +32,6 @@ export default function MessageInput({
   const [value, setValue] = useState("");
   const [showEmojis, setShowEmojis] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const [showMedia, setShowMedia] = useState(false);
   const [attachedSong, setAttachedSong] = useState(null);
   const typingTimeoutRef = useRef(null);
   const inputRef = useRef(null);
@@ -46,7 +42,6 @@ export default function MessageInput({
     if (editing || replyTo) {
       setAttachedSong(null);
       setShowPicker(false);
-      setShowMedia(false);
       inputRef.current?.focus();
     }
   }, [editing, replyTo]);
@@ -91,20 +86,6 @@ export default function MessageInput({
             setShowPicker(false);
             setAttachedSong(song);
             inputRef.current?.focus();
-          }}
-        />
-      )}
-
-      {showMedia && !editing && (
-        <MediaPicker
-          onClose={() => setShowMedia(false)}
-          onPickGif={(url) => {
-            setShowMedia(false);
-            onSendGif?.(url);
-          }}
-          onPickSticker={(url) => {
-            setShowMedia(false);
-            onSendSticker?.(url);
           }}
         />
       )}
@@ -202,23 +183,6 @@ export default function MessageInput({
             <Music className="w-5 h-5" />
           </button>
         )}
-        {!editing && (onSendGif || onSendSticker) && (
-          <button
-            onClick={() => {
-              setShowMedia((s) => !s);
-              setShowEmojis(false);
-              setShowPicker(false);
-            }}
-            disabled={disabled}
-            className={`transition p-1 ${
-              showMedia ? "text-green-400" : "text-neutral-400 hover:text-green-400"
-            } disabled:text-neutral-700`}
-            title="GIFs & Stickers"
-            tabIndex={-1}
-          >
-            <Smile className="w-5 h-5" />
-          </button>
-        )}
         <input
           ref={inputRef}
           type="text"
@@ -232,9 +196,6 @@ export default function MessageInput({
               if (showPicker) {
                 e.preventDefault();
                 setShowPicker(false);
-              } else if (showMedia) {
-                e.preventDefault();
-                setShowMedia(false);
               } else if (attachedSong) {
                 e.preventDefault();
                 setAttachedSong(null);
@@ -258,7 +219,6 @@ export default function MessageInput({
         <button
           onClick={() => {
             setShowEmojis((s) => !s);
-            setShowMedia(false);
             setShowPicker(false);
           }}
           className="text-neutral-400 hover:text-yellow-400 transition p-1"

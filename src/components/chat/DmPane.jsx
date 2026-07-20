@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Lock, Ban, MessageCircle, Menu, Music as MusicIcon } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import { encryptDmTo, decryptDmRow } from "@/lib/e2eeClient";
-import { encodeSongMessage, withMediaEnvelopes, encodeGifMessage, encodeStickerMessage } from "@/lib/songEnvelope";
+import { encodeSongMessage, withMediaEnvelopes } from "@/lib/songEnvelope";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
@@ -272,14 +272,6 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
     await sendMessage(payload);
   };
 
-  const sendGif = async (url) => {
-    await sendMessage(encodeGifMessage(url));
-  };
-
-  const sendSticker = async (url) => {
-    await sendMessage(encodeStickerMessage(url));
-  };
-
   // Shared PATCH runner for react / edit / delete, then sync peer via socket.
   const patchMessage = async (msg, action, extra = {}) => {
     try {
@@ -453,8 +445,6 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
         placeholder={`Message ${friend.name}`}
         onSend={sendMessage}
         onSendSong={sendSong}
-        onSendGif={sendGif}
-        onSendSticker={sendSticker}
         nowPlaying={nowPlaying}
         onTyping={emitTyping}
         disabled={!peerHasKeys}
