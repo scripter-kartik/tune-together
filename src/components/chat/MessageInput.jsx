@@ -169,7 +169,6 @@ export default function MessageInput({
             onClick={() => {
               setShowPicker((s) => !s);
               setShowEmojis(false);
-              setShowMedia(false);
             }}
             disabled={disabled}
             className={`transition p-1 -ml-1 ${
