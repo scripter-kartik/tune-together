@@ -26,7 +26,50 @@ const socketRateOk = (socket) => {
   return ++socket._rl.count <= 25;
 };
 
+let Group, connectDB;
+
+const debounceTimers = new Map();
+function schedulePersist(roomId, room) {
+  if (!Group) return;
+  if (debounceTimers.has(roomId)) {
+    clearTimeout(debounceTimers.get(roomId));
+  }
+  const state = {
+    currentSong: room.currentSong,
+    playlist: [...room.playlist],
+    position: room.position,
+    isPlaying: room.isPlaying,
+    at: room.at,
+  };
+  debounceTimers.set(roomId, setTimeout(async () => {
+    debounceTimers.delete(roomId);
+    try {
+      await Group.updateOne(
+        { linkedRoomId: roomId },
+        {
+          $set: {
+            session: {
+              currentSong: state.currentSong,
+              queue: state.playlist,
+              position: state.position,
+              isPlaying: state.isPlaying,
+              updatedAt: new Date(state.at),
+            }
+          }
+        },
+        { timestamps: false }
+      );
+    } catch (err) {
+      console.error(`Failed to persist room state for ${roomId}:`, err);
+    }
+  }, 1000));
+}
+
 app.prepare().then(() => {
+  connectDB = require("./src/lib/db.js").connectDB;
+  Group = require("./src/lib/models/Group.js").default;
+  connectDB().catch(console.error);
+
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
@@ -42,16 +85,38 @@ app.prepare().then(() => {
     cors: { origin: "*" },
   });
 
-  const getRoom = (roomId) => {
+  const getRoom = async (roomId) => {
     if (!rooms.has(roomId)) {
-      rooms.set(roomId, {
+      const newRoom = {
         currentSong: null,
         isPlaying: false,
         position: 0,
         at: now(),
         playlist: [],
         users: new Set(),
-      });
+      };
+
+      if (Group) {
+        try {
+          const group = await Group.findOne({ linkedRoomId: roomId }, "session").lean();
+          if (group && group.session) {
+            const s = group.session;
+            if (s.currentSong) newRoom.currentSong = s.currentSong;
+            if (s.queue) newRoom.playlist = s.queue;
+            if (s.position !== undefined) newRoom.position = s.position;
+            // Always resume paused with a fresh `at`: clients compute the live
+            // position as position + (now - at), so a stale snapshot timestamp
+            // would seek hours past the end of the song.
+            newRoom.isPlaying = false;
+          }
+        } catch (err) {
+          console.error(`Failed to hydrate room ${roomId}:`, err);
+        }
+      }
+
+      if (!rooms.has(roomId)) {
+        rooms.set(roomId, newRoom);
+      }
     }
     return rooms.get(roomId);
   };
@@ -65,9 +130,9 @@ app.prepare().then(() => {
       console.log(`User ${clerkId} registered with socket ${socket.id}`);
     });
 
-    socket.on("join-room", (roomId) => {
+    socket.on("join-room", async (roomId) => {
       socket.join(roomId);
-      const room = getRoom(roomId);
+      const room = await getRoom(roomId);
       room.users.add(socket.id);
 
       socket.emit("room-state", {
@@ -221,8 +286,8 @@ app.prepare().then(() => {
       }
     });
 
-    socket.on("toggle-play", ({ roomId, isPlaying, position }) => {
-      const room = getRoom(roomId);
+    socket.on("toggle-play", async ({ roomId, isPlaying, position }) => {
+      const room = await getRoom(roomId);
       room.isPlaying = !!isPlaying;
       room.position = typeof position === "number" ? position : room.position;
       room.at = now();
@@ -232,10 +297,11 @@ app.prepare().then(() => {
         position: room.position,
         at: room.at,
       });
+      schedulePersist(roomId, room);
     });
 
-    socket.on("change-song", ({ roomId, song, position = 0 }) => {
-      const room = getRoom(roomId);
+    socket.on("change-song", async ({ roomId, song, position = 0 }) => {
+      const room = await getRoom(roomId);
       room.currentSong = song || null;
       room.position = position || 0;
       room.at = now();
@@ -255,32 +321,36 @@ app.prepare().then(() => {
         position: room.position,
         at: room.at,
       });
+      schedulePersist(roomId, room);
     });
 
-    socket.on("add-to-queue", ({ roomId, song }) => {
+    socket.on("add-to-queue", async ({ roomId, song }) => {
       if (!song) return;
-      const room = getRoom(roomId);
+      const room = await getRoom(roomId);
 
       if (!room.playlist.some((s) => s.id === song.id)) {
         room.playlist.push(song);
       }
       io.to(roomId).emit("sync-queue", { playlist: room.playlist });
+      schedulePersist(roomId, room);
     });
 
-    socket.on("remove-from-queue", ({ roomId, songId }) => {
-      const room = getRoom(roomId);
+    socket.on("remove-from-queue", async ({ roomId, songId }) => {
+      const room = await getRoom(roomId);
       room.playlist = room.playlist.filter((s) => s.id !== songId);
       io.to(roomId).emit("sync-queue", { playlist: room.playlist });
+      schedulePersist(roomId, room);
     });
 
-    socket.on("clear-queue", ({ roomId }) => {
-      const room = getRoom(roomId);
+    socket.on("clear-queue", async ({ roomId }) => {
+      const room = await getRoom(roomId);
       room.playlist = [];
       io.to(roomId).emit("sync-queue", { playlist: room.playlist });
+      schedulePersist(roomId, room);
     });
 
-    socket.on("seek-time", ({ roomId, position }) => {
-      const room = getRoom(roomId);
+    socket.on("seek-time", async ({ roomId, position }) => {
+      const room = await getRoom(roomId);
       room.position = typeof position === "number" ? position : room.position;
       room.at = now();
 
@@ -288,10 +358,11 @@ app.prepare().then(() => {
         position: room.position,
         at: room.at,
       });
+      schedulePersist(roomId, room);
     });
 
-    socket.on("next-song", ({ roomId, song }) => {
-      const room = getRoom(roomId);
+    socket.on("next-song", async ({ roomId, song }) => {
+      const room = await getRoom(roomId);
 
       let nextSong = song || null;
       if (room.playlist.length > 0) {
@@ -310,10 +381,11 @@ app.prepare().then(() => {
         position: 0,
         at: room.at,
       });
+      schedulePersist(roomId, room);
     });
 
-    socket.on("prev-song", ({ roomId, song }) => {
-      const room = getRoom(roomId);
+    socket.on("prev-song", async ({ roomId, song }) => {
+      const room = await getRoom(roomId);
       room.currentSong = song || null;
       room.position = 0;
       room.at = now();
@@ -325,6 +397,7 @@ app.prepare().then(() => {
         position: 0,
         at: room.at,
       });
+      schedulePersist(roomId, room);
     });
 
     socket.on("send-reaction", ({ roomId, reaction, user }) => {

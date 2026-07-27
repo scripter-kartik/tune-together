@@ -12,8 +12,20 @@ export async function GET(req) {
     const ytmusic = await getYTMusic();
     const artist = await ytmusic.getArtist(id);
 
+    // ytmusic-api occasionally returns the same entry twice (or several rows
+    // sharing one mis-parsed id) — drop repeats so the grids don't duplicate.
+    const dedupeById = (items) => {
+      const seen = new Set();
+      return items.filter((item) => {
+        if (!item.id) return true;
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+    };
+
     // Format top songs for the ArtistView
-    const topSongs = (artist.topSongs || []).map(item => ({
+    const topSongs = dedupeById((artist.topSongs || []).map(item => ({
       id: item.videoId,
       title: item.name,
       artist: {
@@ -27,30 +39,30 @@ export async function GET(req) {
       },
       duration: 0,
       youtubeId: item.videoId
-    }));
-    
+    })));
+
     // Format top albums
-    const topAlbums = (artist.topAlbums || []).map(item => ({
+    const topAlbums = dedupeById((artist.topAlbums || []).map(item => ({
       id: item.albumId,
       title: item.name,
       cover_medium: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/icon2.png",
       artist: { name: artist.name }
-    }));
+    })));
 
     // Format top singles
-    const topSingles = (artist.topSingles || []).map(item => ({
+    const topSingles = dedupeById((artist.topSingles || []).map(item => ({
       id: item.albumId,
       title: item.name,
       cover_medium: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/icon2.png",
       artist: { name: artist.name }
-    }));
+    })));
 
     // Format similar artists
-    const similarArtists = (artist.similarArtists || []).map(item => ({
+    const similarArtists = dedupeById((artist.similarArtists || []).map(item => ({
       id: item.artistId,
       name: item.name,
       picture_medium: item.thumbnails?.[item.thumbnails.length - 1]?.url || "/icon2.png"
-    }));
+    })));
 
     return Response.json({
       id: artist.artistId,

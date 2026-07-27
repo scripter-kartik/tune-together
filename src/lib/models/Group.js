@@ -36,6 +36,19 @@ const groupSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Durable, non-authoritative snapshot of the linked room's playback state.
+    // The live source of truth is the in-memory room in server.js; this is
+    // written on change so a session survives everyone leaving (and server
+    // restarts) and members can "Resume listening" where the group left off.
+    // Its own `updatedAt` is nested on purpose — the group's top-level
+    // updatedAt drives chat-list ordering and must NOT move on every play tick.
+    session: {
+      currentSong: { type: mongoose.Schema.Types.Mixed, default: null },
+      queue: { type: [mongoose.Schema.Types.Mixed], default: [] },
+      position: { type: Number, default: 0 }, // ms into currentSong at snapshot
+      isPlaying: { type: Boolean, default: false },
+      updatedAt: { type: Date, default: null },
+    },
   },
   {
     timestamps: true,
@@ -43,6 +56,8 @@ const groupSchema = new mongoose.Schema(
 );
 
 groupSchema.index({ "members.clerkId": 1, updatedAt: -1 });
+// server.js resolves group rooms by their linked room id on join / snapshot.
+groupSchema.index({ linkedRoomId: 1 });
 
 const Group = mongoose.models.Group || mongoose.model("Group", groupSchema);
 

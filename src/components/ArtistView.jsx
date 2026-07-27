@@ -86,7 +86,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
           {items.map((item, i) => (
             <div
-              key={item.id || i}
+              key={`${item.id || "album"}-${i}`}
               onClick={() => onOpenAlbum && onOpenAlbum(item.id)}
               className="group p-4 bg-[#181818] hover:bg-[#282828] rounded-xl cursor-pointer transition-all duration-300"
             >
@@ -188,7 +188,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                 const cover = resolveCover(track.album?.cover_medium || track.album?.cover_small, track.title || track.id);
                 return (
                   <div
-                    key={track.id || idx}
+                    key={`${track.id || "track"}-${idx}`}
                     className={`flex items-center justify-between px-4 py-2.5 rounded-md group cursor-pointer transition-colors ${isActive ? 'bg-white/10' : 'hover:bg-white/10'}`}
                     onClick={() => onPlay(track, topTracks)}
                   >
@@ -243,7 +243,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
               {similarArtists.map((simArtist, i) => (
                 <div
-                  key={simArtist.id || i}
+                  key={`${simArtist.id || "artist"}-${i}`}
                   onClick={() => onOpenArtist && onOpenArtist(simArtist.id)}
                   className="group p-4 bg-[#181818] hover:bg-[#282828] rounded-xl cursor-pointer transition-all duration-300 text-center"
                 >
