@@ -1,5 +1,6 @@
 "use client";
 import { X, ListMusic, Trash2 } from "lucide-react";
+import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
 export default function QueueList({ queue = [], onRemove, onClear }) {
   return (
@@ -36,9 +37,10 @@ export default function QueueList({ queue = [], onRemove, onClear }) {
                 {idx + 1}
               </span>
               <img
-                src={song.album?.cover_small}
+                src={resolveCover(song.album?.cover_small || song.album?.cover_medium, song.title || song.id)}
                 alt=""
-                className="w-9 h-9 rounded flex-shrink-0"
+                className="w-9 h-9 rounded flex-shrink-0 object-cover bg-neutral-800"
+                onError={coverError(song.title || song.id)}
               />
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-white truncate">{song.title}</p>

@@ -148,7 +148,7 @@ const ListeningUsers = () => {
       <div className="flex-shrink-0 border-b border-gray-800/50">
         <div className="flex items-center px-4 py-3 gap-3">
           <Users className="w-5 h-5" />
-          <h1 className="font-semibold text-base">Community</h1>
+          <h1 className="font-semibold text-base">Friends</h1>
         </div>
 
         <div className="flex gap-1 px-4 pb-3">
@@ -196,7 +196,7 @@ const ListeningUsers = () => {
           <div className="flex flex-col items-center justify-center h-full px-4 text-center">
             <Users className="w-12 h-12 text-gray-600 mb-3" />
             <p className="text-gray-400 text-sm">
-              {filter === 'online' ? 'No users online right now' : 'No users found'}
+              {filter === 'online' ? 'No friends online right now' : 'No friends found'}
             </p>
           </div>
         ) : (

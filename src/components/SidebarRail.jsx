@@ -1,6 +1,7 @@
 "use client";
 
 import { Home, Disc, MessageCircle } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 
 /**
  * Discord-style leftmost icon rail. On desktop it's a static column; on
@@ -31,34 +32,45 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
 
       <div className="w-8 h-[2px] bg-white/10 rounded-full mb-2" />
 
-      {/* Main Tabs */}
-      {tabs.map((tab) => {
-        const isActive = activeView === tab.id;
-        return (
-          <div key={tab.id} className="relative group flex items-center justify-center w-full">
-            {/* Discord-like left indicator pill */}
-            <div
-              className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-300 ${
-                isActive ? "h-10" : "h-0 group-hover:h-5"
-              }`}
-            />
-            <button
-              onClick={() => {
-                onTabChange(tab.id);
-                if (tab.id === "chat") onNavigate?.();
-              }}
-              className={`w-12 h-12 rounded-[24px] flex items-center justify-center transition-all duration-300 ${
-                isActive
-                  ? "bg-green-500 text-black rounded-[16px]"
-                  : "bg-[#181818] text-neutral-400 hover:bg-green-500 hover:text-black hover:rounded-[16px]"
-              }`}
-              title={tab.label}
-            >
-              <tab.icon className="w-6 h-6" />
-            </button>
-          </div>
-        );
-      })}
+      <div className="flex-1 flex flex-col gap-4 items-center w-full">
+        {tabs.map((tab) => {
+          const isActive = activeView === tab.id;
+          return (
+            <div key={tab.id} className="relative group flex items-center justify-center w-full">
+              {/* Discord-like left indicator pill */}
+              <div
+                className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-300 ${
+                  isActive ? "h-10" : "h-0 group-hover:h-5"
+                }`}
+              />
+              <button
+                onClick={() => {
+                  onTabChange(tab.id);
+                  if (tab.id === "chat") onNavigate?.();
+                }}
+                className={`w-12 h-12 rounded-[24px] flex items-center justify-center transition-all duration-300 ${
+                  isActive
+                    ? "bg-green-500 text-black rounded-[16px]"
+                    : "bg-[#181818] text-neutral-400 hover:bg-green-500 hover:text-black hover:rounded-[16px]"
+                }`}
+                title={tab.label}
+              >
+                <tab.icon className="w-6 h-6" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-auto mb-4 flex flex-col gap-4 items-center w-full">
+        <UserButton 
+          appearance={{
+            elements: {
+              userButtonAvatarBox: "w-10 h-10 hover:scale-105 transition-all shadow-lg"
+            }
+          }}
+        />
+      </div>
     </div>
   );
 }
