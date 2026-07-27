@@ -218,9 +218,9 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         <section>
           <SectionHeader title="Your top artists" subtitle="On heavy rotation lately" />
           <div className="flex overflow-x-auto pb-4 gap-4 md:gap-5 scrollbar-hide px-4">
-            {topArtists.map((artist) => (
+            {topArtists.map((artist, idx) => (
               <div
-                key={artist.id || artist.name}
+                key={`${artist.id || artist.name}-${idx}`}
                 onClick={() => artist.id && onOpenArtist?.(artist.id)}
                 className={`flex-shrink-0 w-32 md:w-40 flex flex-col items-center gap-3 group p-3 rounded-xl transition-all duration-300 ${artist.id ? "cursor-pointer hover:bg-white/5" : ""}`}
               >
@@ -610,6 +610,7 @@ export default function Home({
       <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
         <RightPanel
           queue={queue}
+          currentSong={currentSong}
           onRemoveFromQueue={onRemoveFromQueue}
           onClearQueue={onClearQueue}
         />
@@ -629,6 +630,7 @@ export default function Home({
             <div className="flex-1 overflow-hidden">
               <RightPanel
                 queue={queue}
+                currentSong={currentSong}
                 onRemoveFromQueue={onRemoveFromQueue}
                 onClearQueue={onClearQueue}
               />

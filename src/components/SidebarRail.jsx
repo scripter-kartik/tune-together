@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Disc, MessageCircle } from "lucide-react";
+import { Home, Disc, MessageCircle, Search } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 
 /**
@@ -17,6 +17,7 @@ import { UserButton } from "@clerk/nextjs";
 export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
   const tabs = [
     { id: "library", icon: Home, label: "Home" },
+    { id: "search", icon: Search, label: "Search" },
     { id: "chat", icon: MessageCircle, label: "Chats" },
   ];
 
@@ -45,6 +46,12 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
               />
               <button
                 onClick={() => {
+                  if (tab.id === "search") {
+                    const searchInput = document.querySelector('input[type="text"][placeholder*="play"]');
+                    if (searchInput) searchInput.focus();
+                    onNavigate?.();
+                    return;
+                  }
                   onTabChange(tab.id);
                   if (tab.id === "chat") onNavigate?.();
                 }}

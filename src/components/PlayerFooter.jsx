@@ -5,6 +5,7 @@ import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
 import { MicVocal, ListMusic } from "lucide-react";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
+import { useLyrics } from "@/hooks/useLyrics";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 import LyricsView from "./LyricsView";
 import NowPlayingView from "./NowPlayingView";
@@ -133,62 +134,7 @@ export default function PlayerFooter({
     };
   }, [song?.id]);
 
-  // Prefetch lyrics the instant the song changes (before the user clicks the
-  // lyrics button), and cache them in memory so opening the panel is instant.
-  const lyricsCacheRef = useRef(new Map());
-  const [lyricsData, setLyricsData] = useState(null);
-  const [lyricsStatus, setLyricsStatus] = useState("idle"); // idle|loading|ready|error
-
-  useEffect(() => {
-    if (!song) {
-      setLyricsData(null);
-      setLyricsStatus("idle");
-      return;
-    }
-
-    const id = song.id;
-    const cache = lyricsCacheRef.current;
-    if (cache.has(id)) {
-      const cached = cache.get(id);
-      setLyricsData(cached);
-      setLyricsStatus(cached ? "ready" : "error");
-      return;
-    }
-
-    let cancelled = false;
-    setLyricsData(null);
-    setLyricsStatus("loading");
-
-    const params = new URLSearchParams({
-      id: String(id),
-      title: song.title || "",
-      artist: song.artist?.name || "",
-      album: song.album?.title || "",
-      duration: song.duration ? String(song.duration) : "",
-    });
-
-    fetch(`/api/lyrics?${params.toString()}`)
-      .then((r) => r.json())
-      .then((res) => {
-        if (cancelled) return;
-        if (res.syncedLyrics || res.plainLyrics) {
-          cache.set(id, res);
-          setLyricsData(res);
-          setLyricsStatus("ready");
-        } else {
-          cache.set(id, null);
-          setLyricsData(null);
-          setLyricsStatus("error");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLyricsStatus("error");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [song?.id]);
+  const { lyricsData, lyricsStatus } = useLyrics(song);
 
   // Broadcast "now playing" for the activity/presence feature.
   useEffect(() => {
@@ -271,6 +217,7 @@ export default function PlayerFooter({
 
   const handleProgress = ({ playedSeconds }) => {
     if (!isSeeking.current) setCurrentTime(playedSeconds);
+    window.dispatchEvent(new CustomEvent("tt-time-update", { detail: playedSeconds }));
   };
 
   const handleDuration = (d) => setDuration(d || 0);

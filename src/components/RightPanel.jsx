@@ -2,10 +2,12 @@
 import { useState } from "react";
 import QueueList from "./QueueList";
 import ListeningUsers from "./ListeningUsers";
-import { ListMusic, Users } from "lucide-react";
+import SidebarLyrics from "./SidebarLyrics";
+import { ListMusic, Users, MicVocal } from "lucide-react";
 
 export default function RightPanel({
   queue = [],
+  currentSong,
   onRemoveFromQueue,
   onClearQueue,
 }) {
@@ -36,15 +38,29 @@ export default function RightPanel({
           <Users className="w-4 h-4" />
           Friends
         </button>
+        <button
+          onClick={() => setActiveTab("lyrics")}
+          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === "lyrics"
+              ? "border-green-400 text-green-400"
+              : "border-transparent text-gray-500 hover:text-white"
+          }`}
+        >
+          <MicVocal className="w-4 h-4" />
+          Lyrics
+        </button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">
         {activeTab === "queue" ? (
           <QueueList
             queue={queue}
+            currentSong={currentSong}
             onRemove={onRemoveFromQueue}
             onClear={onClearQueue}
           />
+        ) : activeTab === "lyrics" ? (
+          <SidebarLyrics song={currentSong} />
         ) : (
           <ListeningUsers />
         )}
