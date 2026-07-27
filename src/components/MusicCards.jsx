@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from "react";
-import { Plus, Check, Play, Music2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Check, Play, Music2, ListMusic, MoreVertical, X } from "lucide-react";
 import SongDetailsModal from "./SongDetailsModal";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
+import { useUser } from "@clerk/nextjs";
 
 function Equalizer() {
   return (
@@ -16,14 +17,133 @@ function Equalizer() {
   );
 }
 
+function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist }) {
+  const { isSignedIn } = useUser();
+  const [playlists, setPlaylists] = useState([]);
+  const [showPlaylists, setShowPlaylists] = useState(false);
+  const [addedToId, setAddedToId] = useState(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      fetch("/api/playlists")
+        .then(r => r.json())
+        .then(d => { if (d.success) setPlaylists(d.playlists); });
+    }
+  }, [isSignedIn]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
+
+  const addToPlaylist = async (playlistId) => {
+    setAddedToId(playlistId);
+    await fetch("/api/playlists", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playlistId, song, action: "add" }),
+    });
+    setTimeout(() => { setAddedToId(null); onClose(); }, 800);
+  };
+
+  // Clamp menu so it doesn't go off screen
+  const style = {
+    position: "fixed",
+    top: position.y,
+    left: position.x,
+    zIndex: 9999,
+  };
+
+  return (
+    <div
+      ref={menuRef}
+      style={style}
+      className="bg-[#282828] border border-neutral-700 rounded-lg shadow-2xl shadow-black/60 py-1 min-w-[200px] text-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+    >
+      <button
+        onClick={() => { onPlay(song); onClose(); }}
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-white hover:bg-white/10 transition-colors text-left"
+      >
+        <Play className="w-4 h-4 fill-current" /> Play now
+      </button>
+      <button
+        onClick={() => { onQueue(song); onClose(); }}
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-white hover:bg-white/10 transition-colors text-left"
+      >
+        <Plus className="w-4 h-4" /> Add to queue
+      </button>
+
+      {isSignedIn && (
+        <>
+          <div className="h-px bg-neutral-700 my-1" />
+          <button
+            onClick={() => setShowPlaylists(!showPlaylists)}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-white hover:bg-white/10 transition-colors text-left"
+          >
+            <ListMusic className="w-4 h-4" />
+            Add to playlist
+            <span className="ml-auto text-neutral-400">{showPlaylists ? "▲" : "▶"}</span>
+          </button>
+
+          {showPlaylists && (
+            <div className="border-t border-neutral-700 bg-[#1a1a1a]">
+              {playlists.length === 0 ? (
+                <p className="px-4 py-2 text-neutral-500 text-xs">No playlists yet. Create one in Your Library.</p>
+              ) : (
+                playlists.map(pl => (
+                  <button
+                    key={pl._id}
+                    onClick={() => addToPlaylist(pl._id)}
+                    className="w-full flex items-center justify-between px-4 py-2 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors text-left"
+                  >
+                    <span className="truncate">{pl.name}</span>
+                    {addedToId === pl._id && <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {song.artist?.id && (
+        <>
+          <div className="h-px bg-neutral-700 my-1" />
+          <button
+            onClick={() => { onOpenArtist?.(song.artist.id); onClose(); }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors text-left"
+          >
+            <Music2 className="w-4 h-4" /> Go to artist
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPlaying, onOpenArtist }) {
   const [addedId, setAddedId] = useState(null);
   const [selectedSong, setSelectedSong] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null); // { song, x, y }
 
   const handleQueue = (song) => {
     onQueue(song);
     setAddedId(song.id);
     setTimeout(() => setAddedId((cur) => (cur === song.id ? null : cur)), 1200);
+  };
+
+  const handleContextMenu = (e, song) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Clamp to viewport
+    const x = Math.min(e.clientX, window.innerWidth - 220);
+    const y = Math.min(e.clientY, window.innerHeight - 280);
+    setContextMenu({ song, x, y });
   };
 
   return (
@@ -35,6 +155,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
           <div
             key={song._uniqueKey || song.id + "-" + song.title}
             onClick={() => setSelectedSong(song)}
+            onContextMenu={(e) => handleContextMenu(e, song)}
             className={`
               relative group
               p-3 md:p-4
@@ -81,6 +202,16 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
               </div>
             )}
 
+            {/* Three-dot menu button (shown on hover) */}
+            <button
+              onClick={(e) => handleContextMenu(e, song)}
+              className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-all rounded-full w-8 h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg"
+              title="More options"
+              aria-label="More options"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
             {/* Queue button */}
             {onQueue && (
               <button
@@ -88,7 +219,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                   e.stopPropagation();
                   handleQueue(song);
                 }}
-                className={`absolute top-3 right-3 z-10 transition-all rounded-full w-8 h-8 flex items-center justify-center shadow-lg ${
+                className={`absolute top-12 right-3 z-10 transition-all rounded-full w-8 h-8 flex items-center justify-center shadow-lg ${
                   addedId === song.id
                     ? "opacity-100 bg-green-500 text-white scale-110"
                     : "opacity-0 group-hover:opacity-100 bg-black/70 text-white hover:bg-green-500 hover:scale-110"
@@ -129,6 +260,17 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
           onClose={() => setSelectedSong(null)}
           onPlay={(s) => onPlay(s, songs)}
           onQueue={onQueue}
+          onOpenArtist={onOpenArtist}
+        />
+      )}
+
+      {contextMenu && (
+        <ContextMenu
+          song={contextMenu.song}
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          onClose={() => setContextMenu(null)}
+          onPlay={(s) => onPlay(s, songs)}
+          onQueue={handleQueue}
           onOpenArtist={onOpenArtist}
         />
       )}

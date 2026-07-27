@@ -1,9 +1,37 @@
 "use client";
-import { X, Play, Plus } from "lucide-react";
+import { useState } from "react";
+import { X, Play, Plus, ListMusic, Check } from "lucide-react";
 import { hiResCover } from "../lib/coverArt";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
+import { useUser } from "@clerk/nextjs";
 
 export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpenArtist }) {
+  const { isSignedIn } = useUser();
+  const [showPlaylists, setShowPlaylists] = useState(false);
+  const [playlists, setPlaylists] = useState([]);
+  const [addingToId, setAddingToId] = useState(null);
+
+  const handleFetchPlaylists = async () => {
+    if (!isSignedIn) return;
+    setShowPlaylists(true);
+    const res = await fetch("/api/playlists");
+    const data = await res.json();
+    if (data.success) setPlaylists(data.playlists);
+  };
+
+  const handleAddToPlaylist = async (playlistId) => {
+    setAddingToId(playlistId);
+    await fetch("/api/playlists", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playlistId, song, action: "add" }),
+    });
+    setTimeout(() => {
+      setAddingToId(null);
+      setShowPlaylists(false);
+    }, 1000);
+  };
+
   if (!song) return null;
 
   const rawCover =
@@ -93,7 +121,40 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
                 Add to Queue
               </button>
             )}
+
+            {isSignedIn && (
+              <button
+                onClick={showPlaylists ? () => setShowPlaylists(false) : handleFetchPlaylists}
+                className="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-white font-semibold rounded-full px-6 py-3 flex items-center justify-center gap-2 transition-transform hover:scale-[1.03] active:scale-95 ring-1 ring-white/10"
+              >
+                <ListMusic className="w-5 h-5" />
+                {showPlaylists ? "Cancel" : "Add to Playlist"}
+              </button>
+            )}
           </div>
+
+          {showPlaylists && (
+            <div className="mt-4 p-4 bg-black/40 rounded-xl border border-white/5 max-h-48 overflow-y-auto">
+              <h3 className="text-sm font-bold text-neutral-400 mb-2 uppercase tracking-wide">Select Playlist</h3>
+              {playlists.length === 0 ? (
+                <p className="text-sm text-neutral-500">No playlists found. Create one in your library first.</p>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {playlists.map(pl => (
+                    <button
+                      key={pl._id}
+                      onClick={() => handleAddToPlaylist(pl._id)}
+                      disabled={addingToId === pl._id}
+                      className="flex items-center justify-between p-2 hover:bg-white/10 rounded-lg text-left transition-colors"
+                    >
+                      <span className="text-white text-sm font-medium">{pl.name}</span>
+                      {addingToId === pl._id && <Check className="w-4 h-4 text-green-400" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

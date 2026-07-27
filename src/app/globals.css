@@ -24,6 +24,41 @@ html {
   overflow: hidden;
 }
 
+/* ── Theme CSS variables (defaults = green/Spotify) ── */
+:root {
+  --tt-accent:       #1db954;
+  --tt-accent-hover: #1db954cc;
+  --tt-bg:           #121212;
+  --tt-rail:         #000000;
+}
+
+/* ── Theme overrides: remap Tailwind green → accent variable ── */
+/* This means every green-500 class in the app becomes the chosen theme color */
+.bg-green-500   { background-color: var(--tt-accent) !important; }
+.bg-green-400   { background-color: var(--tt-accent) !important; filter: brightness(1.1); }
+.bg-green-600   { background-color: var(--tt-accent) !important; filter: brightness(0.9); }
+.text-green-400 { color: var(--tt-accent) !important; }
+.text-green-500 { color: var(--tt-accent) !important; }
+.ring-green-500 { --tw-ring-color: var(--tt-accent) !important; }
+.border-green-400 { border-color: var(--tt-accent) !important; }
+.border-green-500 { border-color: var(--tt-accent) !important; }
+.shadow-green-500\/20 { --tw-shadow-color: color-mix(in srgb, var(--tt-accent) 20%, transparent) !important; }
+.shadow-green-500\/25 { --tw-shadow-color: color-mix(in srgb, var(--tt-accent) 25%, transparent) !important; }
+.shadow-green-500\/30 { --tw-shadow-color: color-mix(in srgb, var(--tt-accent) 30%, transparent) !important; }
+.from-green-400 { --tw-gradient-from: var(--tt-accent) !important; filter: brightness(1.05); }
+.from-green-500 { --tw-gradient-from: var(--tt-accent) !important; }
+.to-green-600   { --tw-gradient-to:   var(--tt-accent) !important; filter: brightness(0.9); }
+.hover\:bg-green-500:hover { background-color: var(--tt-accent) !important; }
+.hover\:bg-green-400:hover { background-color: var(--tt-accent) !important; filter: brightness(1.1); }
+.focus\:border-green-500:focus { border-color: var(--tt-accent) !important; }
+.bg-green-500\/10 { background-color: color-mix(in srgb, var(--tt-accent) 10%, transparent) !important; }
+.bg-green-400\/10 { background-color: color-mix(in srgb, var(--tt-accent) 10%, transparent) !important; }
+.ring-green-500\/40 { --tw-ring-color: color-mix(in srgb, var(--tt-accent) 40%, transparent) !important; }
+.from-green-900\/30 { --tw-gradient-from: color-mix(in srgb, var(--tt-accent) 20%, #000) !important; }
+.text-indigo-300 { color: var(--tt-accent) !important; filter: brightness(1.3); }
+.bg-indigo-500\/20 { background-color: color-mix(in srgb, var(--tt-accent) 20%, transparent) !important; }
+
+
 /* Spotify-like scrollbar */
 html, body, * {
   scrollbar-width: thin;
@@ -115,6 +150,11 @@ input[type="range"]::-webkit-slider-thumb {
 @keyframes equalize {
   0%, 100% { height: 4px; }
   50% { height: 14px; }
+}
+
+@keyframes visualizer-bar {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
 }
 
 /* Friends empty-state SVG animations */

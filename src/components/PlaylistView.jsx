@@ -32,7 +32,14 @@ export default function PlaylistView({
   const coverUrl = resolveCover(playlist?.image, playlist?.name || playlist?.id);
 
   useEffect(() => {
-    if (!playlist?.artist) return;
+    // Custom user playlists already carry their songs inline
+    if (Array.isArray(playlist?.songs)) {
+      setSongs(playlist.songs);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!playlist?.artist) { setIsLoading(false); return; }
     let cancelled = false;
     const fetchSongs = async () => {
       setIsLoading(true);
@@ -54,7 +61,7 @@ export default function PlaylistView({
     };
     fetchSongs();
     return () => { cancelled = true; };
-  }, [playlist?.id, playlist?.artist]);
+  }, [playlist?.id, playlist?.artist, playlist?.songs]);
 
   const handleQueue = (song) => {
     onQueue?.(song);

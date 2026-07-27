@@ -349,10 +349,43 @@ export default function PlayerFooter({
                   className="w-12 h-12 md:w-14 md:h-14 object-cover rounded shadow-md"
                   onError={coverError(song.title || song.id)}
                 />
+                {/* Visualizer overlay on album art */}
+                {isPlaying && (
+                  <div className="absolute inset-0 rounded flex items-end justify-center gap-[2px] pb-1.5 bg-black/30 backdrop-blur-[1px] opacity-0 hover:opacity-100 transition-opacity">
+                    {[1,2,3,4,5].map((i) => (
+                      <span
+                        key={i}
+                        className="w-[3px] bg-green-400 rounded-full"
+                        style={{
+                          height: `${30 + Math.random() * 50}%`,
+                          animation: `visualizer-bar ${0.5 + i * 0.15}s ease-in-out infinite alternate`,
+                          animationDelay: `${i * 0.07}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="flex flex-col overflow-hidden min-w-0 justify-center">
+              <div className="flex flex-col overflow-hidden min-w-0 justify-center gap-0.5">
                 <span className="text-[13px] md:text-[14px] font-normal truncate md:hover:underline cursor-pointer text-white">{song.title}</span>
-                <span className="text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer md:hover:text-white transition-colors">{song.artist.name}</span>
+                <div className="flex items-center gap-2">
+                  {isPlaying && (
+                    <div className="flex items-end gap-[2px] h-3 flex-shrink-0">
+                      {[1,2,3].map((i) => (
+                        <span
+                          key={i}
+                          className="w-[2px] bg-green-400 rounded-full"
+                          style={{
+                            animation: `visualizer-bar ${0.4 + i * 0.15}s ease-in-out infinite alternate`,
+                            animationDelay: `${i * 0.1}s`,
+                            height: "100%",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <span className="text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer md:hover:text-white transition-colors">{song.artist.name}</span>
+                </div>
               </div>
             </div>
           ) : (

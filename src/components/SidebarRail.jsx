@@ -2,6 +2,8 @@
 
 import { Home, Disc, MessageCircle, Search } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
+import FriendRequestBell from "./FriendRequestBell";
+import ThemeSwitcher from "./ThemeSwitcher";
 
 /**
  * Discord-style leftmost icon rail. On desktop it's a static column; on
@@ -22,22 +24,22 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
   ];
 
   return (
-    <div className="w-[72px] flex-shrink-0 bg-[#000000] flex flex-col items-center py-4 gap-4 h-full border-r border-white/5">
+    <div className="w-[72px] flex-shrink-0 bg-[#000000] flex flex-col items-center py-4 gap-4 h-full border-r border-white/5 overflow-hidden">
       {/* App Icon */}
       <div
         onClick={() => onTabChange("library")}
-        className="w-12 h-12 rounded-[16px] bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition-all mb-2"
+        className="w-12 h-12 rounded-[16px] bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition-all mb-2 flex-shrink-0"
       >
         <Disc className="w-7 h-7 text-black fill-black/20 animate-[spin_4s_linear_infinite]" />
       </div>
 
-      <div className="w-8 h-[2px] bg-white/10 rounded-full mb-2" />
+      <div className="w-8 h-[2px] bg-white/10 rounded-full flex-shrink-0" />
 
-      <div className="flex-1 flex flex-col gap-4 items-center w-full">
+      <div className="flex-1 flex flex-col gap-4 items-center w-full min-h-0 overflow-y-auto scrollbar-hide">
         {tabs.map((tab) => {
           const isActive = activeView === tab.id;
           return (
-            <div key={tab.id} className="relative group flex items-center justify-center w-full">
+            <div key={tab.id} className="relative group flex items-center justify-center w-full flex-shrink-0">
               {/* Discord-like left indicator pill */}
               <div
                 className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-300 ${
@@ -69,7 +71,10 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
         })}
       </div>
 
-      <div className="mt-auto mb-4 flex flex-col gap-4 items-center w-full">
+      {/* Bottom actions — pinned, never overflow */}
+      <div className="flex flex-col gap-3 items-center w-full flex-shrink-0 pb-2">
+        <FriendRequestBell />
+        <ThemeSwitcher />
         <UserButton 
           appearance={{
             elements: {
