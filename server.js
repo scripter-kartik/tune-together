@@ -353,6 +353,21 @@ app.prepare().then(() => {
       schedulePersist(roomId, room);
     });
 
+    socket.on("reorder-queue", async ({ roomId, fromIndex, toIndex }) => {
+      const room = await getRoom(roomId);
+      if (
+        typeof fromIndex !== "number" ||
+        typeof toIndex !== "number" ||
+        fromIndex < 0 || toIndex < 0 ||
+        fromIndex >= room.playlist.length ||
+        toIndex >= room.playlist.length
+      ) return;
+      const [moved] = room.playlist.splice(fromIndex, 1);
+      room.playlist.splice(toIndex, 0, moved);
+      io.to(roomId).emit("sync-queue", { playlist: room.playlist });
+      schedulePersist(roomId, room);
+    });
+
     socket.on("seek-time", async ({ roomId, position }) => {
       const room = await getRoom(roomId);
       room.position = typeof position === "number" ? position : room.position;

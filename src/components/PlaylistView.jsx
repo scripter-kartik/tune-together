@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Play, Plus, Check, Music2, ListMusic } from "lucide-react";
+import { ArrowLeft, Play, Plus, Check, Music2, ListMusic, ListPlus } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 function formatTime(seconds) {
@@ -73,6 +73,10 @@ export default function PlaylistView({
     if (songs.length) onPlay(songs[0], songs);
   };
 
+  const queueAll = () => {
+    songs.forEach((song) => onQueue?.(song));
+  };
+
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
       {/* Header */}
@@ -121,6 +125,14 @@ export default function PlaylistView({
               title="Play all"
             >
               <Play className="w-6 h-6 fill-black ml-0.5" />
+            </button>
+            <button
+              onClick={queueAll}
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-all duration-200"
+              title="Queue all songs"
+            >
+              <ListPlus className="w-4 h-4" />
+              Queue All
             </button>
           </div>
         )}

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
-import { MicVocal, ListMusic } from "lucide-react";
+import { MicVocal, ListMusic, Layers } from "lucide-react";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
 import { useLyrics } from "@/hooks/useLyrics";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
@@ -237,30 +237,30 @@ export default function PlayerFooter({
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.code !== "Space" && e.key !== " ") return;
       const t = e.target;
       const tag = t?.tagName;
       
-      // Only allow spacebar to type normally inside inputs and textareas
-      if (
-        t?.isContentEditable ||
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        tag === "SELECT"
-      ) {
+      if (t?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
         return;
       }
       
-      // Prevent default browser behavior (page scrolling) unconditionally
-      e.preventDefault();
-      
-      if (!song || isLoading) return;
-      handlePlayPauseClick();
+      if (e.code === "Space" || e.key === " ") {
+        e.preventDefault();
+        if (!song || isLoading) return;
+        handlePlayPauseClick();
+      } else if (e.key === "ArrowRight" && e.shiftKey) {
+        e.preventDefault();
+        if (!song || isLoading) return;
+        onNext?.();
+      } else if (e.key === "q" || e.key === "Q") {
+        e.preventDefault();
+        handleQueueSong();
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [song, isPlaying, isLoading, roomId]);
+  }, [song, isPlaying, isLoading, roomId, onNext]);
 
   const handleSeek = (e) => {
     if (!song) return;
@@ -488,13 +488,21 @@ export default function PlayerFooter({
             <MicVocal size={18} />
           </button>
           <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
-            <button
+          <button
               onClick={handleQueueSong}
               className={`p-2 transition-colors ${added ? 'text-green-500' : 'text-neutral-300 hover:text-white'}`}
               aria-label="Add to Queue"
               title="Add to Queue"
             >
               <ListMusic size={20} />
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
+              className="p-2 text-neutral-300 hover:text-white transition-colors"
+              aria-label="View Queue"
+              title="View Queue"
+            >
+              <Layers size={18} />
             </button>
           <button
             onClick={handlePlayPauseClick}

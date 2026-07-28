@@ -5,6 +5,7 @@ import { getSocket } from "@/lib/socket";
 import { resolveRoomId, joinRoomId } from "@/lib/room";
 import PlayerFooter from "./PlayerFooter";
 import ReactionOverlay from "./ReactionOverlay";
+import toast from "react-hot-toast";
 
 export default function GlobalPlayer() {
   const [currentSong, setCurrentSong] = useState(null);
@@ -142,6 +143,19 @@ export default function GlobalPlayer() {
       const song = e.detail;
       if (!song) return;
       socketRef.current?.emit("add-to-queue", { roomId, song });
+      toast(
+        `Added "${song.title || 'Song'}" to queue`,
+        {
+          duration: 2500,
+          icon: '🎵',
+          style: {
+            background: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid #333',
+            fontSize: '13px',
+          },
+        }
+      );
     };
     
     const handleRemoveFromQueue = (e) => {
@@ -151,6 +165,13 @@ export default function GlobalPlayer() {
     
     const handleClearQueue = () => {
       socketRef.current?.emit("clear-queue", { roomId });
+    };
+
+    const handleReorderQueue = (e) => {
+      const { fromIndex, toIndex } = e.detail || {};
+      if (typeof fromIndex === "number" && typeof toIndex === "number") {
+        socketRef.current?.emit("reorder-queue", { roomId, fromIndex, toIndex });
+      }
     };
 
     const onRequestState = () => {
@@ -174,6 +195,7 @@ export default function GlobalPlayer() {
     window.addEventListener("tt-queue-song", handleQueueSong);
     window.addEventListener("tt-remove-from-queue", handleRemoveFromQueue);
     window.addEventListener("tt-clear-queue", handleClearQueue);
+    window.addEventListener("tt-reorder-queue", handleReorderQueue);
     window.addEventListener("tt-request-global-state", onRequestState);
     window.addEventListener("tt-player-command", handlePlayerCommand);
     return () => {
@@ -181,6 +203,7 @@ export default function GlobalPlayer() {
       window.removeEventListener("tt-queue-song", handleQueueSong);
       window.removeEventListener("tt-remove-from-queue", handleRemoveFromQueue);
       window.removeEventListener("tt-clear-queue", handleClearQueue);
+      window.removeEventListener("tt-reorder-queue", handleReorderQueue);
       window.removeEventListener("tt-request-global-state", onRequestState);
       window.removeEventListener("tt-player-command", handlePlayerCommand);
     };
@@ -219,6 +242,20 @@ export default function GlobalPlayer() {
   const handleTogglePlayPause = () => {
     setIsPlaying((p) => !p);
   };
+
+  if (!currentSong) {
+    return (
+      <div className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">
+        <div className="flex items-center justify-center gap-3 h-[72px] px-6">
+          <div className="w-2 h-2 rounded-full bg-neutral-700 animate-pulse" />
+          <p className="text-neutral-600 text-sm select-none">
+            Pick a song to start listening
+          </p>
+          <div className="w-2 h-2 rounded-full bg-neutral-700 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">

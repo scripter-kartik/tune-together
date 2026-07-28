@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Play, Plus, Music2, Disc } from "lucide-react";
+import { ArrowLeft, Play, Plus, Music2, Disc, ListPlus } from "lucide-react";
 import { resolveCover } from "../lib/coverPlaceholder";
 
 export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSongId, isPlaying, onOpenArtist }) {
@@ -139,8 +139,17 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
             <button
               onClick={() => onPlay(fullTracks[0], fullTracks)}
               className="w-14 h-14 bg-green-500 hover:bg-green-400 hover:scale-105 text-black rounded-full flex items-center justify-center transition-all duration-200 shadow-xl shadow-green-500/25"
+              title="Play all"
             >
               <Play className="w-6 h-6 fill-black ml-0.5" />
+            </button>
+            <button
+              onClick={() => fullTracks.forEach((t) => onQueue?.(t))}
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-all duration-200"
+              title="Queue all songs"
+            >
+              <ListPlus className="w-4 h-4" />
+              Queue All
             </button>
           </div>
         )}

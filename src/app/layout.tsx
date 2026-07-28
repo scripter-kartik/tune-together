@@ -38,6 +38,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { Toaster } from "react-hot-toast";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,6 +49,20 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className="font-sans antialiased bg-black overflow-hidden h-[100dvh] w-full flex flex-col">
+          <Toaster 
+            position="bottom-right" 
+            toastOptions={{
+              style: {
+                background: '#333',
+                color: '#fff',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontSize: '14px',
+                border: '1px solid #444',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+              },
+            }}
+          />
           <div className="flex-1 overflow-hidden flex flex-col min-h-0">
             {children}
           </div>
