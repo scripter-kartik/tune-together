@@ -13,6 +13,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Tune Together",
   description: "Listen to music together",
+  referrer: "no-referrer",
 
   icons: {
     icon: "/icon2.png", 

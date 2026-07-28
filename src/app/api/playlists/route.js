@@ -57,14 +57,16 @@ export async function PUT(req) {
 
     if (action === "add") {
       // Prevent duplicates
-      if (!playlist.songs.find((s) => s.id === song.id)) {
+      if (!playlist.songs.find((s) => String(s.id) === String(song.id))) {
         playlist.songs.push(song);
+        playlist.markModified("songs");
         if (!playlist.image) {
           playlist.image = song.album?.cover_medium || song.album?.cover_small || "";
         }
       }
     } else if (action === "remove") {
-      playlist.songs = playlist.songs.filter((s) => s.id !== song.id);
+      playlist.songs = playlist.songs.filter((s) => String(s.id) !== String(song.id));
+      playlist.markModified("songs");
     }
 
     await playlist.save();

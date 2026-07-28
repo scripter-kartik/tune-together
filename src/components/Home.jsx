@@ -12,6 +12,7 @@ import PlaylistView from "./PlaylistView";
 import SidebarRail from "./SidebarRail";
 import ChatHub from "./chat/ChatHub";
 import ChatNotifications from "./chat/ChatNotifications";
+import HistoryList from "./HistoryList";
 import { Menu, X, Play, Shuffle, Music4 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
@@ -581,11 +582,15 @@ export default function Home({
 
       {/* Left sidebar - desktop */}
       <div className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 bg-[#121212] rounded-r-xl overflow-hidden flex-col h-full">
-        <PlaylistSidebar
-          onOpenPlaylist={openPlaylist}
-          externalView={activeSidebarView} 
-          onExternalViewChange={setActiveSidebarView} 
-        />
+        {activeSidebarView === 'history' ? (
+          <HistoryList history={recentHistory} onPlay={onPlay} />
+        ) : (
+          <PlaylistSidebar
+            onOpenPlaylist={openPlaylist}
+            externalView={activeSidebarView} 
+            onExternalViewChange={setActiveSidebarView} 
+          />
+        )}
       </div>
 
       {/* Mobile / tablet left drawer: Discord-style rail + library panel */}
@@ -601,17 +606,21 @@ export default function Home({
             />
             <div className="flex-1 bg-[#121212] flex flex-col overflow-hidden min-w-0">
               <div className="flex items-center justify-between p-4 border-b border-neutral-800">
-                <h3 className="text-white font-bold">Your Library</h3>
+                <h3 className="text-white font-bold">{activeSidebarView === 'history' ? 'History' : 'Your Library'}</h3>
                 <button onClick={() => setShowLeft(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
                   <X size={20} className="text-white" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto">
-                <PlaylistSidebar
-                  onOpenPlaylist={openPlaylist}
-                  externalView={activeSidebarView}
-                  onExternalViewChange={setActiveSidebarView}
-                />
+                {activeSidebarView === 'history' ? (
+                  <HistoryList history={recentHistory} onPlay={onPlay} />
+                ) : (
+                  <PlaylistSidebar
+                    onOpenPlaylist={openPlaylist}
+                    externalView={activeSidebarView}
+                    onExternalViewChange={setActiveSidebarView}
+                  />
+                )}
               </div>
             </div>
           </div>

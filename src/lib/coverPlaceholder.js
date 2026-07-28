@@ -4,9 +4,8 @@
 
 export function resolveCover(url, seed) {
   if (!url || typeof url !== "string" || url === "/icon2.png") {
-    // If there is no URL, you can return a transparent pixel or empty string.
-    // We'll return an empty string so the alt text or a broken image shows.
-    return "";
+    // Return null instead of "" to prevent Next.js "empty string" warning
+    return null;
   }
   return url;
 }

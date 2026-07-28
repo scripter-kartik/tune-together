@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Disc, MessageCircle, Search } from "lucide-react";
+import { Home, Disc, MessageCircle, Search, Clock } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import FriendRequestBell from "./FriendRequestBell";
 import ThemeSwitcher from "./ThemeSwitcher";
@@ -20,6 +20,7 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
   const tabs = [
     { id: "library", icon: Home, label: "Home" },
     { id: "search", icon: Search, label: "Search" },
+    { id: "history", icon: Clock, label: "History" },
     { id: "chat", icon: MessageCircle, label: "Chats" },
   ];
 
