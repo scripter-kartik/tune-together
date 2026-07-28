@@ -328,16 +328,20 @@ app.prepare().then(() => {
       if (!song) return;
       const room = await getRoom(roomId);
 
-      if (!room.playlist.some((s) => s.id === song.id)) {
-        room.playlist.push(song);
+      if (!song._uniqueKey) {
+        song._uniqueKey = Date.now().toString(36) + Math.random().toString(36).substr(2);
       }
+      room.playlist.push(song);
       io.to(roomId).emit("sync-queue", { playlist: room.playlist });
       schedulePersist(roomId, room);
     });
 
     socket.on("remove-from-queue", async ({ roomId, songId }) => {
       const room = await getRoom(roomId);
-      room.playlist = room.playlist.filter((s) => s.id !== songId);
+      const index = room.playlist.findIndex((s) => s._uniqueKey === songId || s.id === songId);
+      if (index !== -1) {
+        room.playlist.splice(index, 1);
+      }
       io.to(roomId).emit("sync-queue", { playlist: room.playlist });
       schedulePersist(roomId, room);
     });

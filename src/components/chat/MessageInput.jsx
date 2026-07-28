@@ -121,7 +121,7 @@ export default function MessageInput({
       {/* Attached song chip — Send will share this track */}
       {attachedSong && !editing && (
         <div className="flex items-center gap-2.5 bg-white/[0.03] backdrop-blur-xl border border-white/[0.1] border-b-0 rounded-t-xl px-3 py-2">
-          <img
+          <img referrerPolicy="no-referrer"
             src={resolveCover(attachedSong.album?.cover_medium, attachedSong.title)}
             alt=""
             onError={coverError(attachedSong.title)}

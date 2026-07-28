@@ -107,7 +107,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
             >
               <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
                 {pl.image ? (
-                  <img src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
+                  <img referrerPolicy="no-referrer" src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className={`absolute inset-0 bg-gradient-to-br from-green-500 to-indigo-500 flex items-center justify-center`}>
                     <Music className="w-5 h-5 text-white/70" />
@@ -136,7 +136,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
               >
                 <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
                   {pl.image ? (
-                    <img src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
+                    <img referrerPolicy="no-referrer" src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className={`absolute inset-0 bg-gradient-to-br ${pl.gradient} flex items-center justify-center`}>
                       <Music className="w-5 h-5 text-white/70" />

@@ -61,7 +61,7 @@ export default function NowPlayingView({
   const overlay = (
     <div className="fixed inset-0 z-[9990] flex flex-col overflow-hidden animate-slide-up">
       {/* Immersive blurred album-art backdrop */}
-      <img
+      <img referrerPolicy="no-referrer"
         src={cover}
         alt=""
         aria-hidden="true"
@@ -105,7 +105,7 @@ export default function NowPlayingView({
 
         {/* Album art */}
         <div className="flex-1 flex items-center justify-center min-h-0 py-4">
-          <img
+          <img referrerPolicy="no-referrer"
             src={cover}
             alt={song.title}
             className="w-full max-w-[min(80vw,22rem)] aspect-square object-cover rounded-2xl shadow-2xl shadow-black/70"

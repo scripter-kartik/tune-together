@@ -172,7 +172,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
           >
             {/* Cover art */}
             <div className="relative w-full aspect-square overflow-hidden rounded-lg mb-4 shadow-lg">
-              <img
+              <img referrerPolicy="no-referrer"
                 src={cover}
                 alt={song.title}
                 onError={coverError(song.title || song.id)}

@@ -28,7 +28,7 @@ export default function HistoryList({ history = [], onPlay }) {
             onClick={() => onPlay && onPlay(song)}
           >
             <div className="relative w-12 h-12 flex-shrink-0 rounded bg-neutral-800 overflow-hidden">
-              <img
+              <img referrerPolicy="no-referrer"
                 src={resolveCover(song.album?.cover_small, song.title)}
                 alt={song.title}
                 onError={coverError(song.title)}

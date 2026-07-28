@@ -71,7 +71,7 @@ export default function ChatNotifications({ onOpenDm }) {
         <div className="flex items-center gap-3 px-3 py-3">
           <div className="relative flex-shrink-0">
             {notice.senderImage ? (
-              <img src={notice.senderImage} alt="" className="h-11 w-11 rounded-full object-cover" />
+              <img referrerPolicy="no-referrer" src={notice.senderImage} alt="" className="h-11 w-11 rounded-full object-cover" />
             ) : (
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white">
                 {notice.senderName.charAt(0).toUpperCase()}

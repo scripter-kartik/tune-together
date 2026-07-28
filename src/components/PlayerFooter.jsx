@@ -295,8 +295,15 @@ export default function PlayerFooter({
 
   const toggleMute = () => setIsMuted((m) => !m);
 
-  // Open the Queue tab in the right panel (RightPanel/Home listen for this).
-  const openQueue = () => window.dispatchEvent(new CustomEvent("tt-open-queue"));
+  // Add current song to queue instead of opening the queue tab
+  const [added, setAdded] = useState(false);
+  const handleQueueSong = () => {
+    if (song) {
+      window.dispatchEvent(new CustomEvent("tt-queue-song", { detail: song }));
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1200);
+    }
+  };
 
   // Tapping the mini-player opens the full-screen "Now Playing" sheet — but
   // only on mobile/tablet, where there's no room for the full desktop player.
@@ -344,7 +351,7 @@ export default function PlayerFooter({
               className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 cursor-pointer md:cursor-default"
             >
               <div className="relative flex-shrink-0 rounded flex items-center shadow-lg shadow-black/50">
-                <img
+                <img referrerPolicy="no-referrer"
                   src={resolveCover(song.album?.cover_medium || song.album?.cover_small, song.title || song.id)}
                   alt={song.title}
                   className="w-12 h-12 md:w-14 md:h-14 object-cover rounded shadow-md"
@@ -481,13 +488,14 @@ export default function PlayerFooter({
             <MicVocal size={18} />
           </button>
           <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
-          <button
-            onClick={openQueue}
-            className="p-2 text-neutral-300 hover:text-white"
-            aria-label="Queue"
-          >
-            <ListMusic size={18} />
-          </button>
+            <button
+              onClick={handleQueueSong}
+              className={`p-2 transition-colors ${added ? 'text-green-500' : 'text-neutral-300 hover:text-white'}`}
+              aria-label="Add to Queue"
+              title="Add to Queue"
+            >
+              <ListMusic size={20} />
+            </button>
           <button
             onClick={handlePlayPauseClick}
             className={`bg-white text-black w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${(!song || isLoading) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'} transition-transform`}
@@ -533,10 +541,10 @@ export default function PlayerFooter({
           </button>
           <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
           <button
-            onClick={openQueue}
-            className="text-[#b3b3b3] hover:text-white transition-colors"
-            aria-label="Queue"
-            title="Queue"
+            onClick={handleQueueSong}
+            className={`transition-colors ${added ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
+            aria-label="Add to Queue"
+            title="Add to Queue"
           >
             <ListMusic size={18} />
           </button>
@@ -589,7 +597,7 @@ export default function PlayerFooter({
         onPrev={onPrev}
         onNext={onNext}
         onOpenLyrics={() => song && setShowLyrics(true)}
-        onOpenQueue={() => { setShowNowPlaying(false); openQueue(); }}
+        onOpenQueue={() => { setShowNowPlaying(false); handleQueueSong(); }}
         showLyrics={showLyrics}
       />
 

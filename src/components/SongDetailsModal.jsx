@@ -53,7 +53,7 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
       >
         <div className="relative h-64 sm:h-80 w-full">
           <div className="absolute inset-0 bg-gradient-to-t from-[#181818] via-[#181818]/60 to-transparent z-10" />
-          <img
+          <img referrerPolicy="no-referrer"
             src={cover}
             alt={song.title}
             className="w-full h-full object-cover"
@@ -82,7 +82,7 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
                 }}
               >
                 {song.artist?.picture_small && (
-                  <img src={song.artist.picture_small} alt={song.artist.name} className="w-6 h-6 rounded-full" onError={coverError(song.artist.name)} />
+                  <img referrerPolicy="no-referrer" src={song.artist.picture_small} alt={song.artist.name} className="w-6 h-6 rounded-full" onError={coverError(song.artist.name)} />
                 )}
                 <span className="font-semibold text-white group-hover:text-green-400 transition-colors">{song.artist?.name}</span>
               </div>

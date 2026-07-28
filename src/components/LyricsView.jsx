@@ -116,7 +116,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       {/* Immersive blurred album-art backdrop */}
       {cover && (
         <>
-          <img
+          <img referrerPolicy="no-referrer"
             src={cover}
             alt=""
             aria-hidden="true"
@@ -134,7 +134,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       >
         <div className="flex items-center gap-3 min-w-0">
           {song && (
-            <img
+            <img referrerPolicy="no-referrer"
               src={resolveCover(song.album?.cover_small, song.title || song.id)}
               alt={song.title}
               className="w-12 h-12 rounded object-cover shadow-lg"

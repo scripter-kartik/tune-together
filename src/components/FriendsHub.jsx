@@ -481,7 +481,7 @@ export default function FriendsHub({ roomId }) {
 function Avatar({ user, status }) {
   return (
     <div className="relative flex-shrink-0">
-      <img src={avatar(user)} alt={user.name} className="w-10 h-10 rounded-full object-cover bg-neutral-800" />
+      <img referrerPolicy="no-referrer" src={avatar(user)} alt={user.name} className="w-10 h-10 rounded-full object-cover bg-neutral-800" />
       <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#121212] ${dotColor[status] || dotColor.offline}`} />
     </div>
   );

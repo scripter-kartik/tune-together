@@ -92,7 +92,7 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
         <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
           <div className="flex-shrink-0 shadow-2xl shadow-black/60">
             {!imgError ? (
-              <img
+              <img referrerPolicy="no-referrer"
                 src={coverUrl}
                 alt={album.title}
                 className="w-44 h-44 md:w-56 md:h-56 rounded shadow-2xl object-cover"

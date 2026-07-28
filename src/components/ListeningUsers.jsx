@@ -209,7 +209,7 @@ const ListeningUsers = () => {
               >
                 <div className="relative flex-shrink-0">
                   {user.imageUrl ? (
-                    <img
+                    <img referrerPolicy="no-referrer"
                       src={user.imageUrl}
                       alt={user.name}
                       className="w-12 h-12 rounded-full object-cover"

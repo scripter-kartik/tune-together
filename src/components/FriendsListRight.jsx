@@ -210,7 +210,7 @@ export default function FriendsListRight() {
               >
                 <div className="relative flex-shrink-0">
                   {user.imageUrl ? (
-                    <img src={user.imageUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" />
+                    <img referrerPolicy="no-referrer" src={user.imageUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" />
                   ) : (
                     <div className={`w-10 h-10 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white font-semibold text-sm shadow-sm group-hover:scale-105 transition-transform`}>
                       {getInitials(user.name)}

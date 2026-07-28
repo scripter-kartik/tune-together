@@ -91,7 +91,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
               className="group p-4 bg-[#181818] hover:bg-[#282828] rounded-xl cursor-pointer transition-all duration-300"
             >
               <div className="relative w-full aspect-square mb-4">
-                <img
+                <img referrerPolicy="no-referrer"
                   src={resolveCover(item.cover_medium, item.title || item.id)}
                   alt={item.title}
                   className="w-full h-full object-cover rounded-md shadow-[0_8px_24px_rgba(0,0,0,0.5)] group-hover:shadow-[0_12px_32px_rgba(0,0,0,0.6)] transition-all duration-300"
@@ -116,7 +116,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
       <div className="relative h-[300px] md:h-[400px] lg:h-[450px] w-full flex-shrink-0">
         <div className="absolute inset-0 z-0">
           {!imgError ? (
-            <img
+            <img referrerPolicy="no-referrer"
               src={artistImg}
               alt={artist.name}
               className="w-full h-full object-cover object-top"
@@ -203,7 +203,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                       <span className="w-6 text-center text-sm flex-shrink-0 hidden group-hover:flex items-center justify-center">
                         <Play className="w-4 h-4 text-white fill-white" />
                       </span>
-                      <img
+                      <img referrerPolicy="no-referrer"
                         src={cover}
                         alt={track.title}
                         className="w-10 h-10 rounded-sm object-cover flex-shrink-0"
@@ -248,7 +248,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                   className="group p-4 bg-[#181818] hover:bg-[#282828] rounded-xl cursor-pointer transition-all duration-300 text-center"
                 >
                   <div className="relative w-full aspect-square mb-4 overflow-hidden rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
-                    <img
+                    <img referrerPolicy="no-referrer"
                       src={resolveCover(simArtist.picture_medium, simArtist.name || simArtist.id)}
                       alt={simArtist.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

@@ -159,17 +159,30 @@ export default function GlobalPlayer() {
       }));
     };
 
+    const handlePlayerCommand = (e) => {
+      const { action } = e.detail || {};
+      if (action === "pause") {
+        setIsPlaying(false);
+        window.dispatchEvent(new CustomEvent("tt-global-state", { detail: { isPlaying: false } }));
+      } else if (action === "play") {
+        setIsPlaying(true);
+        window.dispatchEvent(new CustomEvent("tt-global-state", { detail: { isPlaying: true } }));
+      }
+    };
+
     window.addEventListener("tt-play-song", handlePlaySong);
     window.addEventListener("tt-queue-song", handleQueueSong);
     window.addEventListener("tt-remove-from-queue", handleRemoveFromQueue);
     window.addEventListener("tt-clear-queue", handleClearQueue);
     window.addEventListener("tt-request-global-state", onRequestState);
+    window.addEventListener("tt-player-command", handlePlayerCommand);
     return () => {
       window.removeEventListener("tt-play-song", handlePlaySong);
       window.removeEventListener("tt-queue-song", handleQueueSong);
       window.removeEventListener("tt-remove-from-queue", handleRemoveFromQueue);
       window.removeEventListener("tt-clear-queue", handleClearQueue);
       window.removeEventListener("tt-request-global-state", onRequestState);
+      window.removeEventListener("tt-player-command", handlePlayerCommand);
     };
   }, [roomId, isPlaying, queue]);
 

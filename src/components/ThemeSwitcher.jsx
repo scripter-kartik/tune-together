@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Palette } from "lucide-react";
+import { Palette, Check } from "lucide-react";
 import { createPortal } from "react-dom";
 
 const THEMES = [
-  { id: "green",  label: "Forest",  accent: "#1db954", bg: "#121212", rail: "#000000" },
-  { id: "purple", label: "Cosmic",  accent: "#a855f7", bg: "#0f0a1a", rail: "#060311" },
-  { id: "blue",   label: "Ocean",   accent: "#3b82f6", bg: "#0a0f1a", rail: "#040811" },
-  { id: "rose",   label: "Rose",    accent: "#f43f5e", bg: "#1a0a0e", rail: "#110407" },
-  { id: "amber",  label: "Amber",   accent: "#f59e0b", bg: "#1a1200", rail: "#110c00" },
-  { id: "cyan",   label: "Ice",     accent: "#06b6d4", bg: "#050f14", rail: "#02090d" },
+  { id: "green",  label: "Forest",  accent: "#1db954", bg: "#121212", rail: "#000000", grad: "from-emerald-900/40" },
+  { id: "purple", label: "Cosmic",  accent: "#a855f7", bg: "#0f0a1a", rail: "#060311", grad: "from-purple-900/40" },
+  { id: "blue",   label: "Ocean",   accent: "#3b82f6", bg: "#0a0f1a", rail: "#040811", grad: "from-blue-900/40" },
+  { id: "rose",   label: "Rose",    accent: "#f43f5e", bg: "#1a0a0e", rail: "#110407", grad: "from-rose-900/40" },
+  { id: "amber",  label: "Amber",   accent: "#f59e0b", bg: "#1a1200", rail: "#110c00", grad: "from-amber-900/40" },
+  { id: "cyan",   label: "Ice",     accent: "#06b6d4", bg: "#050f14", rail: "#02090d", grad: "from-cyan-900/40" },
 ];
 
 function applyTheme(theme) {
@@ -55,10 +55,12 @@ export default function ThemeSwitcher() {
   const handleToggle = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      // Anchor to bottom of button so panel doesn't go off screen
-      const panelHeight = 180;
+      const panelHeight = 260;
+      const panelWidth = 220;
       const top = Math.min(rect.top, window.innerHeight - panelHeight - 8);
-      setPanelPos({ top, left: rect.right + 8 });
+      // Put to the right of the button
+      const left = Math.min(rect.right + 10, window.innerWidth - panelWidth - 8);
+      setPanelPos({ top, left });
     }
     setOpen(o => !o);
   };
@@ -69,35 +71,62 @@ export default function ThemeSwitcher() {
     setOpen(false);
   };
 
+  const activeTheme = THEMES.find(t => t.id === activeId) || THEMES[0];
+
   const panel = open && typeof document !== "undefined" && createPortal(
     <div
       id="tt-theme-panel"
       style={{ position: "fixed", top: panelPos.top, left: panelPos.left, zIndex: 9999 }}
-      className="w-56 bg-[#1e1e1e] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden animate-in fade-in slide-in-from-left-2 duration-150 p-3"
+      className="w-52 bg-[#181818] border border-white/[0.1] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-hidden"
     >
-      <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3 px-1">Theme</p>
-      <div className="grid grid-cols-3 gap-2">
-        {THEMES.map(theme => (
-          <button
-            key={theme.id}
-            onClick={() => handleSelect(theme)}
-            className={`flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all ${
-              activeId === theme.id
-                ? "bg-white/10 ring-1 ring-white/30"
-                : "hover:bg-white/5"
-            }`}
-            title={theme.label}
-          >
-            <div
-              className="w-8 h-8 rounded-full shadow-lg"
-              style={{
-                background: `radial-gradient(circle at 35% 35%, ${theme.accent}, ${theme.accent}66)`,
-                boxShadow: activeId === theme.id ? `0 0 12px ${theme.accent}88` : undefined,
-              }}
-            />
-            <span className="text-[10px] text-neutral-300 font-medium">{theme.label}</span>
-          </button>
-        ))}
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-white/[0.07]">
+        <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Appearance</p>
+        <p className="text-white text-sm font-semibold mt-0.5">{activeTheme.label} theme</p>
+      </div>
+
+      {/* Theme grid */}
+      <div className="p-3 grid grid-cols-3 gap-2">
+        {THEMES.map(theme => {
+          const isActive = activeId === theme.id;
+          return (
+            <button
+              key={theme.id}
+              onClick={() => handleSelect(theme)}
+              className={`relative flex flex-col items-center gap-2 p-2.5 rounded-xl transition-all duration-200 ${
+                isActive
+                  ? "bg-white/[0.12] ring-1 ring-white/20"
+                  : "hover:bg-white/[0.07]"
+              }`}
+              title={theme.label}
+            >
+              {/* Color swatch */}
+              <div
+                className="w-8 h-8 rounded-full transition-transform duration-200 hover:scale-110"
+                style={{
+                  background: `conic-gradient(from 180deg, ${theme.accent}, ${theme.accent}99, ${theme.accent}44, ${theme.accent})`,
+                  boxShadow: isActive
+                    ? `0 0 0 2px ${theme.accent}55, 0 4px 16px ${theme.accent}66`
+                    : `0 2px 8px ${theme.accent}33`,
+                }}
+              />
+              {/* Active check */}
+              {isActive && (
+                <div
+                  className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: theme.accent }}
+                >
+                  <Check className="w-2.5 h-2.5 text-black" strokeWidth={3} />
+                </div>
+              )}
+              <span className={`text-[10px] font-semibold leading-none transition-colors ${
+                isActive ? "text-white" : "text-neutral-500"
+              }`}>
+                {theme.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>,
     document.body
@@ -110,12 +139,16 @@ export default function ThemeSwitcher() {
         onClick={handleToggle}
         className={`w-12 h-12 rounded-[24px] flex items-center justify-center transition-all duration-300 ${
           open
-            ? "bg-[#181818] text-green-400 rounded-[16px]"
-            : "bg-[#181818] text-neutral-400 hover:bg-white/10 hover:text-white hover:rounded-[16px]"
+            ? "rounded-[16px]"
+            : "hover:rounded-[16px]"
         }`}
+        style={{
+          backgroundColor: open ? `${activeTheme.accent}22` : "#181818",
+          color: open ? activeTheme.accent : "#9ca3af",
+        }}
         title="Change Theme"
       >
-        <Palette className="w-6 h-6" />
+        <Palette className="w-5 h-5" />
       </button>
       {panel}
     </div>

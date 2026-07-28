@@ -320,7 +320,7 @@ function MessageRow({
         {showAvatar && !groupedNext && (
           <div className="absolute left-0 bottom-0">
             {msg.senderImage ? (
-              <img src={msg.senderImage} alt="" className="w-8 h-8 rounded-full" />
+              <img referrerPolicy="no-referrer" src={msg.senderImage} alt="" className="w-8 h-8 rounded-full" />
             ) : (
               <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
                 {msg.senderName?.charAt(0)?.toUpperCase() || "U"}
@@ -374,7 +374,7 @@ function MessageRow({
               <div className="flex flex-col gap-2 py-1 min-w-[220px] max-w-[280px]">
                 <div className="flex items-center gap-2.5">
                   <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-neutral-900/50">
-                    <img
+                    <img referrerPolicy="no-referrer"
                       src={resolveCover(msg.song.album?.cover_medium, msg.song.title)}
                       alt=""
                       onError={coverError(msg.song.title)}
@@ -468,7 +468,7 @@ function MessageRow({
             ) : msg.gif ? (
               /* ── GIF Bubble ── */
               <div className="flex flex-col relative min-w-[120px] min-h-[120px]">
-                <img src={msg.gif} alt="GIF" className="w-full max-w-[260px] rounded-xl object-contain" />
+                <img referrerPolicy="no-referrer" src={msg.gif} alt="GIF" className="w-full max-w-[260px] rounded-xl object-contain" />
                 <span
                   className={`absolute bottom-1 right-1.5 bg-black/40 backdrop-blur-sm rounded px-1 flex items-center gap-1 text-[10px] leading-none py-0.5 text-white/90 shadow-sm`}
                 >
@@ -485,7 +485,7 @@ function MessageRow({
             ) : msg.sticker ? (
               /* ── Sticker Bubble ── */
               <div className="flex flex-col relative">
-                <img src={msg.sticker} alt="Sticker" className="w-36 h-36 object-contain drop-shadow-xl" />
+                <img referrerPolicy="no-referrer" src={msg.sticker} alt="Sticker" className="w-36 h-36 object-contain drop-shadow-xl" />
                 <span
                   className={`absolute bottom-1 right-1.5 bg-black/40 backdrop-blur-sm rounded px-1 flex items-center gap-1 text-[10px] leading-none py-0.5 text-white/90 shadow-sm`}
                 >

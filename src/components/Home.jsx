@@ -35,6 +35,17 @@ function coverOf(song) {
   );
 }
 
+function Equalizer() {
+  return (
+    <div className="flex gap-0.5 items-end h-3.5">
+      <span className="w-0.5 bg-green-400 animate-pulse h-1.5" />
+      <span className="w-0.5 bg-green-400 animate-pulse h-3" style={{ animationDelay: "0.2s" }} />
+      <span className="w-0.5 bg-green-400 animate-pulse h-2" style={{ animationDelay: "0.4s" }} />
+      <span className="w-0.5 bg-green-400 animate-pulse h-3.5" style={{ animationDelay: "0.6s" }} />
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ *
  * Section header — shared title + optional "Play all" affordance.
  * ------------------------------------------------------------------ */
@@ -94,7 +105,7 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
             className="group flex-shrink-0 w-full md:w-72 flex items-center gap-4 rounded-xl bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-white/5 p-3 cursor-pointer transition-colors"
           >
             <div className="relative w-16 h-16 md:w-20 md:h-20 flex-shrink-0 overflow-hidden rounded-lg shadow-lg">
-              <img
+              <img referrerPolicy="no-referrer"
                 src={coverOf(spotlight)}
                 alt={spotlight.title}
                 onError={coverError(spotlight.title || spotlight.id)}
@@ -226,7 +237,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
                 className={`flex-shrink-0 w-32 md:w-40 flex flex-col items-center gap-3 group p-3 rounded-xl transition-all duration-300 ${artist.id ? "cursor-pointer hover:bg-white/5" : ""}`}
               >
                 <div className="relative">
-                  <img
+                  <img referrerPolicy="no-referrer"
                     src={resolveCover(artist.image, artist.name)}
                     alt={artist.name}
                     className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-lg group-hover:scale-105 transition-transform duration-300"
@@ -408,110 +419,298 @@ export default function Home({
         <div className="flex-1 overflow-y-auto scrollbar">
           {isSearchQuery ? (
             /* --- SEARCH RESULTS VIEW --- */
-            <div className="flex flex-col gap-8 pt-4 md:pt-6">
-              {isLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 p-4">
-                  {Array.from({ length: 15 }).map((_, i) => (
-                    <div key={i} className="flex flex-col gap-3">
-                      <div className="aspect-square bg-neutral-800 rounded-lg animate-pulse" />
-                      <div className="h-3 w-3/4 bg-neutral-800 rounded animate-pulse" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <div className="px-4 md:px-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {['all', 'songs', 'artists', 'albums'].map(filter => (
-                      <button
-                        key={filter}
-                        onClick={() => setSearchFilter(filter)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-semibold capitalize whitespace-nowrap transition-colors ${
-                          searchFilter === filter
-                            ? "bg-green-500 text-black"
-                            : "bg-white/10 text-white hover:bg-white/20"
-                        }`}
-                      >
-                        {filter}
-                      </button>
+            isLoading ? (
+              /* skeleton while loading */
+              <div className="p-6 flex flex-col gap-8">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="h-52 bg-white/5 rounded-2xl animate-pulse" />
+                  <div className="flex flex-col gap-3 justify-center">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded bg-white/5 animate-pulse flex-shrink-0" />
+                        <div className="flex-1 flex flex-col gap-1.5">
+                          <div className="h-3 bg-white/5 rounded animate-pulse w-3/4" />
+                          <div className="h-2.5 bg-white/5 rounded animate-pulse w-1/2" />
+                        </div>
+                      </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-10 pt-2 pb-10">
 
-                  {artists.length > 0 && (searchFilter === 'all' || searchFilter === 'artists') && (
-                    <section className="px-4 md:px-6">
-                      <h2 className="text-xl md:text-2xl font-bold text-white mb-4">Artists</h2>
-                      <div className="flex overflow-x-auto pb-4 gap-4 md:gap-5 scrollbar-hide">
-                        {artists.slice(0, 10).map(artist => (
-                          <div
-                            key={artist.id}
-                            onClick={() => onOpenArtist(artist.id)}
-                            className="flex-shrink-0 w-32 md:w-40 flex flex-col items-center gap-3 cursor-pointer group p-3 hover:bg-white/5 rounded-xl transition-all duration-300"
-                          >
-                            <div className="relative">
-                              <img
-                                src={resolveCover(artist.picture_medium, artist.name)}
-                                className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-lg group-hover:scale-105 transition-transform duration-300"
+                {/* ── Filter pills ── */}
+                <div className="px-6 flex gap-2 flex-wrap">
+                  {['all', 'songs', 'artists', 'albums'].map(filter => (
+                    <button
+                      key={filter}
+                      onClick={() => setSearchFilter(filter)}
+                      className={`px-4 py-1.5 rounded-full text-sm font-semibold capitalize whitespace-nowrap transition-all duration-200 ${
+                        searchFilter === filter
+                          ? "bg-white text-black scale-[1.02]"
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ── Top Result + Top Tracks (Spotify dual-panel) ── */}
+                {(searchFilter === 'all' || searchFilter === 'songs') && (songs.length > 0 || artists.length > 0) && (() => {
+                  const topResult = artists[0] || null;
+                  const topSong = songs[0] || null;
+                  const topItem = topResult || topSong;
+                  const isArtistTop = !!topResult;
+                  const topImg = isArtistTop
+                    ? resolveCover(topResult.picture_xl || topResult.picture_big || topResult.picture_medium, topResult.name)
+                    : resolveCover(topSong?.album?.cover_big || topSong?.album?.cover_medium, topSong?.title);
+                  const tracksToShow = songs.slice(0, 5);
+
+                  return (
+                    <section className="px-6">
+                      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6">
+
+                        {/* Left: Top Result card */}
+                        {topItem && (
+                          <div className="flex flex-col gap-3">
+                            <h2 className="text-2xl font-bold text-white">Top result</h2>
+                            <div
+                              onClick={() => {
+                                if (isArtistTop) onOpenArtist(topResult.id);
+                                else onPlay(topSong, songs);
+                              }}
+                              className="group relative bg-[#181818] hover:bg-[#282828] rounded-xl p-6 cursor-pointer transition-all duration-300 h-full min-h-[200px] flex flex-col justify-between overflow-hidden"
+                            >
+                              {/* bg glow */}
+                              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                <div className="absolute -top-8 -left-8 w-40 h-40 rounded-full blur-3xl opacity-30"
+                                  style={{ backgroundColor: 'var(--tt-accent)' }} />
+                              </div>
+
+                              <div className="relative flex flex-col gap-5">
+                                <img referrerPolicy="no-referrer"
+                                  src={topImg}
+                                  alt={isArtistTop ? topResult.name : topSong?.title}
+                                  onError={coverError(isArtistTop ? topResult.name : topSong?.title)}
+                                  className={`w-24 h-24 object-cover shadow-2xl ${isArtistTop ? 'rounded-full' : 'rounded-lg'}`}
+                                />
+                                <div>
+                                  <p className="text-3xl font-extrabold text-white truncate group-hover:text-white transition-colors">
+                                    {isArtistTop ? topResult.name : topSong?.title}
+                                  </p>
+                                  <p className="text-neutral-400 text-sm mt-1 font-medium">
+                                    {isArtistTop ? 'Artist' : `Song • ${topSong?.artist?.name || ''}`}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Play button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isArtistTop) onOpenArtist(topResult.id);
+                                  else onPlay(topSong, songs);
+                                }}
+                                className="absolute bottom-5 right-5 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300"
+                                style={{ backgroundColor: 'var(--tt-accent)' }}
+                              >
+                                <Play className="w-6 h-6 fill-black text-black ml-0.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Right: Song list */}
+                        {tracksToShow.length > 0 && (
+                          <div className="flex flex-col gap-3">
+                            <h2 className="text-2xl font-bold text-white">Songs</h2>
+                            <div className="flex flex-col">
+                              {tracksToShow.map((song, idx) => {
+                                const isActive = currentSongId === song.id;
+                                const playing = isActive && isPlaying;
+                                const cover = resolveCover(song.album?.cover_medium || song.album?.cover_small, song.title);
+                                return (
+                                  <div
+                                    key={song.id + idx}
+                                    onClick={() => onPlay(song, songs)}
+                                    className={`group flex items-center gap-4 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
+                                      isActive ? 'bg-white/10' : 'hover:bg-white/[0.07]'
+                                    }`}
+                                  >
+                                    {/* Index / equalizer */}
+                                    <div className="w-5 flex-shrink-0 flex items-center justify-center">
+                                      {playing ? (
+                                        <Equalizer />
+                                      ) : (
+                                        <>
+                                          <span className={`text-sm font-medium group-hover:hidden ${isActive ? 'text-green-400' : 'text-neutral-400'}`}>
+                                            {idx + 1}
+                                          </span>
+                                          <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
+                                        </>
+                                      )}
+                                    </div>
+
+                                    {/* Cover */}
+                                    <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
+                                      {cover && <img referrerPolicy="no-referrer" src={cover} alt={song.title} className="w-full h-full object-cover" />}
+                                    </div>
+
+                                    {/* Title + Artist */}
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-sm font-semibold truncate ${isActive ? 'text-green-400' : 'text-white'}`}>
+                                        {song.title}
+                                      </p>
+                                      <p className="text-neutral-400 text-xs truncate mt-0.5 hover:text-white transition-colors cursor-pointer"
+                                        onClick={(e) => { e.stopPropagation(); song.artist?.id && onOpenArtist(song.artist.id); }}>
+                                        {song.artist?.name || 'Unknown Artist'}
+                                      </p>
+                                    </div>
+
+                                    {/* Duration */}
+                                    {song.duration && (
+                                      <span className="text-neutral-500 text-xs flex-shrink-0 tabular-nums">
+                                        {Math.floor(song.duration / 60)}:{String(song.duration % 60).padStart(2, '0')}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  );
+                })()}
+
+                {/* ── Artists ── */}
+                {artists.length > 0 && (searchFilter === 'all' || searchFilter === 'artists') && (
+                  <section className="px-6">
+                    <h2 className="text-2xl font-bold text-white mb-5">Artists</h2>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4">
+                      {artists.slice(0, 14).map(artist => (
+                        <div
+                          key={artist.id}
+                          onClick={() => onOpenArtist(artist.id)}
+                          className="group flex flex-col items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.06] transition-all duration-200"
+                        >
+                          <div className="relative w-full">
+                            <div className="aspect-square w-full rounded-full overflow-hidden bg-neutral-800 shadow-lg">
+                              <img referrerPolicy="no-referrer"
+                                src={resolveCover(artist.picture_medium || artist.picture_small, artist.name)}
+                                alt={artist.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 onError={coverError(artist.name)}
                               />
-                              <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl shadow-green-500/30 translate-y-2 group-hover:translate-y-0">
-                                <Play className="w-4 h-4 fill-black text-black ml-0.5" />
-                              </div>
                             </div>
-                            <div className="text-center">
-                              <span className="text-white font-semibold text-sm block truncate w-full">{artist.name}</span>
-                              <span className="text-neutral-400 text-xs">Artist</span>
+                            <div className="absolute bottom-1 right-1 w-10 h-10 rounded-full flex items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200"
+                              style={{ backgroundColor: 'var(--tt-accent)' }}>
+                              <Play className="w-4 h-4 fill-black text-black ml-0.5" />
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
+                          <div className="text-center w-full">
+                            <p className="text-white text-sm font-semibold truncate">{artist.name}</p>
+                            <p className="text-neutral-400 text-xs mt-0.5">Artist</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-                  {albums.length > 0 && (searchFilter === 'all' || searchFilter === 'albums') && (
-                    <section className="px-4 md:px-6">
-                      <h2 className="text-xl md:text-2xl font-bold text-white mb-4">Albums</h2>
-                      <div className="flex overflow-x-auto pb-4 gap-4 md:gap-5 scrollbar-hide">
-                        {albums.slice(0, 10).map(album => (
-                          <div
-                            key={album.id}
-                            onClick={() => onOpenAlbum(album.id)}
-                            className="flex-shrink-0 w-36 md:w-44 flex flex-col gap-3 cursor-pointer group p-3 hover:bg-white/5 rounded-xl transition-all duration-300"
-                          >
-                            <div className="relative">
-                              <img
-                                src={resolveCover(album.cover_medium, album.title)}
-                                className="w-full aspect-square rounded-lg shadow-lg group-hover:scale-105 transition-transform duration-300 object-cover"
+                {/* ── Albums ── */}
+                {albums.length > 0 && (searchFilter === 'all' || searchFilter === 'albums') && (
+                  <section className="px-6">
+                    <h2 className="text-2xl font-bold text-white mb-5">Albums</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                      {albums.slice(0, 12).map(album => (
+                        <div
+                          key={album.id}
+                          onClick={() => onOpenAlbum(album.id)}
+                          className="group flex flex-col gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.06] transition-all duration-200"
+                        >
+                          <div className="relative">
+                            <div className="aspect-square w-full rounded-lg overflow-hidden bg-neutral-800 shadow-lg">
+                              <img referrerPolicy="no-referrer"
+                                src={resolveCover(album.cover_medium || album.cover_small, album.title)}
+                                alt={album.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 onError={coverError(album.title)}
                               />
-                              <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl shadow-green-500/30 translate-y-2 group-hover:translate-y-0">
-                                <Play className="w-4 h-4 fill-black text-black ml-0.5" />
-                              </div>
                             </div>
-                            <div>
-                              <span className="text-white font-semibold text-sm block truncate">{album.title}</span>
-                              <span className="text-neutral-400 text-xs block truncate">{album.artist?.name || 'Album'}</span>
+                            <div className="absolute bottom-2 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200"
+                              style={{ backgroundColor: 'var(--tt-accent)' }}>
+                              <Play className="w-4 h-4 fill-black text-black ml-0.5" />
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
+                          <div>
+                            <p className="text-white text-sm font-semibold truncate">{album.title}</p>
+                            <p className="text-neutral-400 text-xs truncate mt-0.5">{album.artist?.name || 'Album'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-                  {songs.length > 0 && (searchFilter === 'all' || searchFilter === 'songs') && (
-                    <section className="px-4 md:px-6">
-                      <h2 className="text-xl md:text-2xl font-bold text-white mb-2 px-4 md:px-6">Songs</h2>
-                      <MusicCards
-                        songs={songs}
-                        onPlay={onPlay}
-                        onQueue={onQueue}
-                        currentSongId={currentSongId}
-                        isPlaying={isPlaying}
-                        onOpenArtist={onOpenArtist}
-                      />
-                    </section>
-                  )}
-                </>
-              )}
-            </div>
+                {/* ── All Songs (when Songs filter selected) ── */}
+                {searchFilter === 'songs' && songs.length > 0 && (
+                  <section className="px-6">
+                    <h2 className="text-2xl font-bold text-white mb-4">All Songs</h2>
+                    <div className="flex flex-col">
+                      {songs.map((song, idx) => {
+                        const isActive = currentSongId === song.id;
+                        const playing = isActive && isPlaying;
+                        const cover = resolveCover(song.album?.cover_medium || song.album?.cover_small, song.title);
+                        return (
+                          <div
+                            key={song.id + idx}
+                            onClick={() => onPlay(song, songs)}
+                            className={`group flex items-center gap-4 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
+                              isActive ? 'bg-white/10' : 'hover:bg-white/[0.07]'
+                            }`}
+                          >
+                            <div className="w-5 flex-shrink-0 flex items-center justify-center">
+                              {playing ? (
+                                <Equalizer />
+                              ) : (
+                                <>
+                                  <span className={`text-sm font-medium group-hover:hidden ${isActive ? 'text-green-400' : 'text-neutral-500'}`}>
+                                    {idx + 1}
+                                  </span>
+                                  <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
+                                </>
+                              )}
+                            </div>
+                            <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
+                              {cover && <img referrerPolicy="no-referrer" src={cover} alt={song.title} className="w-full h-full object-cover" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-semibold truncate ${isActive ? 'text-green-400' : 'text-white'}`}>
+                                {song.title}
+                              </p>
+                              <p className="text-neutral-400 text-xs truncate mt-0.5 hover:text-white transition-colors cursor-pointer"
+                                onClick={(e) => { e.stopPropagation(); song.artist?.id && onOpenArtist(song.artist.id); }}>
+                                {song.artist?.name || 'Unknown Artist'}
+                              </p>
+                            </div>
+                            {song.duration && (
+                              <span className="text-neutral-500 text-xs flex-shrink-0 tabular-nums">
+                                {Math.floor(song.duration / 60)}:{String(song.duration % 60).padStart(2, '0')}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
+              </div>
+            )
           ) : (
             /* --- HOME FEED VIEW --- */
             <HomeFeed

@@ -57,7 +57,7 @@ export default function SongPicker({ nowPlaying, onPick, onClose }) {
       className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.07] active:bg-white/10 transition text-left group"
     >
       <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden bg-neutral-800">
-        <img
+        <img referrerPolicy="no-referrer"
           src={coverOf(song)}
           alt=""
           onError={coverError(song.title || song.id)}

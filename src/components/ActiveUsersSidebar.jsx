@@ -45,7 +45,7 @@ export default function ActiveUsersSidebar({ onUserClick }) {
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-all cursor-pointer"
               >
                 <div className="relative flex-shrink-0">
-                  <img
+                  <img referrerPolicy="no-referrer"
                     src={user.imageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
                     alt={user.name}
                     className="w-10 h-10 rounded-full border-2 border-white/20"

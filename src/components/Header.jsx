@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -10,23 +10,38 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { Search, Home, LayoutGrid, Clock, X, Music, Play } from "lucide-react";
+import { Search, Home, LayoutGrid, Clock, X, Play, Pause, ChevronRight } from "lucide-react";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
 function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId, externalOnPlay, externalOnOpenArtist }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomId = externalRoomId || searchParams?.get("room") || null;
-  
+
   const [internalQuery, setInternalQuery] = useState("");
   const query = externalQuery !== undefined ? externalQuery : internalQuery;
   const setQuery = externalSetQuery !== undefined ? externalSetQuery : setInternalQuery;
-  
+
   const [mounted, setMounted] = useState(false);
   const [focused, setFocused] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
+
+  // Track currently playing song & state from global events
+  const [currentSong, setCurrentSong] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    const onGlobalState = (e) => {
+      const { currentSong: s, isPlaying: p } = e.detail || {};
+      if (s !== undefined) setCurrentSong(s);
+      if (p !== undefined) setIsPlaying(p);
+    };
+    window.addEventListener("tt-global-state", onGlobalState);
+    window.dispatchEvent(new CustomEvent("tt-request-global-state"));
+    return () => window.removeEventListener("tt-global-state", onGlobalState);
+  }, []);
 
   // Spotify-style recent searches, persisted locally.
   useEffect(() => {
@@ -93,9 +108,9 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
           const top = [];
           // First artist as top result
           if (data.artists?.length > 0) top.push({ type: 'Artist', ...data.artists[0] });
-          // Then up to 5 songs
-          if (data.songs?.length > 0) top.push(...data.songs.slice(0, 5).map(s => ({ type: 'Song', ...s })));
-          setSuggestions(top.slice(0, 6));
+          // Then up to 8 songs
+          if (data.songs?.length > 0) top.push(...data.songs.slice(0, 8).map(s => ({ type: 'Song', ...s })));
+          setSuggestions(top.slice(0, 9));
         }
       } catch (err) {
         console.error("Failed to load suggestions", err);
@@ -113,8 +128,31 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       handleSearch();
+      setFocused(false);
+    } else if (e.key === "Escape") {
+      setFocused(false);
     }
   };
+
+  // Play or pause a song from suggestions - keeps dropdown open
+  const handleSuggestionPlay = (e, song) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isCurrentlyPlaying = currentSong?.id === song.id && isPlaying;
+    if (isCurrentlyPlaying) {
+      // Pause
+      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+    } else {
+      // Play
+      if (externalOnPlay) externalOnPlay(song);
+    }
+  };
+
+  const isThisSongPlaying = (song) =>
+    currentSong?.id === song.id && isPlaying;
+
+  const isThisSongCurrent = (song) =>
+    currentSong?.id === song.id;
 
   const searchBar = (
     <div className="relative flex-1 min-w-0 max-w-[500px]">
@@ -128,7 +166,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
         />
         {query && (
           <button
@@ -147,7 +185,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 
       {/* Recent searches — Spotify-style, shown on focus with an empty query */}
       {focused && !query.trim() && recentSearches.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-md shadow-2xl border border-neutral-700 overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-xl shadow-2xl border border-white/[0.08] overflow-hidden z-50">
           <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
             <p className="text-white text-sm font-bold">Recent searches</p>
             <button
@@ -190,106 +228,111 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
       )}
 
       {focused && query.trim() && (suggestions.length > 0 || isFetchingSuggestions) && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.6)] border border-white/[0.08] overflow-hidden z-50 flex flex-col max-h-[480px]">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] border border-white/[0.08] overflow-hidden z-50 flex flex-col max-h-[520px]">
+
+          {/* Scrollable body */}
           <div className="overflow-y-auto flex-1 scrollbar-hide">
-          
-          {/* Skeleton loading state */}
-          {isFetchingSuggestions && suggestions.length === 0 ? (
-            <div className="p-3 flex flex-col gap-2">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-2 py-1">
-                  <div className="w-10 h-10 rounded bg-white/10 animate-pulse flex-shrink-0" />
-                  <div className="flex-1 flex flex-col gap-1.5">
-                    <div className="h-3 bg-white/10 rounded animate-pulse w-3/4" />
-                    <div className="h-2.5 bg-white/10 rounded animate-pulse w-1/2" />
+            {isFetchingSuggestions && suggestions.length === 0 ? (
+              <div className="p-3 flex flex-col gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-2 py-2">
+                    <div className="w-10 h-10 rounded-md bg-white/10 animate-pulse flex-shrink-0" />
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <div className="h-3 bg-white/10 rounded animate-pulse" style={{ width: `${55 + i * 8}%` }} />
+                      <div className="h-2.5 bg-white/[0.06] rounded animate-pulse w-1/3" />
+                    </div>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* Song suggestions - Spotify-style rows */}
+                <div className="py-1">
+                  {suggestions.map((s, i) => {
+                    const isArtist = s.type === 'Artist';
+                    const img = isArtist
+                      ? resolveCover(s.picture_medium || s.picture_small, s.name)
+                      : resolveCover(s.album?.cover_medium || s.album?.cover_small, s.title);
+                    const playing = !isArtist && isThisSongPlaying(s);
+                    const current = !isArtist && isThisSongCurrent(s);
+
+                    return (
+                      <div
+                        key={i}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          if (isArtist) {
+                            setFocused(false);
+                            setQuery("");
+                            if (externalOnOpenArtist) externalOnOpenArtist(s.id);
+                            else handleSearch(s.name);
+                          }
+                          // For songs, clicking the row itself does nothing — use play button
+                        }}
+                        className={`flex items-center gap-3 px-3 py-2 cursor-default group transition-colors ${
+                          current ? "bg-white/[0.06]" : "hover:bg-white/[0.06]"
+                        } ${isArtist ? "cursor-pointer" : ""}`}
+                      >
+                        {/* Thumbnail */}
+                        <div className={`relative w-11 h-11 flex-shrink-0 bg-neutral-800 overflow-hidden shadow-md ${isArtist ? 'rounded-full' : 'rounded-md'}`}>
+                          {img && <img referrerPolicy="no-referrer" src={img} alt={s.name || s.title} onError={coverError(s.name || s.title)} className="w-full h-full object-cover" />}
+                          {/* Play/Pause overlay for songs */}
+                          {!isArtist && (
+                            <button
+                              onMouseDown={(e) => handleSuggestionPlay(e, s)}
+                              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              {playing ? (
+                                <Pause className="w-4 h-4 text-white fill-white" />
+                              ) : (
+                                <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Text */}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold truncate transition-colors ${
+                            current ? "text-green-400" : "text-white group-hover:text-white"
+                          }`}>
+                            {s.title || s.name}
+                          </p>
+                          <p className="text-neutral-500 text-xs truncate mt-0.5">
+                            {isArtist ? "Artist" : `Song${s.artist?.name ? ` • ${s.artist.name}` : ''}`}
+                          </p>
+                        </div>
+
+                        {/* Song: dedicated play button on the right */}
+                        {!isArtist && (
+                          <button
+                            onMouseDown={(e) => handleSuggestionPlay(e, s)}
+                            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                              playing
+                                ? "bg-green-500 text-black opacity-100"
+                                : "bg-white/10 text-white opacity-0 group-hover:opacity-100 hover:bg-green-500 hover:text-black"
+                            }`}
+                          >
+                            {playing ? (
+                              <Pause className="w-3.5 h-3.5 fill-current" />
+                            ) : (
+                              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                            )}
+                          </button>
+                        )}
+                        {/* Artist: arrow */}
+                        {isArtist && (
+                          <ChevronRight className="w-4 h-4 text-neutral-500 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <>
-              {/* Best Result — top card */}
-              {(() => {
-                const top = suggestions[0];
-                if (!top) return null;
-                const isArtist = top.type === 'Artist';
-                const img = isArtist
-                  ? resolveCover(top.picture_medium || top.picture_small, top.name)
-                  : resolveCover(top.album?.cover_medium || top.album?.cover_small, top.title);
-                return (
-                  <div
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      setFocused(false);
-                      setQuery("");
-                      if (isArtist && externalOnOpenArtist) externalOnOpenArtist(top.id);
-                      else if (!isArtist && externalOnPlay) externalOnPlay(top);
-                      else handleSearch(top.title || top.name);
-                    }}
-                    className="flex items-center gap-4 p-4 hover:bg-white/5 cursor-pointer group border-b border-white/[0.06] transition-colors"
-                  >
-                    <div className={`relative w-16 h-16 flex-shrink-0 overflow-hidden shadow-lg ${isArtist ? 'rounded-full' : 'rounded-lg'}`}>
-                      <img src={img} alt={top.name || top.title} onError={coverError(top.name || top.title)} className="w-full h-full object-cover" />
-                      {!isArtist && (
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-9 h-9 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                            <Play className="w-4 h-4 text-black fill-black ml-0.5" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Best Result</p>
-                      <p className="text-white text-base font-bold truncate group-hover:text-green-400 transition-colors">{top.title || top.name}</p>
-                      <p className="text-neutral-400 text-xs truncate mt-0.5">
-                        {isArtist ? 'Artist' : `Song ${top.artist?.name ? `• ${top.artist.name}` : ''}`}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Remaining suggestions as compact rows */}
-              {suggestions.slice(1).map((s, i) => {
-                const isArtist = s.type === 'Artist';
-                const img = isArtist
-                  ? resolveCover(s.picture_small || s.picture_medium, s.name)
-                  : resolveCover(s.album?.cover_small, s.title);
-
-                return (
-                  <div
-                    key={i}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      setFocused(false);
-                      setQuery("");
-                      if (isArtist && externalOnOpenArtist) externalOnOpenArtist(s.id);
-                      else if (!isArtist && externalOnPlay) externalOnPlay(s);
-                      else handleSearch(s.title || s.name);
-                    }}
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-white/[0.07] cursor-pointer group transition-colors"
-                  >
-                    <div className={`relative w-10 h-10 flex-shrink-0 bg-neutral-800 overflow-hidden ${isArtist ? 'rounded-full' : 'rounded'}`}>
-                      <img src={img} alt={s.name || s.title} onError={coverError(s.name || s.title)} className="w-full h-full object-cover" />
-                      {!isArtist && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Play className="w-4 h-4 text-white fill-white ml-0.5" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{s.title || s.name}</p>
-                      <p className="text-neutral-500 text-xs truncate">
-                        {s.type}{s.artist?.name ? ` • ${s.artist.name}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </>
-          )}
+              </>
+            )}
           </div>
-          {/* Pinned footer — always visible */}
+
+          {/* Pinned footer — "View all results" */}
           {!isFetchingSuggestions && suggestions.length > 0 && (
             <div
               onMouseDown={(e) => {
@@ -297,14 +340,12 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                 setFocused(false);
                 handleSearch(query);
               }}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.07] cursor-pointer group transition-colors border-t border-white/[0.08] flex-shrink-0"
+              className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.06] cursor-pointer transition-colors border-t border-white/[0.07] flex-shrink-0 group"
             >
-              <div className="w-10 h-10 flex-shrink-0 bg-neutral-800 rounded flex items-center justify-center">
-                <Search className="w-4 h-4 text-neutral-400" />
-              </div>
-              <p className="text-white text-sm">
-                Search for <span className="font-bold">"{query}"</span>
+              <p className="text-white text-sm font-medium">
+                View all results for <span className="font-bold text-green-400">"{query}"</span>
               </p>
+              <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-white transition-colors" />
             </div>
           )}
         </div>
@@ -321,13 +362,13 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
           {/* Logo - mobile only */}
           <Link href="/" className="flex md:hidden items-center gap-1.5 min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
-            <img src="/icon2.png" alt="Logo" className="w-7 h-7 flex-shrink-0" />
+            <img referrerPolicy="no-referrer" src="/icon2.png" alt="Logo" className="w-7 h-7 flex-shrink-0" />
             <span className="font-black text-base text-white truncate">tune<span className="text-green-500">together</span></span>
           </Link>
 
           {/* Logo - desktop */}
           <Link href="/" className="hidden md:flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img src="/icon2.png" alt="Logo" className="w-8 h-8" />
+            <img referrerPolicy="no-referrer" src="/icon2.png" alt="Logo" className="w-8 h-8" />
             <span className="font-black text-lg tracking-tight text-white drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
               tune<span className="text-green-500">together</span>
             </span>
@@ -381,11 +422,11 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 export default function Header(props) {
   return (
     <Suspense fallback={<div className="h-14 bg-black"></div>}>
-      <HeaderContent 
-        externalQuery={props.query} 
-        externalSetQuery={props.setQuery} 
-        externalHandleSearch={props.handleSearch} 
-        externalRoomId={props.roomId} 
+      <HeaderContent
+        externalQuery={props.query}
+        externalSetQuery={props.setQuery}
+        externalHandleSearch={props.handleSearch}
+        externalRoomId={props.roomId}
         externalOnPlay={props.onPlay}
         externalOnOpenArtist={props.onOpenArtist}
       />

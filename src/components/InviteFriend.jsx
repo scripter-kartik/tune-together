@@ -37,7 +37,7 @@ const InviteFriend = () => {
     return (
       <div className="w-full h-full bg-[#121212]">
         <div className="flex items-center px-3 py-4 justify-start gap-4 border-b border-gray-800">
-          <img className="w-5 h-5" src="/users.png" alt="" />
+          <img referrerPolicy="no-referrer" className="w-5 h-5" src="/users.png" alt="" />
           <h1 className="font-bold text-sm">What they're listening to</h1>
         </div>
         <div className="flex flex-col gap-10 justify-center items-center text-center h-full w-full p-14">
@@ -87,7 +87,7 @@ const InviteFriend = () => {
   return (
     <div className="w-full h-full bg-[#121212]">
       <div className="flex items-center px-3 py-4 justify-start gap-4 border-b border-gray-800">
-        <img className="w-5 h-5" src="/users.png" alt="" />
+        <img referrerPolicy="no-referrer" className="w-5 h-5" src="/users.png" alt="" />
         <h1 className="font-bold text-sm">What they're listening to</h1>
       </div>
 
@@ -108,7 +108,7 @@ const InviteFriend = () => {
                 className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 transition-colors cursor-pointer border-b border-gray-800/30"
               >
                 <div className="relative">
-                  <img
+                  <img referrerPolicy="no-referrer"
                     src={user.avatar}
                     alt={user.name}
                     className="w-10 h-10 rounded-full object-cover"

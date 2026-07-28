@@ -497,7 +497,7 @@ function MemberList({ group, me }) {
                 >
                   <div className="relative flex-shrink-0">
                     {p?.imageUrl ? (
-                      <img src={p.imageUrl} alt="" className="w-8 h-8 rounded-full" />
+                      <img referrerPolicy="no-referrer" src={p.imageUrl} alt="" className="w-8 h-8 rounded-full" />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
                         {(p?.name || "U").charAt(0).toUpperCase()}

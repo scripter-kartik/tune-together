@@ -52,7 +52,7 @@ export default function CollectionView({
 
         <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
           <div className="flex-shrink-0 shadow-2xl shadow-black/60">
-            <img
+            <img referrerPolicy="no-referrer"
               src={coverUrl}
               alt={collection.title}
               className="w-44 h-44 md:w-56 md:h-56 rounded shadow-2xl object-cover"
@@ -115,7 +115,7 @@ export default function CollectionView({
                     )}
                   </span>
                   <div className="flex items-center gap-3 min-w-0">
-                    <img
+                    <img referrerPolicy="no-referrer"
                       src={resolveCover(track.album?.cover_small || track.album?.cover_medium, track.title || track.id)}
                       alt=""
                       className="w-10 h-10 rounded object-cover flex-shrink-0"

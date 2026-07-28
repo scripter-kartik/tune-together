@@ -79,7 +79,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                 <span className="text-xs text-gray-500 w-4 text-center flex-shrink-0">
                   {idx + 1}
                 </span>
-                <img
+                <img referrerPolicy="no-referrer"
                   src={resolveCover(song.album?.cover_small || song.album?.cover_medium, song.title || song.id)}
                   alt=""
                   className="w-9 h-9 rounded flex-shrink-0 object-cover bg-neutral-800"
@@ -90,7 +90,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                   <p className="text-xs text-gray-400 truncate">{song.artist?.name}</p>
                 </div>
                 <button
-                  onClick={() => onRemove(song.id)}
+                  onClick={() => onRemove(song._uniqueKey || song.id)}
                   className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 transition flex-shrink-0"
                   title="Remove from queue"
                 >
@@ -122,7 +122,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                     className="flex items-center gap-2 p-2 rounded hover:bg-white/5 group"
                   >
                     <div className="relative w-9 h-9 rounded flex-shrink-0 overflow-hidden bg-neutral-800">
-                      <img
+                      <img referrerPolicy="no-referrer"
                         src={resolveCover(song.album?.cover_small || song.album?.cover_medium, song.title || song.id)}
                         alt=""
                         className="w-full h-full object-cover"

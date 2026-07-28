@@ -145,7 +145,7 @@ export default function CreateGroupModal({ me, onClose, onCreated }) {
                     className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition text-left"
                   >
                     {f.imageUrl ? (
-                      <img src={f.imageUrl} alt="" className="w-8 h-8 rounded-full" />
+                      <img referrerPolicy="no-referrer" src={f.imageUrl} alt="" className="w-8 h-8 rounded-full" />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
                         {f.name?.charAt(0)?.toUpperCase()}

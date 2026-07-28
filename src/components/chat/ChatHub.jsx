@@ -339,7 +339,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
               >
                 <div className="relative flex-shrink-0">
                   {f.imageUrl ? (
-                    <img src={f.imageUrl} alt="" className="w-9 h-9 rounded-full" />
+                    <img referrerPolicy="no-referrer" src={f.imageUrl} alt="" className="w-9 h-9 rounded-full" />
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-green-600 flex items-center justify-center text-sm font-semibold">
                       {f.name?.charAt(0)?.toUpperCase()}

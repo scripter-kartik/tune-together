@@ -177,7 +177,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
                 return (
                   <div key={m.clerkId} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5">
                     {p?.imageUrl ? (
-                      <img src={p.imageUrl} alt="" className="w-8 h-8 rounded-full" />
+                      <img referrerPolicy="no-referrer" src={p.imageUrl} alt="" className="w-8 h-8 rounded-full" />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
                         {(p?.name || "U").charAt(0).toUpperCase()}
@@ -228,7 +228,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
                 {addableFriends.map((f) => (
                   <div key={f.clerkId} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5">
                     {f.imageUrl ? (
-                      <img src={f.imageUrl} alt="" className="w-8 h-8 rounded-full" />
+                      <img referrerPolicy="no-referrer" src={f.imageUrl} alt="" className="w-8 h-8 rounded-full" />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
                         {f.name?.charAt(0)?.toUpperCase()}

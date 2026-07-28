@@ -417,7 +417,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
           </button>
         )}
         {friend.imageUrl ? (
-          <img src={friend.imageUrl} alt={friend.name} className="w-8 h-8 rounded-full" />
+          <img referrerPolicy="no-referrer" src={friend.imageUrl} alt={friend.name} className="w-8 h-8 rounded-full" />
         ) : (
           <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-sm font-semibold">
             {friend.name?.charAt(0)?.toUpperCase()}

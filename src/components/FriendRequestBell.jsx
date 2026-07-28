@@ -94,7 +94,7 @@ export default function FriendRequestBell() {
               <div key={user.clerkId} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-shrink-0">
                   {user.imageUrl ? (
-                    <img src={user.imageUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                    <img referrerPolicy="no-referrer" src={user.imageUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-bold text-white">
                       {user.name?.[0]?.toUpperCase() || "?"}

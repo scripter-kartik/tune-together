@@ -1,10 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import QueueList from "./QueueList";
 import ListeningUsers from "./ListeningUsers";
 import SidebarLyrics from "./SidebarLyrics";
-import HistoryList from "./HistoryList";
-import { ListMusic, Users, MicVocal, History } from "lucide-react";
+import { ListMusic, Users, MicVocal } from "lucide-react";
 
 export default function RightPanel({
   queue = [],
@@ -16,12 +15,18 @@ export default function RightPanel({
 }) {
   const [activeTab, setActiveTab] = useState("queue");
 
+  useEffect(() => {
+    const handleOpenQueue = () => setActiveTab("queue");
+    window.addEventListener("tt-open-queue", handleOpenQueue);
+    return () => window.removeEventListener("tt-open-queue", handleOpenQueue);
+  }, []);
+
   return (
     <div className="w-full h-full flex flex-col bg-[#121212] overflow-hidden">
       <div className="flex items-center px-4 py-2 border-b border-neutral-800 flex-shrink-0 gap-4 mt-2">
         <button
           onClick={() => setActiveTab("queue")}
-          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors ${
+          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
             activeTab === "queue"
               ? "border-green-400 text-green-400"
               : "border-transparent text-gray-500 hover:text-white"
@@ -32,7 +37,7 @@ export default function RightPanel({
         </button>
         <button
           onClick={() => setActiveTab("community")}
-          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors ${
+          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
             activeTab === "community"
               ? "border-green-400 text-green-400"
               : "border-transparent text-gray-500 hover:text-white"
@@ -43,7 +48,7 @@ export default function RightPanel({
         </button>
         <button
           onClick={() => setActiveTab("lyrics")}
-          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors ${
+          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
             activeTab === "lyrics"
               ? "border-green-400 text-green-400"
               : "border-transparent text-gray-500 hover:text-white"
@@ -51,18 +56,6 @@ export default function RightPanel({
         >
           <MicVocal className="w-4 h-4" />
           Lyrics
-        </button>
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors ${
-            activeTab === "history"
-              ? "border-green-400 text-green-400"
-              : "border-transparent text-gray-500 hover:text-white"
-          }`}
-          title="History"
-        >
-          <History className="w-4 h-4" />
-          History
         </button>
       </div>
 
@@ -76,8 +69,6 @@ export default function RightPanel({
           />
         ) : activeTab === "lyrics" ? (
           <SidebarLyrics song={currentSong} />
-        ) : activeTab === "history" ? (
-          <HistoryList history={recentHistory} onPlay={onPlay} />
         ) : (
           <ListeningUsers />
         )}

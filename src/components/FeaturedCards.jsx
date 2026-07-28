@@ -77,7 +77,7 @@ export default function FeaturedCards({ songs, onPlay, onQueue, onOpenCollection
           onClick={() => onOpenCollection?.(tile)}
           className="group relative flex items-center gap-3 md:gap-4 rounded-md bg-white/10 hover:bg-white/20 overflow-hidden cursor-pointer transition-colors duration-200 h-16 md:h-[4.5rem] animate-fade-up"
         >
-          <img
+          <img referrerPolicy="no-referrer"
             src={tile.cover}
             alt={tile.title}
             onError={coverError(tile.title)}
