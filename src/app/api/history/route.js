@@ -112,7 +112,32 @@ export async function GET() {
       });
     }
 
-    return Response.json({ topArtists, songs });
+    // Recent 50 songs overall (for History tab)
+    const recentRows = await PlayHistory.find({ clerkId })
+      .sort({ playedAt: -1 })
+      .limit(50)
+      .lean();
+      
+    const recentHistory = recentRows.map((doc) => {
+      const cover = `https://i.ytimg.com/vi/${doc.songId}/mqdefault.jpg`;
+      return {
+        id: doc.songId,
+        title: doc.title,
+        artist: { name: doc.artistName, id: doc.artistId || null },
+        album: {
+          id: null,
+          title: "",
+          cover_medium: cover,
+          cover_small: cover,
+          cover_big: cover,
+        },
+        duration: 0,
+        youtubeId: doc.songId,
+        playedAt: doc.playedAt,
+      };
+    });
+
+    return Response.json({ topArtists, songs, recentHistory });
   } catch (error) {
     console.error("Error fetching play history:", error);
     return Response.json({ topArtists: [], songs: [] }, { status: 200 });

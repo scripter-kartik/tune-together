@@ -285,7 +285,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
 }
 
 export default function Home({
-  songs, artists = [], albums = [], topArtists = [], historySongs = [], isSearchQuery = false,
+  songs, artists = [], albums = [], topArtists = [], historySongs = [], recentHistory = [], isSearchQuery = false,
   onLoadMore, showLoadMore, onPlay, onQueue, currentSongId, currentSong, isPlaying,
   queue, onRemoveFromQueue, onClearQueue, isLoading, error,
   selectedArtistId, onOpenArtist, selectedAlbumId, onOpenAlbum,
@@ -298,6 +298,7 @@ export default function Home({
   // DM to open inside the embedded chat view. { id, ts } — ts so re-clicking
   // the same friend re-triggers the effect in ChatHub.
   const [chatDm, setChatDm] = useState(null);
+  const [searchFilter, setSearchFilter] = useState('all');
 
   // Open a sidebar playlist in-app and close the mobile drawer.
   const openPlaylist = (pl) => {
@@ -418,7 +419,23 @@ export default function Home({
                 </div>
               ) : (
                 <>
-                  {artists.length > 0 && (
+                  <div className="px-4 md:px-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {['all', 'songs', 'artists', 'albums'].map(filter => (
+                      <button
+                        key={filter}
+                        onClick={() => setSearchFilter(filter)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-semibold capitalize whitespace-nowrap transition-colors ${
+                          searchFilter === filter
+                            ? "bg-green-500 text-black"
+                            : "bg-white/10 text-white hover:bg-white/20"
+                        }`}
+                      >
+                        {filter}
+                      </button>
+                    ))}
+                  </div>
+
+                  {artists.length > 0 && (searchFilter === 'all' || searchFilter === 'artists') && (
                     <section className="px-4 md:px-6">
                       <h2 className="text-xl md:text-2xl font-bold text-white mb-4">Artists</h2>
                       <div className="flex overflow-x-auto pb-4 gap-4 md:gap-5 scrollbar-hide">
@@ -448,7 +465,7 @@ export default function Home({
                     </section>
                   )}
 
-                  {albums.length > 0 && (
+                  {albums.length > 0 && (searchFilter === 'all' || searchFilter === 'albums') && (
                     <section className="px-4 md:px-6">
                       <h2 className="text-xl md:text-2xl font-bold text-white mb-4">Albums</h2>
                       <div className="flex overflow-x-auto pb-4 gap-4 md:gap-5 scrollbar-hide">
@@ -478,8 +495,8 @@ export default function Home({
                     </section>
                   )}
 
-                  {songs.length > 0 && (
-                    <section className="pb-6">
+                  {songs.length > 0 && (searchFilter === 'all' || searchFilter === 'songs') && (
+                    <section className="px-4 md:px-6">
                       <h2 className="text-xl md:text-2xl font-bold text-white mb-2 px-4 md:px-6">Songs</h2>
                       <MusicCards
                         songs={songs}
@@ -613,6 +630,8 @@ export default function Home({
           currentSong={currentSong}
           onRemoveFromQueue={onRemoveFromQueue}
           onClearQueue={onClearQueue}
+          recentHistory={recentHistory}
+          onPlay={onPlay}
         />
       </div>
 
@@ -633,6 +652,8 @@ export default function Home({
                 currentSong={currentSong}
                 onRemoveFromQueue={onRemoveFromQueue}
                 onClearQueue={onClearQueue}
+                recentHistory={recentHistory}
+                onPlay={onPlay}
               />
             </div>
           </div>

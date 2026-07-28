@@ -11,6 +11,7 @@ import LyricsView from "./LyricsView";
 import NowPlayingView from "./NowPlayingView";
 import { getSyncSession, endSyncSession } from "@/lib/syncSession";
 import { joinRoomId } from "@/lib/room";
+import ReactionMenu from "./ReactionMenu";
 
 export default function PlayerFooter({
   song,
@@ -479,6 +480,7 @@ export default function PlayerFooter({
           >
             <MicVocal size={18} />
           </button>
+          <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
           <button
             onClick={openQueue}
             className="p-2 text-neutral-300 hover:text-white"
@@ -529,6 +531,7 @@ export default function PlayerFooter({
           >
             <MicVocal size={18} />
           </button>
+          <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
           <button
             onClick={openQueue}
             className="text-[#b3b3b3] hover:text-white transition-colors"

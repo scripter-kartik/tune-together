@@ -36,22 +36,29 @@ export async function GET(req) {
       album: {
         id: item.album?.albumId || null,
         title: item.album?.name || "Unknown",
-        cover_medium: lastThumb(item),
+        cover_small:  item.thumbnails?.[0]?.url  || lastThumb(item),
+        cover_medium: item.thumbnails?.[1]?.url  || lastThumb(item),
+        cover_big:    lastThumb(item),
+        cover_xl:     lastThumb(item),
       },
       duration: item.duration || 0,
-      youtubeId: item.videoId, // Tell the frontend it already has the yt ID
+      youtubeId: item.videoId,
     }));
 
     const artists = (artistResults || []).map(item => ({
       id: item.artistId,
       name: item.name,
-      picture_medium: lastThumb(item),
+      picture_small:  item.thumbnails?.[0]?.url || lastThumb(item),
+      picture_medium: item.thumbnails?.[1]?.url || lastThumb(item),
+      picture_xl:     lastThumb(item),
     }));
 
     const albums = (albumResults || []).map(item => ({
       id: item.albumId,
       title: item.name,
-      cover_medium: lastThumb(item),
+      cover_small:  item.thumbnails?.[0]?.url || lastThumb(item),
+      cover_medium: item.thumbnails?.[1]?.url || lastThumb(item),
+      cover_big:    lastThumb(item),
       artist: {
         name: item.artist?.name || "Unknown",
       },

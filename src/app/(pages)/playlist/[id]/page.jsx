@@ -8,6 +8,7 @@ import { IoMdTime } from "react-icons/io";
 import Link from "next/link";
 import { Menu, X, Plus, Check } from "lucide-react";
 import { PLAYLISTS } from "../../../../lib/constants";
+import { resolveCover, coverError } from "../../../../lib/coverPlaceholder";
 
 function PlaylistSidebarContent({ currentId }) {
   return (
@@ -172,7 +173,7 @@ export default function PlaylistPage() {
             <div className={`bg-gradient-to-b ${gradient} to-black px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 flex-shrink-0`}>
               <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6 mt-4 sm:mt-0">
                 <div className="w-40 h-40 sm:w-40 sm:h-40 md:w-56 md:h-56 bg-black/20 rounded shadow-xl overflow-hidden flex-shrink-0">
-                  <img src={songs[0]?.album?.cover_xl || songs[0]?.album?.cover_medium || "/icon2.png"} className="w-full h-full object-cover" />
+                  <img src={resolveCover(songs[0]?.album?.cover_xl || songs[0]?.album?.cover_medium || songs[0]?.album?.cover_small, songs[0]?.title)} onError={coverError(songs[0]?.title)} className="w-full h-full object-cover" />
                 </div>
 
                 <div className="flex-1 pb-2 sm:pb-4 text-center sm:text-left mt-2 sm:mt-0">
@@ -247,7 +248,7 @@ export default function PlaylistPage() {
                         </div>
 
                         <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-                          <img src={song.album?.cover_small || song.album?.cover_medium || "/icon2.png"} className="w-8 h-8 sm:w-10 sm:h-10 rounded flex-shrink-0" />
+                          <img src={resolveCover(song.album?.cover_small || song.album?.cover_medium, song.title)} onError={coverError(song.title)} className="w-8 h-8 sm:w-10 sm:h-10 rounded flex-shrink-0 object-cover" />
                           <div className="overflow-hidden min-w-0">
                             <p className={`text-xs sm:text-sm truncate ${currentSongIndex === index ? "text-green-500" : "text-white"}`}>
                               {song.title}

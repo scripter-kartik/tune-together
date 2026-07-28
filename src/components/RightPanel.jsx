@@ -3,13 +3,16 @@ import { useState } from "react";
 import QueueList from "./QueueList";
 import ListeningUsers from "./ListeningUsers";
 import SidebarLyrics from "./SidebarLyrics";
-import { ListMusic, Users, MicVocal } from "lucide-react";
+import HistoryList from "./HistoryList";
+import { ListMusic, Users, MicVocal, History } from "lucide-react";
 
 export default function RightPanel({
   queue = [],
   currentSong,
   onRemoveFromQueue,
   onClearQueue,
+  recentHistory,
+  onPlay,
 }) {
   const [activeTab, setActiveTab] = useState("queue");
 
@@ -49,6 +52,18 @@ export default function RightPanel({
           <MicVocal className="w-4 h-4" />
           Lyrics
         </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex items-center gap-2 pb-2 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === "history"
+              ? "border-green-400 text-green-400"
+              : "border-transparent text-gray-500 hover:text-white"
+          }`}
+          title="History"
+        >
+          <History className="w-4 h-4" />
+          History
+        </button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -61,6 +76,8 @@ export default function RightPanel({
           />
         ) : activeTab === "lyrics" ? (
           <SidebarLyrics song={currentSong} />
+        ) : activeTab === "history" ? (
+          <HistoryList history={recentHistory} onPlay={onPlay} />
         ) : (
           <ListeningUsers />
         )}

@@ -10,9 +10,10 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { Search, Home, LayoutGrid, Clock, X } from "lucide-react";
+import { Search, Home, LayoutGrid, Clock, X, Music, Play } from "lucide-react";
+import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
-function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId }) {
+function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId, externalOnPlay, externalOnOpenArtist }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomId = externalRoomId || searchParams?.get("room") || null;
@@ -70,7 +71,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
     const q = (overrideQuery !== undefined ? overrideQuery : query).trim();
     if (q) saveRecentSearch(q);
     if (externalHandleSearch) {
-      externalHandleSearch();
+      externalHandleSearch(q);
     } else {
       if (q) {
         router.push(`/?q=${encodeURIComponent(q)}${roomId ? `&room=${roomId}` : ""}`);
@@ -90,8 +91,10 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         if (res.ok) {
           const data = await res.json();
           const top = [];
+          // First artist as top result
           if (data.artists?.length > 0) top.push({ type: 'Artist', ...data.artists[0] });
-          if (data.songs?.length > 0) top.push(...data.songs.slice(0, 4).map(s => ({ type: 'Song', ...s })));
+          // Then up to 5 songs
+          if (data.songs?.length > 0) top.push(...data.songs.slice(0, 5).map(s => ({ type: 'Song', ...s })));
           setSuggestions(top.slice(0, 6));
         }
       } catch (err) {
@@ -99,7 +102,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
       } finally {
         setIsFetchingSuggestions(false);
       }
-    }, 300);
+    }, 250);
     return () => clearTimeout(timer);
   }, [query]);
 
@@ -187,33 +190,122 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
       )}
 
       {focused && query.trim() && (suggestions.length > 0 || isFetchingSuggestions) && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-md shadow-2xl border border-neutral-700 overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.6)] border border-white/[0.08] overflow-hidden z-50 flex flex-col max-h-[480px]">
+          <div className="overflow-y-auto flex-1 scrollbar-hide">
+          
+          {/* Skeleton loading state */}
           {isFetchingSuggestions && suggestions.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-neutral-400">Loading...</div>
-          ) : (
-            suggestions.map((s, i) => (
-              <div 
-                key={i}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  const suggestionText = s.title || s.name;
-                  setQuery(suggestionText);
-                  setFocused(false);
-                  setTimeout(() => {
-                    handleSearch(suggestionText);
-                  }, 0);
-                }}
-                className="flex items-center gap-3 px-4 py-2 hover:bg-white/10 cursor-pointer"
-              >
-                <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{s.title || s.name}</p>
-                  <p className="text-neutral-400 text-xs truncate">
-                    {s.type} {s.artist?.name ? `• ${s.artist.name}` : ''}
-                  </p>
+            <div className="p-3 flex flex-col gap-2">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-2 py-1">
+                  <div className="w-10 h-10 rounded bg-white/10 animate-pulse flex-shrink-0" />
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <div className="h-3 bg-white/10 rounded animate-pulse w-3/4" />
+                    <div className="h-2.5 bg-white/10 rounded animate-pulse w-1/2" />
+                  </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Best Result — top card */}
+              {(() => {
+                const top = suggestions[0];
+                if (!top) return null;
+                const isArtist = top.type === 'Artist';
+                const img = isArtist
+                  ? resolveCover(top.picture_medium || top.picture_small, top.name)
+                  : resolveCover(top.album?.cover_medium || top.album?.cover_small, top.title);
+                return (
+                  <div
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setFocused(false);
+                      setQuery("");
+                      if (isArtist && externalOnOpenArtist) externalOnOpenArtist(top.id);
+                      else if (!isArtist && externalOnPlay) externalOnPlay(top);
+                      else handleSearch(top.title || top.name);
+                    }}
+                    className="flex items-center gap-4 p-4 hover:bg-white/5 cursor-pointer group border-b border-white/[0.06] transition-colors"
+                  >
+                    <div className={`relative w-16 h-16 flex-shrink-0 overflow-hidden shadow-lg ${isArtist ? 'rounded-full' : 'rounded-lg'}`}>
+                      <img src={img} alt={top.name || top.title} onError={coverError(top.name || top.title)} className="w-full h-full object-cover" />
+                      {!isArtist && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-9 h-9 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                            <Play className="w-4 h-4 text-black fill-black ml-0.5" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Best Result</p>
+                      <p className="text-white text-base font-bold truncate group-hover:text-green-400 transition-colors">{top.title || top.name}</p>
+                      <p className="text-neutral-400 text-xs truncate mt-0.5">
+                        {isArtist ? 'Artist' : `Song ${top.artist?.name ? `• ${top.artist.name}` : ''}`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Remaining suggestions as compact rows */}
+              {suggestions.slice(1).map((s, i) => {
+                const isArtist = s.type === 'Artist';
+                const img = isArtist
+                  ? resolveCover(s.picture_small || s.picture_medium, s.name)
+                  : resolveCover(s.album?.cover_small, s.title);
+
+                return (
+                  <div
+                    key={i}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setFocused(false);
+                      setQuery("");
+                      if (isArtist && externalOnOpenArtist) externalOnOpenArtist(s.id);
+                      else if (!isArtist && externalOnPlay) externalOnPlay(s);
+                      else handleSearch(s.title || s.name);
+                    }}
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-white/[0.07] cursor-pointer group transition-colors"
+                  >
+                    <div className={`relative w-10 h-10 flex-shrink-0 bg-neutral-800 overflow-hidden ${isArtist ? 'rounded-full' : 'rounded'}`}>
+                      <img src={img} alt={s.name || s.title} onError={coverError(s.name || s.title)} className="w-full h-full object-cover" />
+                      {!isArtist && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{s.title || s.name}</p>
+                      <p className="text-neutral-500 text-xs truncate">
+                        {s.type}{s.artist?.name ? ` • ${s.artist.name}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+          </div>
+          {/* Pinned footer — always visible */}
+          {!isFetchingSuggestions && suggestions.length > 0 && (
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setFocused(false);
+                handleSearch(query);
+              }}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.07] cursor-pointer group transition-colors border-t border-white/[0.08] flex-shrink-0"
+            >
+              <div className="w-10 h-10 flex-shrink-0 bg-neutral-800 rounded flex items-center justify-center">
+                <Search className="w-4 h-4 text-neutral-400" />
               </div>
-            ))
+              <p className="text-white text-sm">
+                Search for <span className="font-bold">"{query}"</span>
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -294,6 +386,8 @@ export default function Header(props) {
         externalSetQuery={props.setQuery} 
         externalHandleSearch={props.handleSearch} 
         externalRoomId={props.roomId} 
+        externalOnPlay={props.onPlay}
+        externalOnOpenArtist={props.onOpenArtist}
       />
     </Suspense>
   );

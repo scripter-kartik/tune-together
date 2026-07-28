@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { getSocket } from "@/lib/socket";
 import { resolveRoomId, joinRoomId } from "@/lib/room";
 import PlayerFooter from "./PlayerFooter";
+import ReactionOverlay from "./ReactionOverlay";
 
 export default function GlobalPlayer() {
   const [currentSong, setCurrentSong] = useState(null);
@@ -208,6 +209,7 @@ export default function GlobalPlayer() {
 
   return (
     <div className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">
+      <ReactionOverlay socketRef={socketRef} roomId={roomId} />
       <PlayerFooter
         song={currentSong}
         isPlaying={isPlaying}

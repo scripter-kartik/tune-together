@@ -24,6 +24,7 @@ export default function Page() {
   const [isSearchQuery, setIsSearchQuery] = useState(false);
   const [topArtists, setTopArtists] = useState([]);
   const [historySongs, setHistorySongs] = useState([]);
+  const [recentHistory, setRecentHistory] = useState([]);
 
   useEffect(() => {
     const onGlobalState = (e) => {
@@ -143,25 +144,10 @@ export default function Page() {
     }
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(query);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  useEffect(() => {
-    if (debouncedQuery.trim() !== "") {
-      fetchSongs(debouncedQuery, true);
-    } else if (isSearchQuery) {
-      setIsSearchQuery(false);
-      fetchHomeFeed(randomTerms);
-    }
-  }, [debouncedQuery]);
-
-  const handleSearch = () => {
-    if (query.trim() !== "") {
-      fetchSongs(query, true);
+  const handleSearch = (overrideQuery) => {
+    const q = overrideQuery || query;
+    if (q.trim() !== "") {
+      fetchSongs(q, true);
     }
   };
 
@@ -179,17 +165,24 @@ export default function Page() {
   };
 
   useEffect(() => {
+    if (!query.trim() && isSearchQuery) {
+      setIsSearchQuery(false);
+      fetchHomeFeed(randomTerms);
+    }
+  }, [query, isSearchQuery, randomTerms]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlQuery = params.get('q');
     const browseQuery = sessionStorage.getItem('browseQuery');
     
     if (urlQuery) {
       setQuery(urlQuery);
-      setDebouncedQuery(urlQuery);
+      fetchSongs(urlQuery, true);
     } else if (browseQuery) {
       setQuery(browseQuery);
-      setDebouncedQuery(browseQuery);
       sessionStorage.removeItem('browseQuery');
+      setTimeout(() => fetchSongs(browseQuery, true), 0);
     } else {
       fetchHomeFeed(randomTerms);
     }
@@ -203,6 +196,7 @@ export default function Page() {
       const data = await res.json();
       setTopArtists(data.topArtists || []);
       setHistorySongs(data.songs || []);
+      setRecentHistory(data.recentHistory || []);
     } catch (err) {
       console.error("Failed to fetch listening history:", err);
     }
@@ -227,6 +221,7 @@ export default function Page() {
     else {
       setTopArtists([]);
       setHistorySongs([]);
+      setRecentHistory([]);
     }
   }, [isSignedIn]);
 
@@ -253,7 +248,7 @@ export default function Page() {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-black">
       <header className="flex-shrink-0 z-40 border-b border-neutral-800">
-        <Header query={query} setQuery={setQuery} handleSearch={handleSearch} />
+        <Header query={query} setQuery={setQuery} handleSearch={handleSearch} onPlay={handlePlay} onOpenArtist={setSelectedArtistId} />
       </header>
       
       <main className="flex-1 overflow-hidden">
@@ -263,6 +258,7 @@ export default function Page() {
           albums={albums}
           topArtists={topArtists}
           historySongs={historySongs}
+          recentHistory={recentHistory}
           isSearchQuery={isSearchQuery}
           onLoadMore={handleLoadMore}
           showLoadMore={songs.length > visibleCount}
