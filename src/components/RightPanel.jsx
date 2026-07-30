@@ -22,7 +22,7 @@ export default function RightPanel({
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#121212] overflow-hidden">
+    <div className="w-full flex-1 flex flex-col bg-[#121212] overflow-hidden">
       <div className="flex items-center px-4 py-2 border-b border-neutral-800 flex-shrink-0 gap-4 mt-2">
         <button
           onClick={() => setActiveTab("queue")}

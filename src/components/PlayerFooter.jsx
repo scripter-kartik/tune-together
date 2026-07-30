@@ -605,7 +605,7 @@ export default function PlayerFooter({
         onPrev={onPrev}
         onNext={onNext}
         onOpenLyrics={() => song && setShowLyrics(true)}
-        onOpenQueue={() => { setShowNowPlaying(false); handleQueueSong(); }}
+        onOpenQueue={() => { setShowNowPlaying(false); window.dispatchEvent(new CustomEvent("tt-open-queue")); }}
         showLyrics={showLyrics}
       />
 

@@ -192,7 +192,7 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
                   <div className="flex items-center gap-4">
                     <button
                       onClick={(e) => { e.stopPropagation(); onQueue(fullTrack); }}
-                      className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-white transition p-1"
+                      className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-neutral-400 hover:text-white active:text-white transition p-1"
                       title="Add to Queue"
                     >
                       <Plus className="w-4 h-4" />

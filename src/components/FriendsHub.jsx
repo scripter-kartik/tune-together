@@ -319,7 +319,7 @@ export default function FriendsHub({ roomId }) {
                       <button
                         onClick={() => removeFriend(f.clerkId)}
                         disabled={busyIds.has(f.clerkId)}
-                        className="p-1.5 rounded-full text-neutral-500 hover:text-red-400 hover:bg-white/10 opacity-0 group-hover:opacity-100 transition"
+                        className="p-1.5 rounded-full text-neutral-500 hover:text-red-400 hover:bg-white/10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition"
                         aria-label="Remove friend"
                       >
                         <X className="w-4 h-4" />

@@ -199,7 +199,7 @@ export default function PlaylistView({
                   <div className="flex items-center gap-4">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQueue(track); }}
-                      className={`transition p-1 ${addedId === track.id ? "text-green-400 opacity-100" : "text-neutral-400 hover:text-white opacity-0 group-hover:opacity-100"}`}
+                      className={`transition p-1 ${addedId === track.id ? "text-green-400 opacity-100" : "text-neutral-400 hover:text-white active:text-white opacity-100 md:opacity-0 md:group-hover:opacity-100"}`}
                       title="Add to queue"
                     >
                       {addedId === track.id ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}

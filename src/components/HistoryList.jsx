@@ -18,7 +18,7 @@ export default function HistoryList({ history = [], onPlay }) {
   }
 
   return (
-    <div className="flex-1 h-full overflow-y-auto scrollbar pb-24">
+    <div className="flex-1 overflow-y-auto scrollbar pb-4">
       <div className="p-4 flex flex-col gap-2">
         <h3 className="text-white font-bold mb-2 px-2">Recently Played</h3>
         {history.map((song, index) => (

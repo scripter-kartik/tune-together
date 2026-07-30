@@ -279,6 +279,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                           {/* Play/Pause overlay for songs */}
                           {!isArtist && (
                             <button
+                              onClick={(e) => handleSuggestionPlay(e, s)}
                               onMouseDown={(e) => handleSuggestionPlay(e, s)}
                               className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
@@ -306,11 +307,12 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                         {/* Song: dedicated play button on the right */}
                         {!isArtist && (
                           <button
+                            onClick={(e) => handleSuggestionPlay(e, s)}
                             onMouseDown={(e) => handleSuggestionPlay(e, s)}
                             className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                               playing
                                 ? "bg-green-500 text-black opacity-100"
-                                : "bg-white/10 text-white opacity-0 group-hover:opacity-100 hover:bg-green-500 hover:text-black"
+                                : "bg-white/10 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-green-500 hover:text-black active:bg-green-500 active:text-black"
                             }`}
                           >
                             {playing ? (

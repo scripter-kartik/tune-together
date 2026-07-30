@@ -179,9 +179,9 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 className="object-cover w-full h-full group-hover:scale-105 transition-all duration-500 ease-out"
               />
               {/* Play button overlay */}
-              <div className="absolute bottom-2 right-2 translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+              <div className="absolute bottom-2 right-2 translate-y-0 md:translate-y-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-300">
                 <button
-                  className="w-10 h-10 bg-green-500 hover:bg-green-400 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30"
+                  className="w-10 h-10 bg-green-500 hover:bg-green-400 active:scale-95 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30"
                   onClick={(e) => {
                     e.stopPropagation();
                     onPlay(song, songs);
@@ -202,10 +202,10 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
               </div>
             )}
 
-            {/* Three-dot menu button (shown on hover) */}
+            {/* Three-dot menu button (always visible on mobile, hover on desktop) */}
             <button
               onClick={(e) => handleContextMenu(e, song)}
-              className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-all rounded-full w-8 h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg"
+              className="absolute top-3 right-3 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-full w-8 h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg"
               title="More options"
               aria-label="More options"
             >
@@ -222,7 +222,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 className={`absolute top-12 right-3 z-10 transition-all rounded-full w-8 h-8 flex items-center justify-center shadow-lg ${
                   addedId === song.id
                     ? "opacity-100 bg-green-500 text-white scale-110"
-                    : "opacity-0 group-hover:opacity-100 bg-black/70 text-white hover:bg-green-500 hover:scale-110"
+                    : "opacity-100 md:opacity-0 md:group-hover:opacity-100 bg-black/70 text-white hover:bg-green-500 active:bg-green-500 hover:scale-110"
                 }`}
                 title={addedId === song.id ? "Added to queue" : "Add to queue"}
                 aria-label="Add to queue"

@@ -219,7 +219,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                     <div className="flex items-center justify-end gap-6 flex-shrink-0 w-32">
                       <button
                         onClick={(e) => { e.stopPropagation(); onQueue(track); }}
-                        className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-white transition-all p-1"
+                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-neutral-400 hover:text-white active:text-white transition-all p-1"
                         title="Add to Queue"
                       >
                         <Plus className="w-5 h-5" />

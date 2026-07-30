@@ -58,7 +58,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#181818]">
+    <div className="flex-1 flex flex-col bg-[#181818] min-h-0">
       <div className="flex items-center justify-between p-3 border-b border-neutral-800 flex-shrink-0">
         <div className="flex items-center gap-2">
           <ListMusic className="w-4 h-4 text-green-400" />
@@ -105,7 +105,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                           {/* Drag handle */}
                           <div
                             {...provided.dragHandleProps}
-                            className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0 transition-opacity"
+                            className="hidden md:block md:opacity-0 md:group-hover:opacity-100 text-gray-600 hover:text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0 transition-opacity"
                           >
                             <GripVertical className="w-3.5 h-3.5" />
                           </div>
@@ -128,7 +128,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                           </div>
                           <button
                             onClick={() => onRemove(song._uniqueKey || song.id)}
-                            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 transition flex-shrink-0"
+                            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-gray-400 hover:text-red-400 active:text-red-400 transition flex-shrink-0"
                             title="Remove from queue"
                           >
                             <X className="w-4 h-4" />
@@ -162,7 +162,8 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                 {suggestions.map((song, idx) => (
                   <div
                     key={`sug-${song.id}-${idx}`}
-                    className="flex items-center gap-2 p-2 rounded hover:bg-white/5 group"
+                    className="flex items-center gap-2 p-2 rounded hover:bg-white/5 group cursor-pointer"
+                    onClick={() => handlePlaySuggestion(song)}
                   >
                     <div className="relative w-9 h-9 rounded flex-shrink-0 overflow-hidden bg-neutral-800">
                       <img
@@ -175,12 +176,6 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                         className="w-full h-full object-cover"
                         onError={coverError(song.title || song.id)}
                       />
-                      <div
-                        onClick={() => handlePlaySuggestion(song)}
-                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      >
-                        <Play className="w-4 h-4 text-white fill-current ml-0.5" />
-                      </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -189,8 +184,8 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                     </div>
 
                     <button
-                      onClick={() => handleAddSuggestion(song)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-neutral-400 hover:text-green-400 hover:bg-green-400/10 rounded-full transition-all flex-shrink-0"
+                      onClick={(e) => { e.stopPropagation(); handleAddSuggestion(song); }}
+                      className="opacity-100 p-1.5 text-neutral-400 hover:text-green-400 active:text-green-400 hover:bg-green-400/10 rounded-full transition-all flex-shrink-0"
                       title="Add to queue"
                     >
                       <Plus className="w-4 h-4" />

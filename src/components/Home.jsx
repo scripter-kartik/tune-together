@@ -319,7 +319,7 @@ export default function Home({
   };
 
   useEffect(() => {
-    const openDrawer = () => setShowRight(true);
+    const openDrawer = () => { setShowRight(true); };
     // Any component (e.g. the friends panel) can open a chat in-place without
     // navigating away — the player keeps running.
     const openChat = (e) => {
@@ -848,13 +848,13 @@ export default function Home({
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowRight(false)} />
           <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-xs bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-right">
-            <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+            <div className="flex items-center justify-between p-4 border-b border-neutral-800 flex-shrink-0">
               <h3 className="text-white font-bold">Queue</h3>
               <button onClick={() => setShowRight(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
                 <X size={20} className="text-white" />
               </button>
             </div>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden min-h-0">
               <RightPanel
                 queue={queue}
                 currentSong={currentSong}
