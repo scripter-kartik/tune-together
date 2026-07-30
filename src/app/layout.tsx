@@ -11,6 +11,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://tunetogether.vercel.app"),
   title: "Tune Together",
   description: "Listen to music together",
   referrer: "no-referrer",

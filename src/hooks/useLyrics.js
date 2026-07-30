@@ -54,7 +54,7 @@ export function useLyrics(song) {
     return () => {
       cancelled = true;
     };
-  }, [song?.id]);
+  }, [song]);
 
   return { lyricsData, lyricsStatus };
 }

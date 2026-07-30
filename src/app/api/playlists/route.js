@@ -17,7 +17,7 @@ export async function GET(req) {
   }
 }
 
-export async function POST(req) {
+export async function POST() {
   try {
     const user = await currentUser();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
