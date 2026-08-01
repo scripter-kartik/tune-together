@@ -1,6 +1,26 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import Playlist from "@/lib/models/Playlist";
+import User from "@/lib/models/User";
+
+// Attach owner/collaborator display info so the UI can render avatars.
+async function hydratePlaylists(playlists) {
+  const clerkIds = new Set();
+  playlists.forEach((p) => {
+    clerkIds.add(p.userId);
+    (p.collaborators || []).forEach((c) => clerkIds.add(c));
+  });
+  const users = await User.find({ clerkId: { $in: [...clerkIds] } }).lean();
+  const byId = new Map(users.map((u) => [u.clerkId, u]));
+
+  return playlists.map((p) => ({
+    ...p,
+    owner: byId.get(p.userId) || null,
+    collaboratorInfo: (p.collaborators || [])
+      .map((c) => byId.get(c) || null)
+      .filter(Boolean),
+  }));
+}
 
 export async function GET(req) {
   try {
@@ -8,16 +28,20 @@ export async function GET(req) {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     await connectDB();
-    const playlists = await Playlist.find({ userId: user.id }).sort({ createdAt: -1 });
+    // Owned + collaborative-with-me.
+    const playlists = await Playlist.find({
+      $or: [{ userId: user.id }, { collaborators: user.id }],
+    }).sort({ createdAt: -1 });
 
-    return Response.json({ success: true, playlists });
+    const hydrated = await hydratePlaylists(playlists);
+    return Response.json({ success: true, playlists: hydrated });
   } catch (error) {
     console.error("Error fetching playlists:", error);
     return Response.json({ error: "Failed to fetch playlists" }, { status: 500 });
   }
 }
 
-export async function POST() {
+export async function POST(req) {
   try {
     const user = await currentUser();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -47,13 +71,26 @@ export async function PUT(req) {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const { playlistId, song, action } = await req.json();
-    if (!playlistId || !song || !action) {
+    if (!playlistId || !action) {
       return Response.json({ error: "Missing parameters" }, { status: 400 });
     }
 
     await connectDB();
-    const playlist = await Playlist.findOne({ _id: playlistId, userId: user.id });
+    const playlist = await Playlist.findOne({
+      _id: playlistId,
+      $or: [{ userId: user.id }, { collaborators: user.id }],
+    });
     if (!playlist) return Response.json({ error: "Not found" }, { status: 404 });
+
+    const isOwner = String(playlist.userId) === String(user.id);
+    const isCollaborator = (playlist.collaborators || []).some(
+      (c) => String(c) === String(user.id)
+    );
+    const canEditSongs = isOwner || isCollaborator;
+
+    if (!canEditSongs) {
+      return Response.json({ error: "No permission" }, { status: 403 });
+    }
 
     if (action === "add") {
       // Prevent duplicates
@@ -67,10 +104,29 @@ export async function PUT(req) {
     } else if (action === "remove") {
       playlist.songs = playlist.songs.filter((s) => String(s.id) !== String(song.id));
       playlist.markModified("songs");
+    } else if (action === "addCollaborator" && isOwner) {
+      const collaboratorId = song; // reuse `song` field to carry the Clerk id
+      if (!collaboratorId) return Response.json({ error: "Missing collaborator" }, { status: 400 });
+      const exists = await User.findOne({ clerkId: collaboratorId }).lean();
+      if (!exists) return Response.json({ error: "User not found" }, { status: 404 });
+      if (!playlist.collaborators.includes(collaboratorId)) {
+        playlist.collaborators.push(collaboratorId);
+        playlist.isCollaborative = true;
+      }
+    } else if (action === "removeCollaborator" && isOwner) {
+      const collaboratorId = song;
+      if (!collaboratorId) return Response.json({ error: "Missing collaborator" }, { status: 400 });
+      playlist.collaborators = (playlist.collaborators || []).filter(
+        (c) => String(c) !== String(collaboratorId)
+      );
+      playlist.isCollaborative = playlist.collaborators.length > 0;
+    } else {
+      return Response.json({ error: "Invalid action or no permission" }, { status: 403 });
     }
 
     await playlist.save();
-    return Response.json({ success: true, playlist });
+    const [hydrated] = await hydratePlaylists([playlist]);
+    return Response.json({ success: true, playlist: hydrated });
   } catch (error) {
     console.error("Error updating playlist:", error);
     return Response.json({ error: "Failed to update playlist" }, { status: 500 });
@@ -88,6 +144,7 @@ export async function DELETE(req) {
     if (!id) return Response.json({ error: "Missing playlist id" }, { status: 400 });
 
     await connectDB();
+    // Only the owner may delete.
     await Playlist.findOneAndDelete({ _id: id, userId: user.id });
 
     return Response.json({ success: true });

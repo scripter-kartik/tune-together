@@ -10,8 +10,9 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { Search, Home, LayoutGrid, Clock, X, Play, Pause, ChevronRight } from "lucide-react";
+import { Search, Home, LayoutGrid, Clock, X, Play, Pause, ChevronRight, PartyPopper } from "lucide-react";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
+import PartiesHub from "./PartiesHub";
 
 function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId, externalOnPlay, externalOnOpenArtist }) {
   const router = useRouter();
@@ -27,6 +28,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
   const [suggestions, setSuggestions] = useState([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
+  const [showParties, setShowParties] = useState(false);
 
   // Track currently playing song & state from global events
   const [currentSong, setCurrentSong] = useState(null);
@@ -156,10 +158,11 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 
   const searchBar = (
     <div className="relative flex-1 min-w-0 max-w-[500px]">
-      <div className={`flex items-center gap-3 bg-[#242424] rounded-full px-4 h-11 md:h-12 w-full transition-all duration-200 ${focused ? 'ring-1 ring-white/30 bg-[#2a2a2a]' : 'hover:bg-[#2a2a2a]'}`}>
+      <div className={`flex items-center gap-3 bg-[#242424] rounded-full px-4 h-11 md:h-12 w-full transition-all duration-200 ${focused ? 'ring-1 ring-[var(--tt-accent)]/40 bg-[#2a2a2a]' : 'transition-colors hover:bg-[#2a2a2a]'}`}>
         <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
         <input
           type="text"
+          data-search-input
           placeholder="What do you want to play?"
           className="text-white text-base md:text-sm font-medium outline-none border-0 bg-transparent flex-1 min-w-0 placeholder-neutral-400"
           value={query}
@@ -171,7 +174,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         {query && (
           <button
             onClick={() => setQuery("")}
-            className="text-neutral-400 hover:text-white transition-colors text-lg leading-none flex-shrink-0"
+            className="text-neutral-400 transition-colors hover:text-white text-lg leading-none flex-shrink-0"
             aria-label="Clear search"
           >
             ✕
@@ -179,13 +182,13 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         )}
         <div className="w-px h-5 bg-neutral-600 flex-shrink-0" />
         <Link href="/browse" className="flex-shrink-0" aria-label="Browse">
-          <LayoutGrid className="w-4 h-4 text-neutral-400 hover:text-white transition-colors" />
+          <LayoutGrid className="w-4 h-4 text-neutral-400 transition-colors hover:text-white" />
         </Link>
       </div>
 
       {/* Recent searches — Spotify-style, shown on focus with an empty query */}
       {focused && !query.trim() && recentSearches.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-xl shadow-2xl border border-white/[0.08] overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-xl shadow-2xl border border-[var(--tt-border)] overflow-hidden z-50">
           <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
             <p className="text-white text-sm font-bold">Recent searches</p>
             <button
@@ -193,7 +196,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                 e.preventDefault();
                 clearRecentSearches();
               }}
-              className="text-neutral-400 hover:text-white text-xs font-semibold transition-colors"
+              className="text-neutral-400 transition-colors hover:text-white text-xs font-semibold"
             >
               Clear all
             </button>
@@ -207,7 +210,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                 setFocused(false);
                 setTimeout(() => handleSearch(term), 0);
               }}
-              className="flex items-center gap-3 px-4 py-2 hover:bg-white/10 cursor-pointer group"
+              className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/10 cursor-pointer group"
             >
               <Clock className="w-4 h-4 text-neutral-400 flex-shrink-0" />
               <p className="flex-1 min-w-0 text-white text-sm font-medium truncate">{term}</p>
@@ -217,7 +220,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                   e.stopPropagation();
                   removeRecentSearch(term);
                 }}
-                className="text-neutral-500 hover:text-white transition-colors flex-shrink-0 p-1"
+                className="text-neutral-500 transition-colors hover:text-white flex-shrink-0 p-1"
                 aria-label={`Remove ${term} from recent searches`}
               >
                 <X className="w-3.5 h-3.5" />
@@ -228,7 +231,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
       )}
 
       {focused && query.trim() && (suggestions.length > 0 || isFetchingSuggestions) && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] border border-white/[0.08] overflow-hidden z-50 flex flex-col max-h-[520px]">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] border border-[var(--tt-border)] overflow-hidden z-50 flex flex-col max-h-[520px]">
 
           {/* Scrollable body */}
           <div className="overflow-y-auto flex-1 scrollbar-hide">
@@ -312,7 +315,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                             className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                               playing
                                 ? "bg-green-500 text-black opacity-100"
-                                : "bg-white/10 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-green-500 hover:text-black active:bg-green-500 active:text-black"
+                                : "bg-white/10 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-colors hover:bg-green-500 hover:text-black active:bg-green-500 active:text-black"
                             }`}
                           >
                             {playing ? (
@@ -342,7 +345,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                 setFocused(false);
                 handleSearch(query);
               }}
-              className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.06] cursor-pointer transition-colors border-t border-white/[0.07] flex-shrink-0 group"
+              className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.06] cursor-pointer border-t border-[var(--tt-border)] flex-shrink-0 group"
             >
               <p className="text-white text-sm font-medium">
                 View all results for <span className="font-bold text-green-400">"{query}"</span>
@@ -378,7 +381,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         {/* Center - Nav + Search (desktop / tablet only), truly centered in the header */}
         <div className="hidden md:flex items-center gap-2 absolute left-1/2 -translate-x-1/2 w-full max-w-[400px] lg:max-w-xl xl:max-w-2xl px-2">
           <Link href="/" className="flex-shrink-0">
-            <div className="w-12 h-12 bg-[#242424] hover:bg-[#2a2a2a] rounded-full flex items-center justify-center transition-colors cursor-pointer">
+            <div className="w-12 h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
               <Home className="w-5 h-5 text-white" />
             </div>
           </Link>
@@ -392,20 +395,31 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
               <SignedOut>
                 <div className="flex items-center gap-2">
                   <SignInButton mode="modal">
-                    <span className="hidden md:inline-block text-neutral-300 hover:text-white text-sm font-bold cursor-pointer transition-colors px-2 py-1">
+                    <span className="hidden md:inline-block text-neutral-300 transition-colors hover:text-white text-sm font-bold cursor-pointer px-2 py-1">
                       Log in
                     </span>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <span className="inline-block text-black bg-white hover:bg-neutral-200 px-4 md:px-5 py-2 rounded-full text-sm font-bold cursor-pointer transition-all hover:scale-105 whitespace-nowrap">
+                    <span className="inline-block text-black bg-white transition-colors hover:bg-neutral-200 px-4 md:px-5 py-2 rounded-full text-sm font-bold cursor-pointer transition-all transition-transform hover:scale-105 whitespace-nowrap">
                       Sign up
                     </span>
                   </SignUpButton>
                 </div>
               </SignedOut>
               <SignedIn>
+                <button
+                  onClick={() => setShowParties(true)}
+                  className="p-2 rounded-full text-neutral-300 transition-colors hover:text-purple-400 hover:bg-white/10"
+                  aria-label="Listening Parties"
+                  title="Listening Parties"
+                >
+                  <PartyPopper className="w-5 h-5" />
+                </button>
                 <UserButton />
               </SignedIn>
+              {showParties && (
+                <PartiesHub open={showParties} onClose={() => setShowParties(false)} />
+              )}
             </>
           )}
         </div>

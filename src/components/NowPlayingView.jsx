@@ -4,6 +4,9 @@ import { createPortal } from "react-dom";
 import { ChevronDown, MicVocal, ListMusic, Heart } from "lucide-react";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
+import CrossfadeMenu from "./CrossfadeMenu";
+import SleepTimerMenu from "./SleepTimerMenu";
+import EqualizerPanel from "./EqualizerPanel";
 
 const fmt = (t) => {
   if (isNaN(t)) return "0:00";
@@ -30,6 +33,9 @@ export default function NowPlayingView({
   onOpenLyrics,
   onOpenQueue,
   showLyrics,
+  crossfade,
+  sleepTimer,
+  equalizer,
 }) {
   const [mounted, setMounted] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -191,7 +197,7 @@ export default function NowPlayingView({
         </div>
 
         {/* Utility row */}
-        <div className="flex items-center justify-center gap-14 flex-shrink-0">
+        <div className="flex items-center justify-center gap-8 sm:gap-14 flex-shrink-0">
           <button
             onClick={onOpenLyrics}
             aria-label="Lyrics"
@@ -210,6 +216,37 @@ export default function NowPlayingView({
             <ListMusic size={20} />
             <span>Queue</span>
           </button>
+          <div className="flex flex-col items-center gap-0 text-[11px] font-medium text-white/70">
+            <CrossfadeMenu
+              fadeSeconds={crossfade?.fadeSeconds}
+              onSet={crossfade?.onSet}
+              disabled={false}
+            />
+          </div>
+          <div className="flex flex-col items-center gap-0 text-[11px] font-medium text-white/70">
+            <SleepTimerMenu
+              timer={sleepTimer?.timer}
+              remainingMs={sleepTimer?.remainingMs}
+              onSetTimer={sleepTimer?.onSetTimer}
+              onEndOfTrack={sleepTimer?.onEndOfTrack}
+              onEndOfQueue={sleepTimer?.onEndOfQueue}
+              onClear={sleepTimer?.onClear}
+              disabled={false}
+              hasTrack={!!song}
+            />
+          </div>
+          <div className="flex flex-col items-center gap-0 text-[11px] font-medium text-white/70">
+            <EqualizerPanel
+              settings={equalizer?.settings}
+              wired={equalizer?.wired}
+              bands={equalizer?.bands}
+              onSetGain={equalizer?.onSetGain}
+              onPreset={equalizer?.onPreset}
+              onToggleEffect={equalizer?.onToggleEffect}
+              onReset={equalizer?.onReset}
+              disabled={false}
+            />
+          </div>
         </div>
       </div>
     </div>

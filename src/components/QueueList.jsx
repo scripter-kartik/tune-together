@@ -59,7 +59,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
 
   return (
     <div className="flex-1 flex flex-col bg-[#121212] min-h-0">
-      <div className="flex items-center justify-between p-3 border-b border-neutral-800 flex-shrink-0">
+      <div className="flex items-center justify-between p-3 border-b border-[var(--tt-divider)] flex-shrink-0">
         <div className="flex items-center gap-2">
           <ListMusic className="w-4 h-4 text-green-400" />
           <h2 className="text-sm font-bold text-green-400">Up Next</h2>
@@ -146,7 +146,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
 
         {/* Suggested / Autoplay Section */}
         {(suggestions.length > 0 || loading) && (
-          <div className="mt-4 pb-6 border-t border-neutral-800/50">
+          <div className="mt-4 pb-6 border-t border-[var(--tt-divider)]/50">
             <div className="px-4 py-3">
               <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
                 Suggested for you

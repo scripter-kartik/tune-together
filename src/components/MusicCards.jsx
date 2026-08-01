@@ -63,27 +63,27 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
     <div
       ref={menuRef}
       style={style}
-      className="bg-[#282828] border border-neutral-700 rounded-lg shadow-2xl shadow-black/60 py-1 min-w-[200px] text-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      className="bg-[#282828] border border-[var(--tt-border)] rounded-lg shadow-2xl shadow-black/60 py-1 min-w-[200px] text-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150"
     >
       <button
         onClick={() => { onPlay(song); onClose(); }}
-        className="w-full flex items-center gap-3 px-4 py-2.5 text-white hover:bg-white/10 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-white transition-colors hover:bg-white/10 text-left"
       >
         <Play className="w-4 h-4 fill-current" /> Play now
       </button>
       <button
         onClick={() => { onQueue(song); onClose(); }}
-        className="w-full flex items-center gap-3 px-4 py-2.5 text-white hover:bg-white/10 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-white transition-colors hover:bg-white/10 text-left"
       >
         <Plus className="w-4 h-4" /> Add to queue
       </button>
 
       {isSignedIn && (
         <>
-          <div className="h-px bg-neutral-700 my-1" />
+          <div className="h-px bg-[var(--tt-divider)] my-1" />
           <button
             onClick={() => setShowPlaylists(!showPlaylists)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-white hover:bg-white/10 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-white transition-colors hover:bg-white/10 text-left"
           >
             <ListMusic className="w-4 h-4" />
             Add to playlist
@@ -91,7 +91,7 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
           </button>
 
           {showPlaylists && (
-            <div className="border-t border-neutral-700 bg-[#1a1a1a]">
+            <div className="border-t border-[var(--tt-border)] bg-[#1a1a1a]">
               {playlists.length === 0 ? (
                 <p className="px-4 py-2 text-neutral-500 text-xs">No playlists yet. Create one in Your Library.</p>
               ) : (
@@ -99,7 +99,7 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
                   <button
                     key={pl._id}
                     onClick={() => addToPlaylist(pl._id)}
-                    className="w-full flex items-center justify-between px-4 py-2 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors text-left"
+                    className="w-full flex items-center justify-between px-4 py-2 text-neutral-300 transition-colors hover:text-white hover:bg-white/10 text-left"
                   >
                     <span className="truncate">{pl.name}</span>
                     {addedToId === pl._id && <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />}
@@ -113,10 +113,10 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
 
       {song.artist?.id && (
         <>
-          <div className="h-px bg-neutral-700 my-1" />
+          <div className="h-px bg-[var(--tt-divider)] my-1" />
           <button
             onClick={() => { onOpenArtist?.(song.artist.id); onClose(); }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-neutral-300 transition-colors hover:text-white hover:bg-white/10 text-left"
           >
             <Music2 className="w-4 h-4" /> Go to artist
           </button>
@@ -176,12 +176,12 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 src={cover}
                 alt={song.title}
                 onError={coverError(song.title || song.id)}
-                className="object-cover w-full h-full group-hover:scale-105 transition-all duration-500 ease-out"
+                className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-105"
               />
               {/* Play button overlay */}
               <div className="absolute bottom-2 right-2 translate-y-0 md:translate-y-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-300">
                 <button
-                  className="w-10 h-10 bg-green-500 hover:bg-green-400 active:scale-95 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30"
+                  className="w-10 h-10 bg-green-500 hover:bg-green-400 active:scale-95 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation();
                     onPlay(song, songs);
@@ -205,7 +205,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
             {/* Three-dot menu button (always visible on mobile, hover on desktop) */}
             <button
               onClick={(e) => handleContextMenu(e, song)}
-              className="absolute top-3 right-3 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-full w-8 h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg"
+              className="absolute top-3 right-3 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 rounded-full w-8 h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg transition-all duration-200"
               title="More options"
               aria-label="More options"
             >
@@ -219,7 +219,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                   e.stopPropagation();
                   handleQueue(song);
                 }}
-                className={`absolute top-12 right-3 z-10 transition-all rounded-full w-8 h-8 flex items-center justify-center shadow-lg ${
+                className={`absolute top-12 right-3 z-10 transition-all duration-200 rounded-full w-8 h-8 flex items-center justify-center shadow-lg ${
                   addedId === song.id
                     ? "opacity-100 bg-green-500 text-white scale-110"
                     : "opacity-100 md:opacity-0 md:group-hover:opacity-100 bg-black/70 text-white hover:bg-green-500 active:bg-green-500 hover:scale-110"
@@ -241,7 +241,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 {song.title}
               </p>
               <p
-                className="text-neutral-400 text-xs truncate mt-1 hover:text-white transition-colors cursor-pointer"
+                className="text-neutral-400 text-xs truncate mt-1 transition-colors hover:text-white cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (song.artist?.id) onOpenArtist?.(song.artist.id);

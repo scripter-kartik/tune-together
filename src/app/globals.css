@@ -27,21 +27,22 @@ html {
 /* Theme CSS variables. ThemeSwitcher overwrites these before first paint. */
 :root {
   color-scheme: dark;
-  --tt-accent: #22c55e;
-  --tt-accent-2: #14b8a6;
-  --tt-accent-hover: #22c55ecc;
-  --tt-accent-soft: color-mix(in srgb, #22c55e 14%, transparent);
-  --tt-accent-strong: color-mix(in srgb, #22c55e 84%, white);
-  --tt-bg: #111214;
-  --tt-rail: #050607;
-  --tt-surface: #181a1d;
-  --tt-surface-elevated: #222529;
-  --tt-surface-hover: #2d3236;
-  --tt-border: color-mix(in srgb, #22c55e 6%, white 9%, transparent);
-  --tt-page-start: #161d1b;
-  --tt-hero-start: #10331f;
-  --tt-hero-mid: #13232a;
-  --tt-hero-end: #121315;
+  --tt-accent: #1ed760;
+  --tt-accent-2: #17c3a3;
+  --tt-accent-hover: #1ed760cc;
+  --tt-accent-soft: color-mix(in srgb, #1ed760 14%, transparent);
+  --tt-accent-strong: color-mix(in srgb, #1ed760 84%, white);
+  --tt-bg: #121212;
+  --tt-rail: #000000;
+  --tt-surface: #181818;
+  --tt-surface-elevated: #242424;
+  --tt-surface-hover: #2a2a2a;
+  --tt-border: color-mix(in srgb, var(--tt-accent) 8%, rgba(255, 255, 255, 0.05));
+  --tt-divider: color-mix(in srgb, var(--tt-accent) 12%, rgba(255, 255, 255, 0.06));
+  --tt-page-start: #1c2a20;
+  --tt-hero-start: #0e3a23;
+  --tt-hero-mid: #11271f;
+  --tt-hero-end: #121212;
 }
 
 html,
@@ -120,6 +121,27 @@ body,
 .border-\[\#121212\] { border-color: var(--tt-bg) !important; }
 .border-t-\[\#282828\] { border-top-color: var(--tt-surface-hover) !important; }
 
+/* ─── Soften white borders into theme-consistent hairlines ─────────────────
+   These Tailwind utilities hardcode rgba(255,255,255,N) which always reads as
+   a "white line" on dark surfaces — especially visible when the theme colour
+   isn't green.  We remap every variant to use the theme border token instead. */
+.border-white\/5,
+.border-white\/10,
+.border-white\/15,
+.border-white\/20,
+.border-white\/\[0\.02\],
+.border-white\/\[0\.03\],
+.border-white\/\[0\.05\],
+.border-white\/\[0\.06\],
+.border-white\/\[0\.08\] {
+  border-color: var(--tt-border) !important;
+}
+.divide-white\/5 > :not([hidden]) ~ :not([hidden]),
+.divide-white\/10 > :not([hidden]) ~ :not([hidden]),
+.divide-white\/15 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--tt-border) !important;
+}
+
 .from-\[\#1a1a2e\] {
   --tw-gradient-from: var(--tt-page-start) var(--tw-gradient-from-position) !important;
   --tw-gradient-to: color-mix(in srgb, var(--tt-page-start) 0%, transparent) var(--tw-gradient-to-position) !important;
@@ -133,10 +155,10 @@ body,
 .to-black { --tw-gradient-to: var(--tt-rail) var(--tw-gradient-to-position) !important; }
 
 
-/* Spotify-like scrollbar */
+/* Spotify-like scrollbar — subtle theme-tinted */
 html, body, * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -149,12 +171,12 @@ html, body, * {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.12);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.35);
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 /* Hide scrollbar for horizontal scroll areas */
@@ -168,7 +190,7 @@ html, body, * {
 
 /* Spotify-green glow for active elements */
 .glow-green {
-  box-shadow: 0 0 20px rgba(29, 185, 84, 0.3);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--tt-accent) 30%, transparent);
 }
 
 /* Smooth range input styling */
@@ -388,4 +410,172 @@ input[type="range"]::-webkit-slider-thumb {
 #__next, main {
   height: 100%;
   overflow: hidden;
+}
+
+/* Global smoothness improvements */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Touch-friendly tap targets — ensure minimum 44px for interactive elements */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Smooth transition utility — applied to interactive containers */
+.transition-smooth {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* GPU-accelerated animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Smooth hover scale */
+.hover-scale {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-scale:hover {
+  transform: scale(1.02) translateZ(0);
+}
+
+/* Button press effect */
+.active-press:active {
+  transform: scale(0.98) translateZ(0);
+}
+
+/* Smooth focus rings */
+*:focus-visible {
+  outline: 2px solid var(--tt-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Equalizer vertical band sliders
+ * ------------------------------------------------------------------ */
+.eq-band-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 100%;
+  height: 120px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to top,
+    var(--tt-accent) var(--band-gain, 50%),
+    rgba(255, 255, 255, 0.12) var(--band-gain, 50%)
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.eq-band-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.eq-band-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.eq-band-slider::-moz-range-track {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ *
+ * Mobile & Touch Optimizations
+ * ------------------------------------------------------------------ */
+
+/* Smooth scroll on iOS */
+@supports (-webkit-overflow-scrolling: touch) {
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Better touch targets */
+@media (hover: none) and (pointer: coarse) {
+  button, a, [role="button"], [onclick] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile-specific smooth animations */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  /* Faster animations on mobile */
+  .animate-slide-up,
+  .animate-slide-left,
+  .animate-slide-right,
+  .animate-fade-up {
+    animation-duration: 0.25s !important;
+  }
+  
+  /* Improve scroll performance */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Landscape mobile optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  body {
+    height: 100vh;
+    height: 100dvh; /* dynamic viewport height */
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
 }

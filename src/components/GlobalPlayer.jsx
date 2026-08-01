@@ -151,7 +151,7 @@ export default function GlobalPlayer() {
           style: {
             background: '#1a1a1a',
             color: '#fff',
-            border: '1px solid #333',
+            border: '1px solid rgba(255,255,255,0.08)',
             fontSize: '13px',
           },
         }
@@ -245,7 +245,7 @@ export default function GlobalPlayer() {
 
   if (!currentSong) {
     return (
-      <div className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">
+      <div className="flex-shrink-0 z-50 bg-black border-t border-[var(--tt-divider)]">
         <div className="flex items-center justify-center gap-3 h-[72px] px-6">
           <div className="w-2 h-2 rounded-full bg-neutral-700 animate-pulse" />
           <p className="text-neutral-600 text-sm select-none">
@@ -258,7 +258,7 @@ export default function GlobalPlayer() {
   }
 
   return (
-    <div className="flex-shrink-0 z-50 bg-black border-t border-neutral-800">
+    <div className="flex-shrink-0 z-50 bg-black border-t border-[var(--tt-divider)]">
       <ReactionOverlay socketRef={socketRef} roomId={roomId} />
       <PlayerFooter
         song={currentSong}

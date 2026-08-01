@@ -105,7 +105,7 @@ const ListeningUsers = () => {
   if (!isSignedIn) {
     return (
       <div className="w-full h-full bg-[#121212] text-white flex flex-col">
-        <div className="flex items-center px-4 py-3 gap-3 border-b border-gray-800/50">
+        <div className="flex items-center px-4 py-3 gap-3 border-b border-[var(--tt-divider)]/50">
           <Users className="w-5 h-5" />
           <h1 className="font-semibold text-base">What they're listening to</h1>
         </div>
@@ -145,7 +145,7 @@ const ListeningUsers = () => {
 
   return (
     <div className="w-full h-full bg-[#121212] text-white overflow-hidden flex flex-col">
-      <div className="flex-shrink-0 border-b border-gray-800/50">
+      <div className="flex-shrink-0 border-b border-[var(--tt-divider)]/50">
         <div className="flex items-center px-4 py-3 gap-3">
           <Users className="w-5 h-5" />
           <h1 className="font-semibold text-base">Friends</h1>

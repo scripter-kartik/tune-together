@@ -25,6 +25,8 @@ export default function Page() {
   const [topArtists, setTopArtists] = useState([]);
   const [historySongs, setHistorySongs] = useState([]);
   const [recentHistory, setRecentHistory] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [mixes, setMixes] = useState([]);
 
   useEffect(() => {
     const onGlobalState = (e) => {
@@ -216,12 +218,28 @@ export default function Page() {
     }
   };
 
+  const fetchRecommendations = async () => {
+    try {
+      const res = await fetch("/api/recommendations");
+      if (!res.ok) return;
+      const data = await res.json();
+      setRecommendations(data.songs || []);
+      setMixes(data.mixes || []);
+    } catch (err) {
+      console.error("Failed to fetch recommendations:", err);
+    }
+  };
+
   useEffect(() => {
-    if (isSignedIn) fetchHistory();
-    else {
+    if (isSignedIn) {
+      fetchHistory();
+      fetchRecommendations();
+    } else {
       setTopArtists([]);
       setHistorySongs([]);
       setRecentHistory([]);
+      setRecommendations([]);
+      setMixes([]);
     }
   }, [isSignedIn]);
 
@@ -247,10 +265,10 @@ export default function Page() {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-black">
-      <header className="flex-shrink-0 z-40 border-b border-neutral-800">
+      <header className="flex-shrink-0 z-40 border-b border-[var(--tt-divider)]">
         <Header query={query} setQuery={setQuery} handleSearch={handleSearch} onPlay={handlePlay} onOpenArtist={setSelectedArtistId} />
       </header>
-      
+
       <main className="flex-1 overflow-hidden">
         <Home
           songs={getVisibleSongs()}
@@ -259,6 +277,8 @@ export default function Page() {
           topArtists={topArtists}
           historySongs={historySongs}
           recentHistory={recentHistory}
+          recommendations={recommendations}
+          mixes={mixes}
           isSearchQuery={isSearchQuery}
           onLoadMore={handleLoadMore}
           showLoadMore={songs.length > visibleCount}

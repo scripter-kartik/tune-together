@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Copy, Check, LocateFixed } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
+import LyricsSyncAdjuster from "./LyricsSyncAdjuster";
+import { useLyricsOffset } from "@/hooks/useLyricsOffset";
 
 // Parse LRC synced lyrics ("[mm:ss.xx] text") into [{ time, text }], sorted.
 function parseLRC(lrc) {
@@ -38,6 +40,10 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
   const programmaticScrollRef = useRef(false);
   const programmaticScrollTimerRef = useRef(null);
 
+  // Per-song lyric timing offset (persisted). Positive = lyrics later.
+  const { offset: lyricsOffset, adjust: adjustLyricsOffset, reset: resetLyricsOffset } =
+    useLyricsOffset(song?.id);
+
   // Portals need the DOM — only render after mount (avoids SSR crash).
   useEffect(() => setMounted(true), []);
 
@@ -49,16 +55,16 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
     [data]
   );
 
-  // Index of the currently-sung line.
+  // Index of the currently-sung line (applies the user's timing offset).
   const activeIndex = useMemo(() => {
     if (!synced || synced.length === 0) return -1;
     let idx = -1;
     for (let i = 0; i < synced.length; i++) {
-      if (synced[i].time <= currentTime + 0.15) idx = i;
+      if (synced[i].time <= currentTime + lyricsOffset + 0.15) idx = i;
       else break;
     }
     return idx;
-  }, [synced, currentTime]);
+  }, [synced, currentTime, lyricsOffset]);
 
   useEffect(() => {
     didInitialScroll.current = false;
@@ -195,6 +201,13 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
           </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {synced && synced.length > 0 && (
+            <LyricsSyncAdjuster
+              offset={lyricsOffset}
+              onAdjust={adjustLyricsOffset}
+              onReset={resetLyricsOffset}
+            />
+          )}
           {hasLyrics && (
             <button
               onClick={handleCopy}

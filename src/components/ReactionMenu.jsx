@@ -47,7 +47,7 @@ export default function ReactionMenu({ socketRef, roomId, disabled }) {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#282828] border border-white/10 rounded-full shadow-2xl flex items-center p-1.5 gap-1 animate-fade-in-up">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#282828] border border-[var(--tt-border)] rounded-full shadow-2xl flex items-center p-1.5 gap-1 animate-fade-in-up">
           {REACTIONS.map((emoji) => (
             <button
               key={emoji}

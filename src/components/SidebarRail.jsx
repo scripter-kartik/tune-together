@@ -25,7 +25,7 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
   ];
 
   return (
-    <div className="w-[72px] flex-shrink-0 bg-[#000000] flex flex-col items-center py-4 gap-4 h-full border-r border-white/5 overflow-hidden">
+    <div className="w-[72px] flex-shrink-0 bg-black flex flex-col items-center py-4 gap-4 h-full border-r border-[var(--tt-divider)] overflow-hidden transition-colors">
       {/* App Icon */}
       <div
         onClick={() => onTabChange("library")}
@@ -34,7 +34,7 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
         <Disc className="w-7 h-7 text-black fill-black/20 animate-[spin_4s_linear_infinite]" />
       </div>
 
-      <div className="w-8 h-[2px] bg-white/10 rounded-full flex-shrink-0" />
+      <div className="w-8 h-[2px] bg-[var(--tt-divider)] rounded-full flex-shrink-0" />
 
       <div className="flex-1 flex flex-col gap-4 items-center w-full min-h-0 overflow-y-auto scrollbar-hide">
         {tabs.map((tab) => {
@@ -43,7 +43,7 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
             <div key={tab.id} className="relative group flex items-center justify-center w-full flex-shrink-0">
               {/* Discord-like left indicator pill */}
               <div
-                className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-300 ${
+                className={`absolute left-0 w-1 bg-green-500 rounded-r-full transition-all duration-300 ${
                   isActive ? "h-10" : "h-0 group-hover:h-5"
                 }`}
               />

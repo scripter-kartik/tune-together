@@ -78,9 +78,9 @@ export default function ThemeSwitcher() {
     <div
       id="tt-theme-panel"
       style={{ position: "fixed", top: panelPos.top, left: panelPos.left, zIndex: 9999 }}
-      className="w-64 overflow-hidden rounded-xl border border-white/[0.1] bg-[#181818] shadow-[0_24px_64px_rgba(0,0,0,0.8)]"
+      className="w-64 overflow-hidden rounded-xl border border-[var(--tt-border)] bg-[#181818] shadow-[0_24px_64px_rgba(0,0,0,0.8)]"
     >
-      <div className="px-4 pt-4 pb-3 border-b border-white/[0.07]">
+      <div className="px-4 pt-4 pb-3 border-b border-[var(--tt-divider)]">
         <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Theme</p>
         <p className="text-white text-sm font-semibold mt-0.5">{activeTheme.label}</p>
       </div>
@@ -94,8 +94,8 @@ export default function ThemeSwitcher() {
               onClick={() => handleSelect(theme)}
               className={`relative overflow-hidden rounded-lg border p-2.5 text-left transition-all duration-200 ${
                 isActive
-                  ? "border-white/25 ring-1 ring-white/20"
-                  : "border-white/5 hover:border-white/15"
+                  ? "border-[var(--tt-accent)] ring-2 ring-[var(--tt-accent)]/30"
+                  : "border-[var(--tt-border)] hover:border-[var(--tt-border)]"
               }`}
               title={theme.label}
               style={{
@@ -110,7 +110,7 @@ export default function ThemeSwitcher() {
               />
               <div className="relative flex items-center justify-between">
                 <span
-                  className="h-8 w-8 rounded-full border border-white/10"
+                  className="h-8 w-8 rounded-full border border-[var(--tt-border)]"
                   style={{
                     background: `conic-gradient(from 180deg, ${theme.accent}, ${theme.accent2}, ${theme.hover}, ${theme.accent})`,
                     boxShadow: `0 8px 20px ${theme.accent}33`,

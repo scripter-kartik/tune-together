@@ -12,6 +12,13 @@ import NowPlayingView from "./NowPlayingView";
 import { getSyncSession, endSyncSession } from "@/lib/syncSession";
 import { joinRoomId } from "@/lib/room";
 import ReactionMenu from "./ReactionMenu";
+import SleepTimerMenu from "./SleepTimerMenu";
+import CrossfadeMenu from "./CrossfadeMenu";
+import EqualizerPanel from "./EqualizerPanel";
+import { useKeyboardShortcuts, KeyboardShortcutsHelp } from "@/hooks/useKeyboardShortcuts";
+import { useSleepTimer } from "@/hooks/useSleepTimer";
+import { useCrossfade } from "@/hooks/useCrossfade";
+import { useEqualizer } from "@/hooks/useEqualizer";
 
 export default function PlayerFooter({
   song,
@@ -207,6 +214,7 @@ export default function PlayerFooter({
   const handleReady = () => {
     playerReadyRef.current = true;
     setIsLoading(false);
+    wireEq();
     if (pendingSeekRef.current != null) {
       const pos = pendingSeekRef.current;
       pendingSeekRef.current = null;
@@ -235,32 +243,99 @@ export default function PlayerFooter({
     onPlayPause();
   };
 
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      const t = e.target;
-      const tag = t?.tagName;
-      
-      if (t?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
-        return;
+  // Full keyboard shortcuts: space play/pause, arrows seek, shift+arrows
+  // prev/next, m mute, / focus search, q queue, l lyrics, ? help.
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+
+  // Relative seek used by arrow-key shortcuts.
+  const seekRelative = useCallback((delta) => {
+    if (!song || isLoading) return;
+    const target = Math.max(0, Math.min(duration || 0, currentTime + delta));
+    seekTo(target);
+    setCurrentTime(target);
+    window.dispatchEvent(new CustomEvent("tt-time-update", { detail: target }));
+    socketRef.current?.emit("seek-time", { roomId, position: target });
+  }, [song, isLoading, duration, currentTime, seekTo, roomId, socketRef]);
+
+  const shortcutsEnabled = mounted;
+
+  const toggleLyricsShortcut = useCallback(() => {
+    if (song) setShowLyrics((v) => !v);
+  }, [song]);
+
+  const closeOverlays = useCallback(() => {
+    setShowNowPlaying(false);
+    setShowLyrics(false);
+    setShowShortcutsHelp(false);
+  }, []);
+
+  const toggleMute = () => setIsMuted((m) => !m);
+
+  useKeyboardShortcuts({
+    onPlayPause: () => {
+      if (song && !isLoading) handlePlayPauseClick();
+    },
+    onSeek: seekRelative,
+    onPrev: () => { if (song && !isLoading) onPrev?.(); },
+    onNext: () => { if (song && !isLoading) onNext?.(); },
+    onMuteToggle: toggleMute,
+    onFocusSearch: () => document.querySelector('[data-search-input]')?.focus(),
+    onToggleQueue: () => window.dispatchEvent(new CustomEvent("tt-open-queue")),
+    onToggleLyrics: toggleLyricsShortcut,
+    onShowHelp: () => setShowShortcutsHelp(true),
+    onCloseModal: closeOverlays,
+    enabled: shortcutsEnabled,
+  });
+
+  // Sleep timer — pause playback (and sync the room) when it fires.
+  const pausePlayback = useCallback(() => {
+    if (isPlaying && song) {
+      if (roomId && socketRef.current) {
+        socketRef.current.emit("toggle-play", {
+          roomId,
+          isPlaying: false,
+          position: playerRef.current?.getCurrentTime?.() || 0,
+        });
       }
-      
-      if (e.code === "Space" || e.key === " ") {
-        e.preventDefault();
-        if (!song || isLoading) return;
-        handlePlayPauseClick();
-      } else if (e.key === "ArrowRight" && e.shiftKey) {
-        e.preventDefault();
-        if (!song || isLoading) return;
-        onNext?.();
-      } else if (e.key === "q" || e.key === "Q") {
-        e.preventDefault();
-        handleQueueSong();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [song, isPlaying, isLoading, roomId, onNext]);
+      onPlayPause();
+    }
+  }, [isPlaying, song, roomId, socketRef, onPlayPause]);
+
+  const {
+    timer: sleepTimer,
+    remainingMs: sleepRemainingMs,
+    setSleepTimer,
+    setEndOfTrack,
+    setEndOfQueue,
+    clearSleepTimer,
+  } = useSleepTimer({
+    onFire: pausePlayback,
+    currentSongId: song?.id,
+    queueLength: hasSongs ? 1 : 0,
+  });
+
+  // Crossfade — fades out the tail of each track and fades in the next head.
+  const { fadeSeconds, setCrossfade, fadeFactor } = useCrossfade({
+    playerRef,
+    duration,
+    isPlaying,
+    song,
+  });
+
+  // Equalizer + effects (Web Audio). Wired to the media element when possible.
+  const {
+    settings: eqSettings,
+    wired: eqWired,
+    bands: eqBands,
+    wirePlayer: wireEq,
+    setGain: setEqGain,
+    applyPreset: applyEqPreset,
+    toggleEffect: toggleEqEffect,
+    resetAll: resetEq,
+  } = useEqualizer({ playerRef });
+
+  // Master volume = user volume × crossfade fade factor.
+  const effectiveVolume = isMuted || volume === 0 ? 0 : volume * fadeFactor;
 
   const handleSeek = (e) => {
     if (!song) return;
@@ -305,8 +380,6 @@ export default function PlayerFooter({
     if (newVolume > 0 && isMuted) setIsMuted(false);
   };
 
-  const toggleMute = () => setIsMuted((m) => !m);
-
   // Add current song to queue instead of opening the queue tab
   const [added, setAdded] = useState(false);
   const handleQueueSong = () => {
@@ -333,7 +406,7 @@ export default function PlayerFooter({
   };
 
   return (
-    <div className="relative w-full bg-[#121212]/80 backdrop-blur-xl border-t border-white/5 text-white px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
+    <div className="relative w-full bg-[#121212]/80 backdrop-blur-xl border-t border-[var(--tt-border)] text-white px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
 
       <div className="md:hidden absolute top-0 left-0 right-0">
         <div className="flex items-center w-full">
@@ -344,7 +417,7 @@ export default function PlayerFooter({
             step="0.1"
             value={currentTime}
             onChange={handleSeek}
-            className={`w-full h-1 appearance-none bg-neutral-800 cursor-pointer outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-0 [&::-webkit-slider-thumb]:h-0 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full h-1 appearance-none bg-neutral-800 cursor-pointer outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-0 [&::-webkit-slider-thumb]:h-0 [&::-webkit-slider-thumb]:bg-white ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label="Seek"
             disabled={!song}
             style={{
@@ -404,7 +477,7 @@ export default function PlayerFooter({
                       ))}
                     </div>
                   )}
-                  <span className="text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer md:hover:text-white transition-colors">{song.artist.name}</span>
+                  <span className="text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer hover:text-white transition-colors">{song.artist.name}</span>
                 </div>
               </div>
             </div>
@@ -423,7 +496,7 @@ export default function PlayerFooter({
           <div className="flex items-center gap-6">
             <button
               onClick={onPrev}
-              className={`text-[#b3b3b3] hover:text-white transition-colors ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`text-[#b3b3b3] transition-colors hover:text-white ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label="Previous"
               disabled={!song}
             >
@@ -432,7 +505,7 @@ export default function PlayerFooter({
 
             <button
               onClick={handlePlayPauseClick}
-              className={`bg-white text-black w-8 h-8 rounded-full flex items-center justify-center hover:scale-105 transition-all ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-white text-black w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 transition-all ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={!song || isLoading}
               aria-label={isPlaying ? "Pause" : "Play"}
             >
@@ -447,7 +520,7 @@ export default function PlayerFooter({
 
             <button
               onClick={onNext}
-              className={`text-[#b3b3b3] hover:text-white transition-colors ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`text-[#b3b3b3] transition-colors hover:text-white ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label="Next"
               disabled={!song}
             >
@@ -468,13 +541,13 @@ export default function PlayerFooter({
               aria-label="Seek"
               disabled={!song}
               style={{
-                background: `linear-gradient(to right, ${song ? '#ffffff' : '#4d4d4d'} ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`
+                background: `linear-gradient(to right, ${song ? '#ffffff' : 'var(--tt-surface-hover)'} ${(currentTime / (duration || 30)) * 100}%, var(--tt-surface-hover) ${(currentTime / (duration || 30)) * 100}%)`
               }}
               onMouseEnter={(e) => {
-                if(song) e.target.style.background = `linear-gradient(to right, var(--tt-accent) ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`;
+                if(song) e.target.style.background = `linear-gradient(to right, var(--tt-accent) ${(currentTime / (duration || 30)) * 100}%, var(--tt-surface-hover) ${(currentTime / (duration || 30)) * 100}%)`;
               }}
               onMouseLeave={(e) => {
-                if(song) e.target.style.background = `linear-gradient(to right, #ffffff ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`;
+                if(song) e.target.style.background = `linear-gradient(to right, #ffffff ${(currentTime / (duration || 30)) * 100}%, var(--tt-surface-hover) ${(currentTime / (duration || 30)) * 100}%)`;
               }}
             />
             <span className="text-[11px] text-[#a7a7a7] font-normal min-w-[40px]">{formatTime(duration)}</span>
@@ -485,7 +558,7 @@ export default function PlayerFooter({
           {activeSyncSession && (
             <button
               onClick={handleUnsync}
-              className="p-2 text-green-400 hover:text-red-400 transition"
+              className="p-2 text-green-400 transition-colors hover:text-red-400"
               title="Leave sync session"
             >
               <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
@@ -493,13 +566,23 @@ export default function PlayerFooter({
           )}
           <button
             onClick={() => song && setShowLyrics(true)}
-            className={`p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
+            className={`p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 transition-colors hover:text-white'} ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
             aria-label="Lyrics"
             disabled={!song}
           >
             <MicVocal size={18} />
           </button>
           <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
+          <SleepTimerMenu
+            timer={sleepTimer}
+            remainingMs={sleepRemainingMs}
+            onSetTimer={setSleepTimer}
+            onEndOfTrack={setEndOfTrack}
+            onEndOfQueue={setEndOfQueue}
+            onClear={clearSleepTimer}
+            disabled={!song}
+            hasTrack={!!song}
+          />
           <button
               onClick={handleQueueSong}
               className={`p-2 transition-colors ${added ? 'text-green-500' : 'text-neutral-300 hover:text-white'}`}
@@ -510,7 +593,7 @@ export default function PlayerFooter({
             </button>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
-              className="p-2 text-neutral-300 hover:text-white transition-colors"
+              className="p-2 text-neutral-300 transition-colors hover:text-white"
               aria-label="View Queue"
               title="View Queue"
             >
@@ -532,7 +615,7 @@ export default function PlayerFooter({
           </button>
           <button
             onClick={onNext}
-            className={`text-neutral-300 hover:text-white transition-colors p-2 ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
+            className={`text-neutral-300 transition-colors hover:text-white p-2 ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
             aria-label="Next"
             disabled={!song}
           >
@@ -540,10 +623,10 @@ export default function PlayerFooter({
           </button>
         </div>
 
-        <div className="hidden md:flex items-center justify-end gap-3 w-[30%] min-w-[220px] group">
+        <div className="hidden md:flex items-center justify-end gap-2 lg:gap-3 w-[34%] min-w-[280px] group">
           {activeSyncSession && (
             <div className="flex items-center group/sync relative mr-2">
-               <button onClick={handleUnsync} className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-[11px] font-bold hover:bg-red-500/20 hover:text-red-400 transition-colors whitespace-nowrap border border-green-500/30 hover:border-red-500/30">
+               <button onClick={handleUnsync} className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-[11px] font-bold transition-colors hover:bg-red-500/20 hover:text-red-400 whitespace-nowrap border border-green-500/30 hover:border-red-500/30">
                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse group-hover/sync:bg-red-500" />
                  <span className="group-hover/sync:hidden">Sync: {activeSyncSession.partnerName}</span>
                  <span className="hidden group-hover/sync:inline">Leave Session</span>
@@ -560,6 +643,31 @@ export default function PlayerFooter({
             <MicVocal size={18} />
           </button>
           <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
+          <SleepTimerMenu
+            timer={sleepTimer}
+            remainingMs={sleepRemainingMs}
+            onSetTimer={setSleepTimer}
+            onEndOfTrack={setEndOfTrack}
+            onEndOfQueue={setEndOfQueue}
+            onClear={clearSleepTimer}
+            disabled={!song}
+            hasTrack={!!song}
+          />
+          <CrossfadeMenu
+            fadeSeconds={fadeSeconds}
+            onSet={setCrossfade}
+            disabled={!song}
+          />
+          <EqualizerPanel
+            settings={eqSettings}
+            wired={eqWired}
+            bands={eqBands}
+            onSetGain={setEqGain}
+            onPreset={applyEqPreset}
+            onToggleEffect={toggleEqEffect}
+            onReset={resetEq}
+            disabled={!song}
+          />
           <button
             onClick={handleQueueSong}
             className={`transition-colors ${added ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
@@ -570,7 +678,7 @@ export default function PlayerFooter({
           </button>
           <button
             onClick={toggleMute}
-            className="text-[#b3b3b3] hover:text-white transition-colors"
+            className="text-[#b3b3b3] transition-colors hover:text-white"
             aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted || volume === 0 ? (
@@ -590,7 +698,7 @@ export default function PlayerFooter({
               className="w-full h-1 appearance-none bg-[#4d4d4d] rounded-full cursor-pointer outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:opacity-0 group-hover/vol:[&::-webkit-slider-thumb]:opacity-100"
               aria-label="Volume"
               style={{
-                background: `linear-gradient(to right, #ffffff ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`
+                background: `linear-gradient(to right, var(--tt-accent) ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`
               }}
               onMouseEnter={(e) => {
                 e.target.style.background = `linear-gradient(to right, var(--tt-accent) ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`;
@@ -619,6 +727,24 @@ export default function PlayerFooter({
         onOpenLyrics={() => song && setShowLyrics(true)}
         onOpenQueue={() => { setShowNowPlaying(false); window.dispatchEvent(new CustomEvent("tt-open-queue")); }}
         showLyrics={showLyrics}
+        crossfade={{ fadeSeconds, onSet: setCrossfade }}
+        sleepTimer={{
+          timer: sleepTimer,
+          remainingMs: sleepRemainingMs,
+          onSetTimer: setSleepTimer,
+          onEndOfTrack: setEndOfTrack,
+          onEndOfQueue: setEndOfQueue,
+          onClear: clearSleepTimer,
+        }}
+        equalizer={{
+          settings: eqSettings,
+          wired: eqWired,
+          bands: eqBands,
+          onSetGain: setEqGain,
+          onPreset: applyEqPreset,
+          onToggleEffect: toggleEqEffect,
+          onReset: resetEq,
+        }}
       />
 
       <LyricsView
@@ -629,6 +755,11 @@ export default function PlayerFooter({
         onSeek={handleLyricSeek}
         lyrics={lyricsData}
         status={lyricsStatus}
+      />
+
+      <KeyboardShortcutsHelp
+        isOpen={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
       />
 
       {/* Hidden audio engine. Kept offscreen (but non-zero size) so YouTube keeps
@@ -651,7 +782,7 @@ export default function PlayerFooter({
             url={playerUrl}
             playing={isPlaying}
             controls={false}
-            volume={isMuted ? 0 : volume}
+            volume={effectiveVolume}
             muted={isMuted}
             width="1px"
             height="1px"

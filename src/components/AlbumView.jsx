@@ -145,7 +145,7 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
             </button>
             <button
               onClick={() => fullTracks.forEach((t) => onQueue?.(t))}
-              className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--tt-border)] text-white text-sm font-semibold hover:bg-white/10 transition-all duration-200"
               title="Queue all songs"
             >
               <ListPlus className="w-4 h-4" />
@@ -158,7 +158,7 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
         {tracks.length > 0 && (
           <div className="flex flex-col">
             {/* Header row */}
-            <div className="grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-white/10 mb-2">
+            <div className="grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-[var(--tt-border)] mb-2">
               <span className="text-neutral-400 text-xs font-medium w-5 text-right">#</span>
               <span className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Title</span>
               <span className="text-neutral-400 text-xs font-medium tabular-nums">⏱</span>

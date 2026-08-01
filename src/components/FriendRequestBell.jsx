@@ -74,9 +74,9 @@ export default function FriendRequestBell() {
     <div
       id="tt-bell-panel"
       style={{ position: "fixed", top: panelPos.top, left: panelPos.left, zIndex: 9999 }}
-      className="w-72 bg-[#1e1e1e] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden animate-in fade-in slide-in-from-left-2 duration-150"
+      className="w-72 bg-[#1e1e1e] border border-[var(--tt-border)] rounded-xl shadow-2xl shadow-black/60 overflow-hidden animate-in fade-in slide-in-from-left-2 duration-150"
     >
-      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-[var(--tt-border)] flex items-center justify-between">
         <h3 className="text-white font-bold text-sm">Friend Requests</h3>
         <span className="text-xs text-neutral-400">{count} pending</span>
       </div>
@@ -87,7 +87,7 @@ export default function FriendRequestBell() {
           <p className="text-sm">No pending requests</p>
         </div>
       ) : (
-        <div className="max-h-80 overflow-y-auto divide-y divide-white/5">
+        <div className="max-h-80 overflow-y-auto divide-y divide-[var(--tt-border)]">
           {requests.map((user) => {
             const done = actionDone[user.clerkId];
             return (

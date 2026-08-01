@@ -32,7 +32,7 @@ export default function ReactionOverlay({ roomId }) {
       {reactions.map((r) => (
         <div
           key={r.id}
-          className="animate-fade-up bg-black/60 backdrop-blur-xl border border-white/10 text-white rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg will-change-transform"
+          className="animate-fade-up bg-black/60 backdrop-blur-xl border border-[var(--tt-border)] text-white rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg will-change-transform"
         >
           <span className="text-xl filter drop-shadow-md">{r.reaction}</span>
           {r.user && (

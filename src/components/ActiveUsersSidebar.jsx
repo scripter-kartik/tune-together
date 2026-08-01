@@ -26,7 +26,7 @@ export default function ActiveUsersSidebar({ onUserClick }) {
   };
 
   return (
-    <div className="w-64 bg-black/40 backdrop-blur-lg border-r border-white/10 h-full overflow-y-auto">
+    <div className="w-64 bg-black/40 backdrop-blur-lg border-r border-[var(--tt-border)] h-full overflow-y-auto">
       <div className="p-4">
         <h2 className="text-white font-bold text-lg mb-4">
           Online ({users.length})
@@ -48,7 +48,7 @@ export default function ActiveUsersSidebar({ onUserClick }) {
                   <img referrerPolicy="no-referrer"
                     src={user.imageUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
                     alt={user.name}
-                    className="w-10 h-10 rounded-full border-2 border-white/20"
+                    className="w-10 h-10 rounded-full border-2 border-[var(--tt-border)]"
                   />
                   <div className="absolute bottom-0 right-0">
                     <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-black"></div>

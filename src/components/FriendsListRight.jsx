@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { UserCircle2 } from "lucide-react";
 
 function getInitials(name) {
   if (!name) return '?';
@@ -14,6 +16,7 @@ const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orang
 
 export default function FriendsListRight() {
   const { isSignedIn, isLoaded } = useUser();
+  const router = useRouter();
   const [chatUsers, setChatUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -53,7 +56,7 @@ export default function FriendsListRight() {
 
   return (
     <div className="flex flex-col h-full bg-[#121212]">
-      <div className="p-3 border-b border-neutral-800">
+      <div className="p-3 border-b border-[var(--tt-divider)]">
         <div className="flex gap-1 bg-[#1e1e1e] p-1 rounded-full mb-3">
           {[
             { key: 'all', label: 'All' },
@@ -222,6 +225,17 @@ export default function FriendsListRight() {
                   <p className="text-white text-sm font-semibold truncate">{user.name}</p>
                   <p className={`text-[11px] truncate mt-0.5 font-medium ${status.color}`}>{status.text}</p>
                 </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (user.username) router.push(`/user/${user.username}`);
+                  }}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label={`View ${user.name}'s profile`}
+                  title="View profile"
+                >
+                  <UserCircle2 className="w-4 h-4" />
+                </button>
               </div>
             );
           })

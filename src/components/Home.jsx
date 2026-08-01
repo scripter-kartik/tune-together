@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import MusicCards from "./MusicCards";
 import FeaturedCards from "./FeaturedCards";
+import RecentlyPlayed from "./RecentlyPlayed";
+import DailyMixCards from "./DailyMixCards";
 import PlaylistSidebar from "./PlaylistSidebar";
 import RightPanel from "./RightPanel";
 import ArtistView from "./ArtistView";
@@ -47,23 +49,33 @@ function Equalizer() {
 }
 
 /* ------------------------------------------------------------------ *
- * Section header — shared title + optional "Play all" affordance.
+ * Section header — shared title + optional "Play all" / "See all" affordances.
  * ------------------------------------------------------------------ */
-function SectionHeader({ title, subtitle, onPlayAll }) {
+function SectionHeader({ title, subtitle, onPlayAll, onSeeAll, expanded }) {
   return (
     <div className="flex items-end justify-between gap-4 px-4 mb-3">
       <div className="min-w-0">
         <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight truncate">{title}</h2>
         {subtitle && <p className="text-neutral-400 text-xs md:text-sm mt-0.5 truncate">{subtitle}</p>}
       </div>
-      {onPlayAll && (
-        <button
-          onClick={onPlayAll}
-          className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-neutral-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-full px-3.5 py-1.5 transition-colors"
-        >
-          <Play className="w-3 h-3 fill-current" /> Play all
-        </button>
-      )}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        {onPlayAll && (
+          <button
+            onClick={onPlayAll}
+            className="flex items-center gap-1.5 text-xs font-semibold text-neutral-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-full px-3.5 py-1.5 transition-colors"
+          >
+            <Play className="w-3 h-3 fill-current" /> Play all
+          </button>
+        )}
+        {onSeeAll && (
+          <button
+            onClick={onSeeAll}
+            className="text-sm font-bold text-neutral-400 hover:text-white hover:underline transition-colors"
+          >
+            {expanded ? "Show less" : "Show all"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -75,7 +87,7 @@ function SectionHeader({ title, subtitle, onPlayAll }) {
 function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist }) {
   return (
     <section
-      className="relative overflow-hidden rounded-2xl border border-white/5 px-5 py-6 md:px-8 md:py-8"
+      className="relative overflow-hidden rounded-2xl border border-[var(--tt-border)] px-5 py-6 md:px-8 md:py-8"
       style={{
         background:
           "linear-gradient(135deg, var(--tt-hero-start), var(--tt-hero-mid) 48%, var(--tt-hero-end))",
@@ -95,11 +107,21 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
             "linear-gradient(90deg, transparent, var(--tt-accent), var(--tt-accent-2), transparent)",
         }}
       />
+      {/* Soft accent glow orbs — depth without the old diagonal stripes */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        className="pointer-events-none absolute top-[-60px] left-[-40px] w-72 h-72 rounded-full"
         style={{
           background:
-            "repeating-linear-gradient(115deg, white 0, white 1px, transparent 1px, transparent 18px)",
+            "radial-gradient(circle, color-mix(in srgb, var(--tt-accent) 30%, transparent), transparent 70%)",
+          filter: "blur(28px)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-[-80px] right-[-40px] w-80 h-80 rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in srgb, var(--tt-accent-2) 26%, transparent), transparent 70%)",
+          filter: "blur(28px)",
         }}
       />
       <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
@@ -127,7 +149,7 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
         {spotlight && (
           <div
             onClick={() => onPlay(spotlight)}
-            className="group flex-shrink-0 w-full md:w-72 flex items-center gap-4 rounded-xl bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-white/5 p-3 cursor-pointer transition-colors"
+            className="group flex-shrink-0 w-full md:w-72 flex items-center gap-4 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm border border-[var(--tt-border)] p-3 cursor-pointer transition-colors"
           >
             <div className="relative w-16 h-16 md:w-20 md:h-20 flex-shrink-0 overflow-hidden rounded-lg shadow-lg">
               <img referrerPolicy="no-referrer"
@@ -157,9 +179,14 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
   );
 }
 
-function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], onPlay, onQueue, currentSongId, isPlaying, onOpenArtist, onOpenAlbum, onOpenCollection, isLoading }) {
+function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], recommendations = [], recentHistory = [], mixes = [], onPlay, onQueue, currentSongId, isPlaying, onOpenArtist, onOpenAlbum, onOpenCollection, isLoading }) {
   const { user } = useUser();
   const greeting = getGreeting();
+  // In-place "Show all" toggles for rows that can overflow (recently played,
+  // top artists) — Spotify-style "See all".
+  const [expandedSections, setExpandedSections] = useState({});
+  const toggleSection = (key) =>
+    setExpandedSections((s) => ({ ...s, [key]: !s[key] }));
 
   // Carve the feed into non-overlapping bands so each section feels distinct.
   const spotlight = songs[0] || null;
@@ -225,22 +252,55 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         onOpenArtist={onOpenArtist}
       />
 
-      {/* Quick shortcut tiles built from the feed */}
+      {/* Recently played — Spotify "Jump back in" quick-picks */}
+      {recentHistory.length > 0 && (
+        <section>
+          <SectionHeader
+            title="Recently played"
+            subtitle="Jump back in"
+            onSeeAll={() => toggleSection("recent")}
+            expanded={!!expandedSections.recent}
+          />
+          <RecentlyPlayed
+            history={recentHistory}
+            onPlay={onPlay}
+            expanded={!!expandedSections.recent}
+            currentSongId={currentSongId}
+            isPlaying={isPlaying}
+          />
+        </section>
+      )}
+
+      {/* Made for you — Daily Mixes built from top artists */}
+      {mixes.length > 0 && (
+        <section>
+          <SectionHeader title="Made for you" subtitle="Made from your top artists" />
+          <DailyMixCards
+            mixes={mixes}
+            onPlay={onPlay}
+            onOpenCollection={onOpenCollection}
+            currentSongId={currentSongId}
+            isPlaying={isPlaying}
+          />
+        </section>
+      )}
+
+      {/* Quick picks — themed shortcut tiles built from the feed */}
       <section>
-        <SectionHeader title="Start listening" subtitle="Hand-picked mixes from your feed" />
+        <SectionHeader title="Quick picks" subtitle="Jump back into the vibe" />
         <FeaturedCards songs={songs} onPlay={onPlay} onQueue={onQueue} onOpenCollection={onOpenCollection} />
       </section>
 
-      {/* Fresh picks — the meat of the feed */}
-      {freshPicks.length > 0 && (
+      {/* Personalized picks from your listening history */}
+      {recommendations.length > 0 && (
         <section>
           <SectionHeader
-            title="Fresh picks for you"
-            subtitle="A blend across the moods you love"
-            onPlayAll={() => playAll(freshPicks)}
+            title="Recommended for you"
+            subtitle="Picked from the artists you love, plus a few new finds"
+            onPlayAll={() => playAll(recommendations)}
           />
           <MusicCards
-            songs={freshPicks}
+            songs={recommendations.slice(0, 12)}
             onPlay={onPlay}
             onQueue={onQueue}
             currentSongId={currentSongId}
@@ -253,9 +313,14 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
       {/* Your top artists — most listened by the logged-in user */}
       {topArtists.length > 0 && (
         <section>
-          <SectionHeader title="Your top artists" subtitle="On heavy rotation lately" />
+          <SectionHeader
+            title="Your top artists"
+            subtitle="On heavy rotation lately"
+            onSeeAll={() => toggleSection("artists")}
+            expanded={!!expandedSections.artists}
+          />
           <div className="flex overflow-x-auto pb-4 gap-4 md:gap-5 scrollbar-hide px-4">
-            {topArtists.map((artist, idx) => (
+            {(expandedSections.artists ? topArtists : topArtists.slice(0, 6)).map((artist, idx) => (
               <div
                 key={`${artist.id || artist.name}-${idx}`}
                 onClick={() => artist.id && onOpenArtist?.(artist.id)}
@@ -281,6 +346,25 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* Fresh picks — the meat of the feed */}
+      {freshPicks.length > 0 && (
+        <section>
+          <SectionHeader
+            title="Fresh picks for you"
+            subtitle="A blend across the moods you love"
+            onPlayAll={() => playAll(freshPicks)}
+          />
+          <MusicCards
+            songs={freshPicks}
+            onPlay={onPlay}
+            onQueue={onQueue}
+            currentSongId={currentSongId}
+            isPlaying={isPlaying}
+            onOpenArtist={onOpenArtist}
+          />
         </section>
       )}
 
@@ -322,7 +406,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
 }
 
 export default function Home({
-  songs, artists = [], albums = [], topArtists = [], historySongs = [], recentHistory = [], isSearchQuery = false,
+  songs, artists = [], albums = [], topArtists = [], historySongs = [], recentHistory = [], recommendations = [], mixes = [], isSearchQuery = false,
   onLoadMore, showLoadMore, onPlay, onQueue, currentSongId, currentSong, isPlaying,
   queue, onRemoveFromQueue, onClearQueue, isLoading, error,
   selectedArtistId, onOpenArtist, selectedAlbumId, onOpenAlbum,
@@ -390,6 +474,7 @@ export default function Home({
           currentSongId={currentSongId}
           isPlaying={isPlaying}
           onOpenArtist={onOpenArtist}
+          onUpdatePlaylist={onOpenPlaylist}
         />
       );
     }
@@ -744,6 +829,9 @@ export default function Home({
               albums={albums}
               topArtists={topArtists}
               historySongs={historySongs}
+              recentHistory={recentHistory}
+              recommendations={recommendations}
+              mixes={mixes}
               onPlay={onPlay}
               onQueue={onQueue}
               currentSongId={currentSongId}
@@ -784,7 +872,7 @@ export default function Home({
       />
 
       {/* Mobile / tablet top bar */}
-      <div className="flex lg:hidden gap-2 p-2 bg-[#121212] border-b border-neutral-800 flex-shrink-0">
+      <div className="flex lg:hidden gap-2 p-2 bg-[#121212] border-b border-[var(--tt-divider)] flex-shrink-0">
         <button
           onClick={() => setShowLeft(!showLeft)}
           className="flex-1 bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-full text-sm font-medium transition flex items-center justify-center gap-2"
@@ -829,7 +917,7 @@ export default function Home({
               onNavigate={() => setShowLeft(false)}
             />
             <div className="flex-1 bg-[#121212] flex flex-col overflow-hidden min-w-0">
-              <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+              <div className="flex items-center justify-between p-4 border-b border-[var(--tt-divider)]">
                 <h3 className="text-white font-bold">{activeSidebarView === 'history' ? 'History' : 'Your Library'}</h3>
                 <button onClick={() => setShowLeft(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
                   <X size={20} className="text-white" />
@@ -879,7 +967,7 @@ export default function Home({
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowRight(false)} />
           <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-xs bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-right">
-            <div className="flex items-center justify-between p-4 border-b border-neutral-800 flex-shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-[var(--tt-divider)] flex-shrink-0">
               <h3 className="text-white font-bold">Queue</h3>
               <button onClick={() => setShowRight(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
                 <X size={20} className="text-white" />

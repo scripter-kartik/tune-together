@@ -90,7 +90,7 @@ export default function CollectionView({
         {tracks.length > 0 ? (
           <div className="flex flex-col">
             {/* Header row */}
-            <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-white/10 mb-2">
+            <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-[var(--tt-divider)] mb-2">
               <span className="text-neutral-400 text-xs font-medium w-5 text-right">#</span>
               <span className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Title</span>
               <span className="text-neutral-400 text-xs font-medium tabular-nums">⏱</span>

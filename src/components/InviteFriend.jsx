@@ -36,7 +36,7 @@ const InviteFriend = () => {
   if (!isSignedIn) {
     return (
       <div className="w-full h-full bg-[#121212]">
-        <div className="flex items-center px-3 py-4 justify-start gap-4 border-b border-gray-800">
+        <div className="flex items-center px-3 py-4 justify-start gap-4 border-b border-[var(--tt-divider)]">
           <img referrerPolicy="no-referrer" className="w-5 h-5" src="/users.png" alt="" />
           <h1 className="font-bold text-sm">What they're listening to</h1>
         </div>
@@ -86,7 +86,7 @@ const InviteFriend = () => {
 
   return (
     <div className="w-full h-full bg-[#121212]">
-      <div className="flex items-center px-3 py-4 justify-start gap-4 border-b border-gray-800">
+      <div className="flex items-center px-3 py-4 justify-start gap-4 border-b border-[var(--tt-divider)]">
         <img referrerPolicy="no-referrer" className="w-5 h-5" src="/users.png" alt="" />
         <h1 className="font-bold text-sm">What they're listening to</h1>
       </div>
@@ -105,7 +105,7 @@ const InviteFriend = () => {
             {displayUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 transition-colors cursor-pointer border-b border-gray-800/30"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 transition-colors cursor-pointer border-b border-[var(--tt-divider)]"
               >
                 <div className="relative">
                   <img referrerPolicy="no-referrer"

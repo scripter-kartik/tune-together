@@ -1,8 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Play, Plus, Check, Music2, ListMusic, ListPlus } from "lucide-react";
+import { ArrowLeft, Play, Plus, Check, Music2, ListMusic, ListPlus, Minus, Users } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
+import CollaboratorsModal from "./CollaboratorsModal";
+
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
+}
 
 function formatTime(seconds) {
   if (!seconds) return "";
@@ -22,11 +30,22 @@ export default function PlaylistView({
   currentSongId,
   isPlaying,
   onOpenArtist,
+  onUpdatePlaylist,
 }) {
   const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addedId, setAddedId] = useState(null);
+  const [showCollaborators, setShowCollaborators] = useState(false);
+  const { user } = useUser();
+
+  const ownerId = playlist?.userId;
+  const isOwner = ownerId && user?.id && String(ownerId) === String(user.id);
+  const isCollaborator = (playlist?.collaborators || []).some(
+    (c) => String(c) === String(user?.id)
+  );
+  const canEdit = isOwner || isCollaborator;
+  const collaboratorInfo = playlist?.collaboratorInfo || [];
 
   const gradient = playlist?.gradient || "from-purple-600 to-blue-600";
   const coverUrl = resolveCover(playlist?.image, playlist?.name || playlist?.id);
@@ -77,6 +96,29 @@ export default function PlaylistView({
     songs.forEach((song) => onQueue?.(song));
   };
 
+  // Owner or collaborator may remove songs (stays in sync for everyone).
+  const handleRemove = async (track) => {
+    if (!canEdit) return;
+    try {
+      const res = await fetch("/api/playlists", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playlistId: playlist._id, song: track, action: "remove" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSongs((prev) => prev.filter((s) => String(s.id) !== String(track.id)));
+        window.dispatchEvent(new CustomEvent("tt-playlists-updated"));
+      }
+    } catch {}
+  };
+
+  const handleCollaboratorsUpdate = (updatedPlaylist) => {
+    setShowCollaborators(false);
+    onUpdatePlaylist?.(updatedPlaylist);
+    window.dispatchEvent(new CustomEvent("tt-playlists-updated"));
+  };
+
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
       {/* Header */}
@@ -111,6 +153,45 @@ export default function PlaylistView({
                 </>
               )}
             </div>
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              {/* Collaborator avatars */}
+              {collaboratorInfo.length > 0 && (
+                <div className="flex -space-x-2">
+                  {collaboratorInfo.slice(0, 5).map((collab) =>
+                    collab.imageUrl ? (
+                      <img referrerPolicy="no-referrer"
+                        key={collab.clerkId}
+                        src={collab.imageUrl}
+                        alt={collab.name}
+                        title={collab.name}
+                        className="w-7 h-7 rounded-full object-cover border-2 border-[#121212]"
+                      />
+                    ) : (
+                      <div
+                        key={collab.clerkId}
+                        title={collab.name}
+                        className="w-7 h-7 rounded-full bg-gradient-to-br from-green-500 to-indigo-500 border-2 border-[#121212] flex items-center justify-center text-[10px] font-bold text-white"
+                      >
+                        {getInitials(collab.name)}
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+              <button
+                onClick={() => setShowCollaborators(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all duration-200 ${
+                  collaboratorInfo.length > 0
+                    ? "border-green-500/40 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                    : "border-[var(--tt-border)] text-white hover:bg-white/10"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                {collaboratorInfo.length > 0
+                  ? `${collaboratorInfo.length} ${collaboratorInfo.length === 1 ? "collaborator" : "collaborators"}`
+                  : "Collaborate"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -128,7 +209,7 @@ export default function PlaylistView({
             </button>
             <button
               onClick={queueAll}
-              className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--tt-border)] text-white text-sm font-semibold hover:bg-white/10 transition-all duration-200"
               title="Queue all songs"
             >
               <ListPlus className="w-4 h-4" />
@@ -150,7 +231,7 @@ export default function PlaylistView({
         ) : songs.length > 0 ? (
           <div className="flex flex-col">
             {/* Header row */}
-            <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-white/10 mb-2">
+            <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-[var(--tt-border)] mb-2">
               <span className="text-neutral-400 text-xs font-medium w-5 text-right">#</span>
               <span className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Title</span>
               <span className="text-neutral-400 text-xs font-medium tabular-nums">⏱</span>
@@ -197,6 +278,15 @@ export default function PlaylistView({
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
+                    {canEdit && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleRemove(track); }}
+                        className="transition p-1 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                        title="Remove from playlist"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQueue(track); }}
                       className={`transition p-1 ${addedId === track.id ? "text-green-400 opacity-100" : "text-neutral-400 hover:text-white active:text-white opacity-100 md:opacity-0 md:group-hover:opacity-100"}`}
@@ -217,6 +307,14 @@ export default function PlaylistView({
           </div>
         )}
       </div>
+
+      {showCollaborators && (
+        <CollaboratorsModal
+          playlist={playlist}
+          onClose={() => setShowCollaborators(false)}
+          onUpdate={handleCollaboratorsUpdate}
+        />
+      )}
     </div>
   );
 }

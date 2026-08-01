@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import {
-  Users, UserPlus, Check, X, AtSign, Music, Loader2, Share2,
+  Users, UserPlus, Check, X, AtSign, Music, Loader2, Share2, UserCircle2,
 } from "lucide-react";
 import { getSocket } from "../lib/socket";
 
@@ -18,6 +19,7 @@ const dotColor = {
 
 export default function FriendsHub({ roomId }) {
   const { user } = useUser();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("friends");
 
@@ -228,9 +230,9 @@ export default function FriendsHub({ roomId }) {
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setOpen(false)} />
 
-          <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-[#121212] border border-white/10 shadow-2xl overflow-hidden animate-fade-up">
+          <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-[#121212] border border-[var(--tt-border)] shadow-2xl overflow-hidden animate-fade-up">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/5">
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--tt-border)]">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-green-500" />
                 <h2 className="text-white font-bold text-lg">Friends</h2>
@@ -316,6 +318,14 @@ export default function FriendsHub({ roomId }) {
                           {invited.has(f.clerkId) ? <><Check className="w-3.5 h-3.5" /> Invited</> : <><Share2 className="w-3.5 h-3.5" /> Invite</>}
                         </button>
                       )}
+                      <button
+                        onClick={() => f.username && router.push(`/user/${f.username}`)}
+                        className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all"
+                        aria-label={`View ${f.name}'s profile`}
+                        title="View profile"
+                      >
+                        <UserCircle2 className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => removeFriend(f.clerkId)}
                         disabled={busyIds.has(f.clerkId)}

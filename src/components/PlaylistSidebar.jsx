@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, X, ArrowLeft, Circle, Music, Plus, Library, Home, Trash2 } from "lucide-react";
+import { MessageCircle, X, ArrowLeft, Circle, Music, Plus, Library, Home, Trash2, Users } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 
 import { PLAYLISTS } from "../lib/constants";
@@ -23,13 +23,26 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
 
   useEffect(() => {
     if (!isSignedIn) return;
-    fetch("/api/playlists")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setCustomPlaylists(data.playlists);
-        }
-      });
+    const loadPlaylists = () => {
+      fetch("/api/playlists")
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            // Deduplicate (user may appear as both owner + collaborator)
+            const seen = new Set();
+            const unique = (data.playlists || []).filter((p) => {
+              const key = p._id || p.id;
+              if (!key || seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+            setCustomPlaylists(unique);
+          }
+        });
+    };
+    loadPlaylists();
+    window.addEventListener("tt-playlists-updated", loadPlaylists);
+    return () => window.removeEventListener("tt-playlists-updated", loadPlaylists);
   }, [isSignedIn]);
 
   const handleCreatePlaylist = async () => {
@@ -69,7 +82,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
           {isSignedIn && (
             <button 
               onClick={() => setIsCreating(!isCreating)}
-              className="text-neutral-400 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-colors"
+              className="text-neutral-400 transition-colors hover:text-white hover:bg-white/10 p-1.5 rounded-full"
               title="Create Playlist"
             >
               <Plus className="w-5 h-5" />
@@ -89,21 +102,21 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
                 value={newPlaylistName}
                 onChange={e => setNewPlaylistName(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleCreatePlaylist()}
-                className="bg-black border border-neutral-700 text-white px-3 py-1.5 rounded text-sm outline-none focus:border-green-500 transition-colors"
+                className="bg-black border border-[var(--tt-divider)] text-white px-3 py-1.5 rounded text-sm outline-none focus:border-green-500 transition-colors"
                 autoFocus
               />
               <div className="flex justify-end gap-2">
-                <button onClick={() => setIsCreating(false)} className="text-xs text-neutral-400 hover:text-white px-2 py-1">Cancel</button>
-                <button onClick={handleCreatePlaylist} className="text-xs bg-green-500 hover:bg-green-400 text-black font-bold px-3 py-1 rounded">Create</button>
+                <button onClick={() => setIsCreating(false)} className="text-xs text-neutral-400 transition-colors hover:text-white px-2 py-1">Cancel</button>
+                <button onClick={handleCreatePlaylist} className="text-xs bg-green-500 transition-colors hover:bg-green-400 text-black font-bold px-3 py-1 rounded">Create</button>
               </div>
             </div>
           )}
 
-          {customPlaylists.map(pl => (
+          {customPlaylists.map((pl, idx) => (
             <div
-              key={pl._id}
+              key={pl._id || pl.id || `pl-${idx}`}
               onClick={() => onOpenPlaylist?.({ ...pl, id: pl._id, type: "User Playlist" })}
-              className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group relative"
+              className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-white/5 cursor-pointer group relative"
             >
               <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
                 {pl.image ? (
@@ -116,11 +129,16 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
               </div>
               <div className="flex-1 min-w-0 pr-6">
                 <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{pl.name}</p>
-                <p className="text-neutral-400 text-xs truncate">Playlist • {pl.songs?.length || 0} songs</p>
+                <p className="text-neutral-400 text-xs truncate flex items-center gap-1">
+                  {pl.collaborators?.length > 0 && (
+                    <Users className="w-3 h-3 text-green-400 flex-shrink-0 inline" />
+                  )}
+                  <span className="truncate">Playlist • {pl.songs?.length || 0} songs</span>
+                </p>
               </div>
               <button 
                 onClick={(e) => handleDeletePlaylist(e, pl._id)}
-                className="absolute right-3 opacity-0 group-hover:opacity-100 p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
+                className="absolute right-3 opacity-0 group-hover:opacity-100 p-1.5 text-neutral-500 transition-colors hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
                 title="Delete Playlist"
               >
                 <Trash2 className="w-4 h-4" />
@@ -128,11 +146,11 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
             </div>
           ))}
 
-          {PLAYLISTS.map(pl => (
+          {PLAYLISTS.map((pl, idx) => (
               <div
-                key={pl.id}
+                key={pl.id || `preset-${idx}`}
                 onClick={() => onOpenPlaylist?.(pl)}
-                className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+                className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-white/5 cursor-pointer group"
               >
                 <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
                   {pl.image ? (

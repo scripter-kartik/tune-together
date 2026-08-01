@@ -36,7 +36,7 @@ function buildCollections(songs) {
   const themed = [
     { title: 'On Repeat', slice: [0, 20] },
     { title: 'Trending Now', slice: [0, 15] },
-    { title: 'Daily Mix', slice: [4, 24] },
+    { title: 'Mood Mix', slice: [4, 24] },
     { title: 'Chill Vibes', slice: [8, 28] },
   ];
   themed.forEach((d, i) => {
@@ -75,7 +75,7 @@ export default function FeaturedCards({ songs, onPlay, onQueue, onOpenCollection
         <div
           key={tile.id}
           onClick={() => onOpenCollection?.(tile)}
-          className="group relative flex items-center gap-3 md:gap-4 rounded-md bg-white/10 hover:bg-white/20 overflow-hidden cursor-pointer transition-colors duration-200 h-16 md:h-[4.5rem] animate-fade-up"
+          className="group relative flex items-center gap-3 md:gap-4 rounded-lg bg-[#181818] hover:bg-[#282828] overflow-hidden cursor-pointer transition-colors duration-200 h-14 md:h-16 animate-fade-up"
         >
           <img referrerPolicy="no-referrer"
             src={tile.cover}

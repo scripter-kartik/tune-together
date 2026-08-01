@@ -48,7 +48,7 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
       <div 
-        className="bg-[#181818] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 animate-in zoom-in-95 duration-200"
+        className="bg-[#181818] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl ring-1 ring-[var(--tt-border)] animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <div className="relative h-64 sm:h-80 w-full">
@@ -115,7 +115,7 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
                   onQueue(song);
                   onClose();
                 }}
-                className="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full px-6 py-3 flex items-center justify-center gap-2 transition-transform hover:scale-[1.03] active:scale-95 ring-1 ring-white/15"
+                className="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full px-6 py-3 flex items-center justify-center gap-2 transition-transform hover:scale-[1.03] active:scale-95 ring-1 ring-[var(--tt-border)]"
               >
                 <Plus className="w-5 h-5" />
                 Add to Queue
@@ -125,7 +125,7 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
             {isSignedIn && (
               <button
                 onClick={showPlaylists ? () => setShowPlaylists(false) : handleFetchPlaylists}
-                className="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-white font-semibold rounded-full px-6 py-3 flex items-center justify-center gap-2 transition-transform hover:scale-[1.03] active:scale-95 ring-1 ring-white/10"
+                className="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-white font-semibold rounded-full px-6 py-3 flex items-center justify-center gap-2 transition-transform hover:scale-[1.03] active:scale-95 ring-1 ring-[var(--tt-border)]"
               >
                 <ListMusic className="w-5 h-5" />
                 {showPlaylists ? "Cancel" : "Add to Playlist"}
@@ -134,7 +134,7 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
           </div>
 
           {showPlaylists && (
-            <div className="mt-4 p-4 bg-black/40 rounded-xl border border-white/5 max-h-48 overflow-y-auto">
+            <div className="mt-4 p-4 bg-black/40 rounded-xl border border-[var(--tt-border)] max-h-48 overflow-y-auto">
               <h3 className="text-sm font-bold text-neutral-400 mb-2 uppercase tracking-wide">Select Playlist</h3>
               {playlists.length === 0 ? (
                 <p className="text-sm text-neutral-500">No playlists found. Create one in your library first.</p>

@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLyrics } from "@/hooks/useLyrics";
+import { useLyricsOffset } from "@/hooks/useLyricsOffset";
 import { LocateFixed, MicVocal } from "lucide-react";
 
 // Parse LRC synced lyrics ("[mm:ss.xx] text") into [{ time, text }], sorted.
@@ -34,6 +35,9 @@ export default function SidebarLyrics({ song }) {
   const programmaticScrollRef = useRef(false);
   const programmaticScrollTimerRef = useRef(null);
 
+  // Shared per-song timing offset so sidebar + fullscreen stay in sync.
+  const { offset: lyricsOffset } = useLyricsOffset(song?.id);
+
   useEffect(() => {
     const handleTimeUpdate = (e) => {
       const time = Number(e.detail);
@@ -53,11 +57,11 @@ export default function SidebarLyrics({ song }) {
     if (!synced || synced.length === 0) return -1;
     let idx = -1;
     for (let i = 0; i < synced.length; i++) {
-      if (synced[i].time <= currentTime + 0.15) idx = i;
+      if (synced[i].time <= currentTime + lyricsOffset + 0.15) idx = i;
       else break;
     }
     return idx;
-  }, [synced, currentTime]);
+  }, [synced, currentTime, lyricsOffset]);
 
   const markProgrammaticScroll = useCallback((duration = 650) => {
     programmaticScrollRef.current = true;
