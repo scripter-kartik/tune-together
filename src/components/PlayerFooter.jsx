@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
@@ -77,7 +77,7 @@ export default function PlayerFooter({
   const { updateNowPlaying } = useUpdateNowPlaying();
 
   // Seek helper: apply now if the media is ready, otherwise defer until onReady.
-  const seekTo = (t) => {
+  const seekTo = useCallback((t) => {
     const pos = Math.max(0, t || 0);
     if (playerRef.current && playerReadyRef.current) {
       try {
@@ -86,7 +86,7 @@ export default function PlayerFooter({
     } else {
       pendingSeekRef.current = pos;
     }
-  };
+  }, []);
 
   // Resolve the current Deezer track to a full-length YouTube source.
   // Falls back to Deezer's 30s preview if no match is found.
@@ -269,6 +269,7 @@ export default function PlayerFooter({
 
     seekTo(newTime);
     setCurrentTime(newTime);
+    window.dispatchEvent(new CustomEvent("tt-time-update", { detail: newTime }));
     socketRef.current?.emit("seek-time", {
       roomId,
       position: newTime,
@@ -280,12 +281,23 @@ export default function PlayerFooter({
   };
 
   // Jump to a lyric line (Spotify-style click-to-seek), and keep the room in sync.
-  const handleLyricSeek = (t) => {
+  const handleLyricSeek = useCallback((t) => {
     if (!song) return;
     seekTo(t);
     setCurrentTime(t);
+    window.dispatchEvent(new CustomEvent("tt-time-update", { detail: t }));
     socketRef.current?.emit("seek-time", { roomId, position: t });
-  };
+  }, [roomId, seekTo, socketRef, song]);
+
+  useEffect(() => {
+    const onSidebarLyricSeek = (e) => {
+      const time = typeof e.detail === "number" ? e.detail : e.detail?.time;
+      if (Number.isFinite(time)) handleLyricSeek(time);
+    };
+
+    window.addEventListener("tt-lyric-seek", onSidebarLyricSeek);
+    return () => window.removeEventListener("tt-lyric-seek", onSidebarLyricSeek);
+  }, [handleLyricSeek]);
 
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
@@ -336,7 +348,7 @@ export default function PlayerFooter({
             aria-label="Seek"
             disabled={!song}
             style={{
-              background: `linear-gradient(to right, #1db954 ${(currentTime / (duration || 30)) * 100}%, #262626 ${(currentTime / (duration || 30)) * 100}%)`
+              background: `linear-gradient(to right, var(--tt-accent) ${(currentTime / (duration || 30)) * 100}%, var(--tt-surface-hover) ${(currentTime / (duration || 30)) * 100}%)`
             }}
           />
         </div>
@@ -459,7 +471,7 @@ export default function PlayerFooter({
                 background: `linear-gradient(to right, ${song ? '#ffffff' : '#4d4d4d'} ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`
               }}
               onMouseEnter={(e) => {
-                if(song) e.target.style.background = `linear-gradient(to right, #1db954 ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`;
+                if(song) e.target.style.background = `linear-gradient(to right, var(--tt-accent) ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`;
               }}
               onMouseLeave={(e) => {
                 if(song) e.target.style.background = `linear-gradient(to right, #ffffff ${(currentTime / (duration || 30)) * 100}%, #4d4d4d ${(currentTime / (duration || 30)) * 100}%)`;
@@ -581,7 +593,7 @@ export default function PlayerFooter({
                 background: `linear-gradient(to right, #ffffff ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = `linear-gradient(to right, #1db954 ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`;
+                e.target.style.background = `linear-gradient(to right, var(--tt-accent) ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`;
               }}
               onMouseLeave={(e) => {
                 e.target.style.background = `linear-gradient(to right, #ffffff ${(isMuted ? 0 : volume) * 100}%, #4d4d4d ${(isMuted ? 0 : volume) * 100}%)`;

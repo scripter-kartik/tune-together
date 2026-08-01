@@ -363,14 +363,12 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         {/* Left - Logo */}
         <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
           {/* Logo - mobile only */}
-          <Link href="/" className="flex md:hidden items-center gap-1.5 min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
-            <img referrerPolicy="no-referrer" src="/icon2.png" alt="Logo" className="w-7 h-7 flex-shrink-0" />
+          <Link href="/" className="flex md:hidden items-center min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
             <span className="font-black text-base text-white truncate">tune<span className="text-green-500">together</span></span>
           </Link>
 
           {/* Logo - desktop */}
-          <Link href="/" className="hidden md:flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img referrerPolicy="no-referrer" src="/icon2.png" alt="Logo" className="w-8 h-8" />
+          <Link href="/" className="hidden md:flex items-center hover:opacity-80 transition-opacity">
             <span className="font-black text-lg tracking-tight text-white drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
               tune<span className="text-green-500">together</span>
             </span>

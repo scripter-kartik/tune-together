@@ -74,9 +74,34 @@ function SectionHeader({ title, subtitle, onPlayAll }) {
  * ------------------------------------------------------------------ */
 function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900/50 via-[#1d1d2e] to-[#151515] border border-white/5 px-5 py-6 md:px-8 md:py-8">
-      {/* soft glow */}
-      <div className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-indigo-500/20 blur-3xl" />
+    <section
+      className="relative overflow-hidden rounded-2xl border border-white/5 px-5 py-6 md:px-8 md:py-8"
+      style={{
+        background:
+          "linear-gradient(135deg, var(--tt-hero-start), var(--tt-hero-mid) 48%, var(--tt-hero-end))",
+      }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 opacity-80"
+        style={{
+          background:
+            "linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--tt-accent) 18%, transparent) 55%, color-mix(in srgb, var(--tt-accent-2) 16%, transparent) 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent, var(--tt-accent), var(--tt-accent-2), transparent)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        style={{
+          background:
+            "repeating-linear-gradient(115deg, white 0, white 1px, transparent 1px, transparent 18px)",
+        }}
+      />
       <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
         <div className="flex-1 min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300/80 mb-2">
@@ -827,7 +852,13 @@ export default function Home({
       )}
 
       {/* Main content */}
-      <div className="flex-1 bg-gradient-to-b from-[#1a1a2e] via-[#121212] to-[#121212] rounded-xl flex flex-col min-w-0 overflow-hidden h-full">
+      <div
+        className="flex-1 rounded-xl flex flex-col min-w-0 overflow-hidden h-full"
+        style={{
+          background:
+            "linear-gradient(to bottom, var(--tt-page-start), var(--tt-bg) 44%, var(--tt-bg))",
+        }}
+      >
         {renderMain()}
       </div>
 

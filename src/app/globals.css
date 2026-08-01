@@ -11,7 +11,7 @@
 }
 
 body {
-  background-color: #000000;
+  background-color: var(--tt-rail);
   width: 100%;
   height: 100%;
   margin: 0;
@@ -24,43 +24,113 @@ html {
   overflow: hidden;
 }
 
-/* ── Theme CSS variables (defaults = green/Spotify) ── */
+/* Theme CSS variables. ThemeSwitcher overwrites these before first paint. */
 :root {
-  --tt-accent:       #1db954;
-  --tt-accent-hover: #1db954cc;
-  --tt-bg:           #121212;
-  --tt-rail:         #000000;
+  color-scheme: dark;
+  --tt-accent: #22c55e;
+  --tt-accent-2: #14b8a6;
+  --tt-accent-hover: #22c55ecc;
+  --tt-accent-soft: color-mix(in srgb, #22c55e 14%, transparent);
+  --tt-accent-strong: color-mix(in srgb, #22c55e 84%, white);
+  --tt-bg: #111214;
+  --tt-rail: #050607;
+  --tt-surface: #181a1d;
+  --tt-surface-elevated: #222529;
+  --tt-surface-hover: #2d3236;
+  --tt-border: color-mix(in srgb, #22c55e 6%, white 9%, transparent);
+  --tt-page-start: #161d1b;
+  --tt-hero-start: #10331f;
+  --tt-hero-mid: #13232a;
+  --tt-hero-end: #121315;
 }
 
-/* ── Theme overrides: remap Tailwind green → accent variable ── */
-/* This means every green-500 class in the app becomes the chosen theme color */
+html,
+body,
+.bg-black,
+.bg-\[\#000000\],
+.bg-\[\#121212\],
+.bg-\[\#181818\],
+.bg-\[\#1e1e1e\],
+.bg-\[\#282828\] {
+  transition: background-color 0.28s ease, border-color 0.28s ease, color 0.28s ease;
+}
+
+/* Theme overrides: remap the app's green accent utilities to the selected theme. */
 .bg-green-500   { background-color: var(--tt-accent) !important; }
 .bg-green-400   { background-color: var(--tt-accent) !important; filter: brightness(1.1); }
 .bg-green-600   { background-color: var(--tt-accent) !important; filter: brightness(0.9); }
+.bg-green-500\/10 { background-color: color-mix(in srgb, var(--tt-accent) 10%, transparent) !important; }
+.bg-green-400\/10 { background-color: color-mix(in srgb, var(--tt-accent) 10%, transparent) !important; }
+.bg-green-500\/15 { background-color: color-mix(in srgb, var(--tt-accent) 15%, transparent) !important; }
+.bg-green-500\/20 { background-color: color-mix(in srgb, var(--tt-accent) 20%, transparent) !important; }
+.bg-green-500\/25 { background-color: color-mix(in srgb, var(--tt-accent) 25%, transparent) !important; }
+.bg-green-500\/30 { background-color: color-mix(in srgb, var(--tt-accent) 30%, transparent) !important; }
+.bg-green-500\/80 { background-color: color-mix(in srgb, var(--tt-accent) 80%, transparent) !important; }
 .text-green-400 { color: var(--tt-accent) !important; }
 .text-green-500 { color: var(--tt-accent) !important; }
+.text-green-300 { color: var(--tt-accent-strong) !important; }
 .ring-green-500 { --tw-ring-color: var(--tt-accent) !important; }
+.ring-green-500\/40 { --tw-ring-color: color-mix(in srgb, var(--tt-accent) 40%, transparent) !important; }
+.ring-green-500\/50 { --tw-ring-color: color-mix(in srgb, var(--tt-accent) 50%, transparent) !important; }
+.focus-within\:ring-green-500\/50:focus-within { --tw-ring-color: color-mix(in srgb, var(--tt-accent) 50%, transparent) !important; }
 .border-green-400 { border-color: var(--tt-accent) !important; }
 .border-green-500 { border-color: var(--tt-accent) !important; }
+.border-green-500\/20 { border-color: color-mix(in srgb, var(--tt-accent) 20%, transparent) !important; }
+.border-green-500\/25 { border-color: color-mix(in srgb, var(--tt-accent) 25%, transparent) !important; }
+.border-green-500\/30 { border-color: color-mix(in srgb, var(--tt-accent) 30%, transparent) !important; }
+.border-green-400\/30 { border-color: color-mix(in srgb, var(--tt-accent) 30%, transparent) !important; }
+.border-green-500\/50 { border-color: color-mix(in srgb, var(--tt-accent) 50%, transparent) !important; }
+.border-green-500\/60 { border-color: color-mix(in srgb, var(--tt-accent) 60%, transparent) !important; }
+.border-green-500\/70 { border-color: color-mix(in srgb, var(--tt-accent) 70%, transparent) !important; }
+.border-t-green-500 { border-top-color: var(--tt-accent) !important; }
+.border-b-green-400 { border-bottom-color: var(--tt-accent) !important; }
+.border-b-green-500 { border-bottom-color: var(--tt-accent) !important; }
 .shadow-green-500\/20 { --tw-shadow-color: color-mix(in srgb, var(--tt-accent) 20%, transparent) !important; }
 .shadow-green-500\/25 { --tw-shadow-color: color-mix(in srgb, var(--tt-accent) 25%, transparent) !important; }
 .shadow-green-500\/30 { --tw-shadow-color: color-mix(in srgb, var(--tt-accent) 30%, transparent) !important; }
+.shadow-green-900\/30 { --tw-shadow-color: color-mix(in srgb, var(--tt-accent) 25%, #000) !important; }
 .from-green-400 { --tw-gradient-from: var(--tt-accent) !important; filter: brightness(1.05); }
 .from-green-500 { --tw-gradient-from: var(--tt-accent) !important; }
 .to-green-600   { --tw-gradient-to:   var(--tt-accent) !important; filter: brightness(0.9); }
+.to-green-700   { --tw-gradient-to:   color-mix(in srgb, var(--tt-accent) 80%, #000) !important; }
 .hover\:bg-green-500:hover { background-color: var(--tt-accent) !important; }
 .hover\:bg-green-400:hover { background-color: var(--tt-accent) !important; filter: brightness(1.1); }
+.hover\:bg-green-500\/15:hover { background-color: color-mix(in srgb, var(--tt-accent) 15%, transparent) !important; }
+.hover\:bg-green-500\/30:hover { background-color: color-mix(in srgb, var(--tt-accent) 30%, transparent) !important; }
+.hover\:text-green-300:hover { color: var(--tt-accent-strong) !important; }
+.hover\:text-green-400:hover { color: var(--tt-accent) !important; }
 .focus\:border-green-500:focus { border-color: var(--tt-accent) !important; }
-.bg-green-500\/10 { background-color: color-mix(in srgb, var(--tt-accent) 10%, transparent) !important; }
-.bg-green-400\/10 { background-color: color-mix(in srgb, var(--tt-accent) 10%, transparent) !important; }
-.ring-green-500\/40 { --tw-ring-color: color-mix(in srgb, var(--tt-accent) 40%, transparent) !important; }
 .from-green-900\/30 { --tw-gradient-from: color-mix(in srgb, var(--tt-accent) 20%, #000) !important; }
 .text-indigo-300 { color: var(--tt-accent) !important; filter: brightness(1.3); }
 .bg-indigo-500\/20 { background-color: color-mix(in srgb, var(--tt-accent) 20%, transparent) !important; }
 
-/* Override hardcoded dark grays with theme backgrounds */
+/* Override common hardcoded dark grays with theme surfaces. */
+.bg-black { background-color: var(--tt-rail) !important; }
 .bg-\[\#121212\] { background-color: var(--tt-bg) !important; }
+.bg-\[\#121212\]\/80 { background-color: color-mix(in srgb, var(--tt-bg) 80%, transparent) !important; }
 .bg-\[\#000000\] { background-color: var(--tt-rail) !important; }
+.bg-\[\#181818\] { background-color: var(--tt-surface) !important; }
+.bg-\[\#1e1e1e\] { background-color: var(--tt-surface-elevated) !important; }
+.bg-\[\#242424\] { background-color: var(--tt-surface-elevated) !important; }
+.bg-\[\#282828\] { background-color: var(--tt-surface-hover) !important; }
+.bg-\[\#2a2a2a\] { background-color: var(--tt-surface-hover) !important; }
+.hover\:bg-\[\#282828\]:hover { background-color: var(--tt-surface-hover) !important; }
+.hover\:bg-\[\#2a2a2a\]:hover { background-color: var(--tt-surface-hover) !important; }
+.border-neutral-800 { border-color: var(--tt-border) !important; }
+.border-\[\#121212\] { border-color: var(--tt-bg) !important; }
+.border-t-\[\#282828\] { border-top-color: var(--tt-surface-hover) !important; }
+
+.from-\[\#1a1a2e\] {
+  --tw-gradient-from: var(--tt-page-start) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: color-mix(in srgb, var(--tt-page-start) 0%, transparent) var(--tw-gradient-to-position) !important;
+}
+.via-\[\#121212\] {
+  --tw-gradient-to: color-mix(in srgb, var(--tt-bg) 0%, transparent) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tt-bg) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+.from-\[\#121212\] { --tw-gradient-from: var(--tt-bg) var(--tw-gradient-from-position) !important; }
+.to-\[\#121212\] { --tw-gradient-to: var(--tt-bg) var(--tw-gradient-to-position) !important; }
+.to-black { --tw-gradient-to: var(--tt-rail) var(--tw-gradient-to-position) !important; }
 
 
 /* Spotify-like scrollbar */

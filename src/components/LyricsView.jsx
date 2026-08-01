@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Copy, Check } from "lucide-react";
+import { X, Copy, Check, LocateFixed } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 // Parse LRC synced lyrics ("[mm:ss.xx] text") into [{ time, text }], sorted.
@@ -31,9 +31,12 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
   const data = lyrics;
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(true);
   const activeLineRef = useRef(null);
   const bodyRef = useRef(null);
   const didInitialScroll = useRef(false);
+  const programmaticScrollRef = useRef(false);
+  const programmaticScrollTimerRef = useRef(null);
 
   // Portals need the DOM — only render after mount (avoids SSR crash).
   useEffect(() => setMounted(true), []);
@@ -57,38 +60,83 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
     return idx;
   }, [synced, currentTime]);
 
-  // Re-arm the "snap instantly" behavior each time the panel opens or the
-  // song changes, so the first scroll after opening is immediate.
   useEffect(() => {
     didInitialScroll.current = false;
+    setIsFollowing(true);
   }, [isOpen, song?.id]);
 
-  // Keep the active line centered. The first scroll after opening snaps
-  // instantly (so the lyrics are visible the moment you click), and every
-  // subsequent line change smooth-scrolls. If no line is active yet (the song
-  // hasn't reached the first lyric), jump to the top so lyrics show right away
-  // instead of leaving the reader staring at blank space.
-  //
-  // We scroll the body container manually rather than using
-  // `scrollIntoView`, which walks up and scrolls *every* scrollable ancestor
-  // (and the page itself) — that was dragging the whole fixed overlay upward
-  // and clipping the header off the top of the screen.
-  useEffect(() => {
-    if (!isOpen) return;
-    const body = bodyRef.current;
-    if (!body) return;
-    const line = activeLineRef.current;
-    if (line) {
-      const top = line.offsetTop - body.clientHeight / 2 + line.clientHeight / 2;
-      body.scrollTo({
-        top,
-        behavior: didInitialScroll.current ? "smooth" : "auto",
-      });
-      didInitialScroll.current = true;
-    } else if (!didInitialScroll.current) {
-      body.scrollTop = 0;
+  const markProgrammaticScroll = useCallback((duration = 650) => {
+    programmaticScrollRef.current = true;
+    if (programmaticScrollTimerRef.current) {
+      window.clearTimeout(programmaticScrollTimerRef.current);
     }
-  }, [activeIndex, isOpen, status]);
+    programmaticScrollTimerRef.current = window.setTimeout(() => {
+      programmaticScrollRef.current = false;
+    }, duration);
+  }, []);
+
+  const scrollToActiveLine = useCallback((behavior = "smooth") => {
+    const body = bodyRef.current;
+    if (!body) return false;
+
+    const line = activeLineRef.current;
+    if (!line) {
+      markProgrammaticScroll(150);
+      body.scrollTo({ top: 0, behavior });
+      return false;
+    }
+
+    const top = Math.max(
+      0,
+      line.offsetTop - body.clientHeight / 2 + line.clientHeight / 2
+    );
+    markProgrammaticScroll(behavior === "smooth" ? 650 : 150);
+    body.scrollTo({ top, behavior });
+    return true;
+  }, [markProgrammaticScroll]);
+
+  useEffect(() => {
+    return () => {
+      if (programmaticScrollTimerRef.current) {
+        window.clearTimeout(programmaticScrollTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !isFollowing || status !== "ready") return;
+
+    const didScroll = scrollToActiveLine(
+      didInitialScroll.current ? "smooth" : "auto"
+    );
+
+    if (didScroll) {
+      didInitialScroll.current = true;
+    } else if (!didInitialScroll.current && bodyRef.current) {
+      didInitialScroll.current = true;
+    }
+  }, [activeIndex, isFollowing, isOpen, scrollToActiveLine, status]);
+
+  const handleManualBrowse = () => {
+    if (programmaticScrollRef.current || !synced?.length) return;
+    setIsFollowing(false);
+  };
+
+  const handleScroll = () => {
+    if (programmaticScrollRef.current || !synced?.length) return;
+    setIsFollowing(false);
+  };
+
+  const handleJumpToCurrent = () => {
+    setIsFollowing(true);
+    didInitialScroll.current = true;
+    scrollToActiveLine("smooth");
+  };
+
+  const handleLineSeek = (time) => {
+    setIsFollowing(true);
+    onSeek?.(time);
+  };
 
   const handleCopy = () => {
     const text =
@@ -168,7 +216,14 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       </div>
 
       {/* Body */}
-      <div ref={bodyRef} className="relative flex-1 min-h-0 overflow-y-auto px-6 md:px-10">
+      <div
+        ref={bodyRef}
+        className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-6 md:px-10"
+        onPointerDown={handleManualBrowse}
+        onTouchMove={handleManualBrowse}
+        onWheel={handleManualBrowse}
+        onScroll={handleScroll}
+      >
         <div className="max-w-3xl mx-auto">
           {status === "loading" && (
             <div className="flex flex-col items-center justify-center gap-3 py-32 text-white/60">
@@ -185,14 +240,14 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
           )}
 
           {status === "ready" && synced && (
-            <div className="py-[40vh]">
+            <div className="pt-6 pb-[55vh] md:pb-[45vh]">
               {synced.map((line, i) => {
                 const isActive = i === activeIndex;
                 return (
                   <p
                     key={i}
                     ref={isActive ? activeLineRef : null}
-                    onClick={() => onSeek?.(line.time)}
+                    onClick={() => handleLineSeek(line.time)}
                     className={`cursor-pointer select-none text-3xl md:text-[2.75rem] leading-tight font-extrabold tracking-tight py-2 origin-left transition-all duration-300 ${
                       isActive
                         ? "text-white scale-100"
@@ -220,6 +275,17 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
           )}
         </div>
       </div>
+
+      {status === "ready" && synced && !isFollowing && (
+        <button
+          onClick={handleJumpToCurrent}
+          className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black shadow-xl shadow-black/40 transition hover:scale-[1.03] active:scale-100"
+          aria-label="Sync to current lyric"
+        >
+          <LocateFixed className="w-4 h-4" />
+          Sync lyrics
+        </button>
+      )}
     </div>
   );
 

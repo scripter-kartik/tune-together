@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLyrics } from "@/hooks/useLyrics";
-import { MicVocal } from "lucide-react";
+import { LocateFixed, MicVocal } from "lucide-react";
 
 // Parse LRC synced lyrics ("[mm:ss.xx] text") into [{ time, text }], sorted.
 function parseLRC(lrc) {
@@ -27,12 +27,19 @@ function parseLRC(lrc) {
 export default function SidebarLyrics({ song }) {
   const { lyricsData, lyricsStatus } = useLyrics(song);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(true);
   const bodyRef = useRef(null);
   const activeLineRef = useRef(null);
   const didInitialScroll = useRef(false);
+  const programmaticScrollRef = useRef(false);
+  const programmaticScrollTimerRef = useRef(null);
 
   useEffect(() => {
-    const handleTimeUpdate = (e) => setCurrentTime(e.detail);
+    const handleTimeUpdate = (e) => {
+      const time = Number(e.detail);
+      if (Number.isFinite(time)) setCurrentTime(time);
+    };
+
     window.addEventListener("tt-time-update", handleTimeUpdate);
     return () => window.removeEventListener("tt-time-update", handleTimeUpdate);
   }, []);
@@ -52,31 +59,90 @@ export default function SidebarLyrics({ song }) {
     return idx;
   }, [synced, currentTime]);
 
+  const markProgrammaticScroll = useCallback((duration = 650) => {
+    programmaticScrollRef.current = true;
+    if (programmaticScrollTimerRef.current) {
+      window.clearTimeout(programmaticScrollTimerRef.current);
+    }
+    programmaticScrollTimerRef.current = window.setTimeout(() => {
+      programmaticScrollRef.current = false;
+    }, duration);
+  }, []);
+
+  const scrollToActiveLine = useCallback((behavior = "smooth") => {
+    const body = bodyRef.current;
+    if (!body) return false;
+
+    const line = activeLineRef.current;
+    if (!line) {
+      markProgrammaticScroll(150);
+      body.scrollTo({ top: 0, behavior });
+      return false;
+    }
+
+    const top = Math.max(
+      0,
+      line.offsetTop - body.clientHeight / 2 + line.clientHeight / 2
+    );
+    markProgrammaticScroll(behavior === "smooth" ? 650 : 150);
+    body.scrollTo({ top, behavior });
+    return true;
+  }, [markProgrammaticScroll]);
+
   useEffect(() => {
     didInitialScroll.current = false;
+    setIsFollowing(true);
+    setCurrentTime(0);
+
+    if (!song) return;
+
+    const probe = { position: 0 };
+    window.dispatchEvent(new CustomEvent("tt-get-position", { detail: probe }));
+    if (Number.isFinite(probe.position)) setCurrentTime(probe.position);
   }, [song?.id]);
 
   useEffect(() => {
-    const body = bodyRef.current;
-    if (!body) return;
-    const line = activeLineRef.current;
-    if (line) {
-      const top = line.offsetTop - body.clientHeight / 2 + line.clientHeight / 2;
-      body.scrollTo({
-        top,
-        behavior: didInitialScroll.current ? "smooth" : "auto",
-      });
+    return () => {
+      if (programmaticScrollTimerRef.current) {
+        window.clearTimeout(programmaticScrollTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isFollowing || lyricsStatus !== "ready") return;
+
+    const didScroll = scrollToActiveLine(
+      didInitialScroll.current ? "smooth" : "auto"
+    );
+
+    if (didScroll) {
       didInitialScroll.current = true;
-    } else if (!didInitialScroll.current) {
-      body.scrollTop = 0;
+    } else if (!didInitialScroll.current && bodyRef.current) {
+      didInitialScroll.current = true;
     }
-  }, [activeIndex, lyricsStatus]);
+  }, [activeIndex, isFollowing, lyricsStatus, scrollToActiveLine]);
 
   const handleSeek = (time) => {
-    // We dispatch tt-sync-seek (same event socket would send, or we could just use tt-seek if PlayerFooter listens)
-    // Wait, PlayerFooter has handleLyricSeek. It doesn't listen to window events for it natively without a special wrapper.
-    // Let's dispatch a custom event that PlayerFooter can listen to if needed.
-    // Right now we can just rely on the existing tt-sync-seek mechanism.
+    setCurrentTime(time);
+    setIsFollowing(true);
+    window.dispatchEvent(new CustomEvent("tt-lyric-seek", { detail: { time } }));
+  };
+
+  const handleManualBrowse = () => {
+    if (programmaticScrollRef.current || !synced?.length) return;
+    setIsFollowing(false);
+  };
+
+  const handleScroll = () => {
+    if (programmaticScrollRef.current || !synced?.length) return;
+    setIsFollowing(false);
+  };
+
+  const handleJumpToCurrent = () => {
+    setIsFollowing(true);
+    didInitialScroll.current = true;
+    scrollToActiveLine("smooth");
   };
 
   if (!song) {
@@ -89,8 +155,15 @@ export default function SidebarLyrics({ song }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#181818] relative min-h-0">
-      <div className="flex-1 overflow-y-auto px-4 py-8 relative scrollbar-hide" ref={bodyRef}>
+    <div className="h-full flex flex-col bg-[#121212] relative min-h-0">
+      <div
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 py-8 relative"
+        ref={bodyRef}
+        onPointerDown={handleManualBrowse}
+        onTouchMove={handleManualBrowse}
+        onWheel={handleManualBrowse}
+        onScroll={handleScroll}
+      >
         {lyricsStatus === "loading" && (
           <div className="flex flex-col items-center justify-center gap-3 h-full text-white/60">
             <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
@@ -106,7 +179,7 @@ export default function SidebarLyrics({ song }) {
         )}
 
         {lyricsStatus === "ready" && synced && (
-          <div className="py-[30vh]">
+          <div className="pt-2 pb-[55vh]">
             {synced.map((line, i) => {
               const isActive = i === activeIndex;
               return (
@@ -116,8 +189,8 @@ export default function SidebarLyrics({ song }) {
                   onClick={() => handleSeek(line.time)}
                   className={`text-lg md:text-xl font-bold leading-snug py-1.5 transition-all duration-300 cursor-pointer ${
                     isActive
-                      ? "text-white"
-                      : "text-white/30 hover:text-white/60"
+                      ? "text-white scale-[1.02]"
+                      : "text-white/30 hover:text-white/70"
                   }`}
                 >
                   {line.text || "♪"}
@@ -135,6 +208,16 @@ export default function SidebarLyrics({ song }) {
           </div>
         )}
       </div>
+      {lyricsStatus === "ready" && synced && !isFollowing && (
+        <button
+          onClick={handleJumpToCurrent}
+          className="absolute bottom-4 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-black shadow-lg shadow-black/40 transition hover:scale-[1.03] active:scale-100"
+          aria-label="Sync to current lyric"
+        >
+          <LocateFixed className="w-4 h-4" />
+          Sync lyrics
+        </button>
+      )}
     </div>
   );
 }

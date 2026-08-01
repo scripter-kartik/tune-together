@@ -2,6 +2,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import GlobalPlayer from "@/components/GlobalPlayer";
+import {
+  DEFAULT_THEME_ID,
+  THEME_STORAGE_KEY,
+  THEMES,
+  getThemeVars,
+} from "@/lib/themes";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -41,6 +47,27 @@ export const metadata: Metadata = {
 
 import { Toaster } from "react-hot-toast";
 
+const themeBootThemes = THEMES.map((theme) => ({
+  id: theme.id,
+  rail: theme.rail,
+  vars: getThemeVars(theme),
+}));
+
+const themeBootScript = `
+(() => {
+  try {
+    const themes = ${JSON.stringify(themeBootThemes)};
+    const stored = localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)}) || ${JSON.stringify(DEFAULT_THEME_ID)};
+    const theme = themes.find((item) => item.id === stored) || themes[0];
+    const root = document.documentElement;
+    Object.entries(theme.vars).forEach(([key, value]) => root.style.setProperty(key, value));
+    root.dataset.theme = theme.id;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme.rail);
+  } catch {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -48,7 +75,10 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        </head>
         <body className="font-sans antialiased bg-black overflow-hidden h-[100dvh] w-full flex flex-col">
           <Toaster 
             position="bottom-right" 

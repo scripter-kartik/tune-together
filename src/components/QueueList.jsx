@@ -58,7 +58,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#181818] min-h-0">
+    <div className="flex-1 flex flex-col bg-[#121212] min-h-0">
       <div className="flex items-center justify-between p-3 border-b border-neutral-800 flex-shrink-0">
         <div className="flex items-center gap-2">
           <ListMusic className="w-4 h-4 text-green-400" />
