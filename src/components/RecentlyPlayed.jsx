@@ -37,7 +37,7 @@ export default function RecentlyPlayed({ history = [], onPlay, expanded = false,
   const shown = expanded ? deduped.slice(0, 20) : deduped.slice(0, 6);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 md:gap-3 px-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3 px-3 sm:px-4">
       {shown.map((item) => {
         const cover = resolveCover(
           item.album?.cover_medium ||
@@ -49,7 +49,7 @@ export default function RecentlyPlayed({ history = [], onPlay, expanded = false,
           <div
             key={item.id}
             onClick={() => onPlay?.(item, deduped)}
-            className={`group relative flex items-center gap-3 rounded-md bg-[#181818] hover:bg-[#282828] h-14 overflow-hidden cursor-pointer transition-colors duration-200 animate-fade-up ${
+            className={`group relative flex items-center gap-2 sm:gap-3 rounded-md bg-[#181818] hover:bg-[#282828] h-12 sm:h-14 overflow-hidden cursor-pointer transition-colors duration-200 animate-fade-up touch-manipulation ${
               isActive ? "ring-2 ring-[var(--tt-accent)]" : ""
             }`}
             title={item.title}
@@ -64,20 +64,20 @@ export default function RecentlyPlayed({ history = [], onPlay, expanded = false,
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Music2 className="w-5 h-5 text-neutral-500" />
+                  <Music2 className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
                 </div>
               )}
             </div>
-            <div className="flex-1 min-w-0 pr-10">
-              <p className="text-white text-sm font-semibold truncate leading-tight">
+            <div className="flex-1 min-w-0 pr-10 sm:pr-12">
+              <p className="text-white text-xs sm:text-sm font-semibold truncate leading-tight">
                 {item.title}
               </p>
-              <p className="text-neutral-400 text-xs truncate mt-0.5">
+              <p className="text-neutral-400 text-[10px] sm:text-xs truncate mt-0.5">
                 {item.artist?.name || "Unknown Artist"}
               </p>
             </div>
             {isActive && isPlaying ? (
-              <div className="absolute right-3 flex items-center justify-center w-9 h-9">
+              <div className="absolute right-2 sm:right-3 flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9">
                 <MiniEqualizer />
               </div>
             ) : (
@@ -87,9 +87,9 @@ export default function RecentlyPlayed({ history = [], onPlay, expanded = false,
                   onPlay?.(item, deduped);
                 }}
                 aria-label={`Play ${item.title}`}
-                className="absolute right-3 w-9 h-9 rounded-full bg-green-500 hover:bg-green-400 hover:scale-105 flex items-center justify-center shadow-xl shadow-green-500/30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200"
+                className="absolute right-2 sm:right-3 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-green-500 hover:bg-green-400 hover:scale-105 active:scale-95 flex items-center justify-center shadow-xl shadow-green-500/30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 touch-manipulation"
               >
-                <Play className="w-4 h-4 fill-black text-black ml-0.5" />
+                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
               </button>
             )}
           </div>

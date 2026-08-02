@@ -406,9 +406,10 @@ export default function PlayerFooter({
   };
 
   return (
-    <div className="relative w-full bg-[#121212]/80 backdrop-blur-xl border-t border-[var(--tt-border)] text-white px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
+    <div className="relative w-full bg-[#121212]/80 backdrop-blur-xl border-t border-[var(--tt-border)] text-white px-2 sm:px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[68px] sm:h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
 
-      <div className="md:hidden absolute top-0 left-0 right-0">
+      {/* Mobile progress bar at top */}
+      <div className="md:hidden absolute top-0 left-0 right-0 z-10">
         <div className="flex items-center w-full">
           <input
             type="range"
@@ -417,7 +418,7 @@ export default function PlayerFooter({
             step="0.1"
             value={currentTime}
             onChange={handleSeek}
-            className={`w-full h-1 appearance-none bg-neutral-800 cursor-pointer outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-0 [&::-webkit-slider-thumb]:h-0 [&::-webkit-slider-thumb]:bg-white ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full h-1 appearance-none bg-neutral-800 cursor-pointer outline-none touch-manipulation [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-0 [&::-webkit-slider-thumb]:h-0 [&::-webkit-slider-thumb]:bg-white ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label="Seek"
             disabled={!song}
             style={{
@@ -427,19 +428,19 @@ export default function PlayerFooter({
         </div>
       </div>
 
-      <div className="flex items-center justify-between w-full h-full">
+      <div className="flex items-center justify-between w-full h-full pt-1 md:pt-0">
 
-        <div className="flex items-center gap-3 md:gap-4 flex-1 md:flex-none md:w-[30%] min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 md:flex-none md:w-[30%] min-w-0">
           {song ? (
             <div
               onClick={openNowPlaying}
-              className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 cursor-pointer md:cursor-default"
+              className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0 flex-1 cursor-pointer md:cursor-default touch-manipulation"
             >
               <div className="relative flex-shrink-0 rounded flex items-center shadow-lg shadow-black/50">
                 <img referrerPolicy="no-referrer"
                   src={resolveCover(song.album?.cover_medium || song.album?.cover_small, song.title || song.id)}
                   alt={song.title}
-                  className="w-12 h-12 md:w-14 md:h-14 object-cover rounded shadow-md"
+                  className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 object-cover rounded shadow-md"
                   onError={coverError(song.title || song.id)}
                 />
                 {/* Visualizer overlay on album art */}
@@ -448,7 +449,7 @@ export default function PlayerFooter({
                     {[1,2,3,4,5].map((i) => (
                       <span
                         key={i}
-                        className="w-[3px] bg-green-400 rounded-full"
+                        className="w-[2.5px] sm:w-[3px] bg-green-400 rounded-full"
                         style={{
                           height: `${30 + Math.random() * 50}%`,
                           animation: `visualizer-bar ${0.5 + i * 0.15}s ease-in-out infinite alternate`,
@@ -460,10 +461,10 @@ export default function PlayerFooter({
                 )}
               </div>
               <div className="flex flex-col overflow-hidden min-w-0 justify-center gap-0.5">
-                <span className="text-[13px] md:text-[14px] font-normal truncate md:hover:underline cursor-pointer text-white">{song.title}</span>
-                <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-[13px] md:text-[14px] font-normal truncate md:hover:underline cursor-pointer text-white">{song.title}</span>
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   {isPlaying && (
-                    <div className="flex items-end gap-[2px] h-3 flex-shrink-0">
+                    <div className="flex items-end gap-[2px] h-2.5 sm:h-3 flex-shrink-0">
                       {[1,2,3].map((i) => (
                         <span
                           key={i}
@@ -477,59 +478,71 @@ export default function PlayerFooter({
                       ))}
                     </div>
                   )}
-                  <span className="text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer hover:text-white transition-colors">{song.artist.name}</span>
+                  <span className="text-[10px] sm:text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer hover:text-white transition-colors">{song.artist.name}</span>
                 </div>
               </div>
             </div>
           ) : (
-            <>
-              <div className="w-12 h-12 md:w-14 md:h-14 rounded bg-[#282828] flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-[#121212]" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="relative w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent" />
+                <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-neutral-500 relative z-[1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
                 </svg>
               </div>
-            </>
+              <div className="flex flex-col overflow-hidden min-w-0 justify-center">
+                <span className="text-[11px] sm:text-xs md:text-[13px] font-medium text-neutral-400 truncate">
+                  Pick a song to start listening
+                </span>
+                <span className="text-[9px] sm:text-[10px] md:text-[11px] text-neutral-600 truncate hidden sm:block">
+                  Browse your library or use search
+                </span>
+              </div>
+            </div>
           )}
         </div>
 
+        {/* Desktop center controls */}
         <div className="hidden md:flex flex-col items-center justify-center w-[40%] max-w-[722px] gap-2">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 lg:gap-6">
             <button
               onClick={onPrev}
-              className={`text-[#b3b3b3] transition-colors hover:text-white ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`text-[#b3b3b3] transition-colors hover:text-white ${!song ? 'opacity-30 cursor-not-allowed' : ''}`}
               aria-label="Previous"
               disabled={!song}
             >
-              <FaBackward size={16} />
+              <FaBackward size={15} className="lg:w-4 lg:h-4" />
             </button>
 
             <button
               onClick={handlePlayPauseClick}
-              className={`bg-white text-black w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 transition-all ${(!song || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-white text-black w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 ${(!song || isLoading) ? 'opacity-30 cursor-not-allowed' : ''}`}
               disabled={!song || isLoading}
               aria-label={isPlaying ? "Pause" : "Play"}
             >
               {isLoading ? (
-                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
               ) : isPlaying ? (
-                <FaPause size={14} />
+                <FaPause size={13} />
               ) : (
-                <FaPlay size={14} className="ml-1" />
+                <FaPlay size={13} className="ml-1" />
               )}
             </button>
 
             <button
               onClick={onNext}
-              className={`text-[#b3b3b3] transition-colors hover:text-white ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`text-[#b3b3b3] transition-colors hover:text-white ${!song ? 'opacity-30 cursor-not-allowed' : ''}`}
               aria-label="Next"
               disabled={!song}
             >
-              <FaForward size={16} />
+              <FaForward size={15} className="lg:w-4 lg:h-4" />
             </button>
           </div>
 
-          <div className="flex items-center gap-2 w-full group">
-            <span className="text-[11px] text-[#a7a7a7] font-normal min-w-[40px] text-right">{formatTime(currentTime)}</span>
+          <div className={`flex items-center gap-2 w-full group ${!song ? 'opacity-30' : ''}`}>
+            <span className="text-[10px] lg:text-[11px] text-[#a7a7a7] font-normal min-w-[36px] lg:min-w-[40px] text-right">{formatTime(currentTime)}</span>
             <input
               type="range"
               min="0"
@@ -537,7 +550,7 @@ export default function PlayerFooter({
               step="0.1"
               value={currentTime}
               onChange={handleSeek}
-              className={`flex-1 h-1 appearance-none bg-[#4d4d4d] rounded-full cursor-pointer outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:opacity-0 group-hover:[&::-webkit-slider-thumb]:opacity-100 ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex-1 h-1 appearance-none bg-[#4d4d4d] rounded-full cursor-pointer outline-none touch-manipulation [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:opacity-0 group-hover:[&::-webkit-slider-thumb]:opacity-100 ${!song ? 'cursor-not-allowed' : ''}`}
               aria-label="Seek"
               disabled={!song}
               style={{
@@ -550,144 +563,171 @@ export default function PlayerFooter({
                 if(song) e.target.style.background = `linear-gradient(to right, #ffffff ${(currentTime / (duration || 30)) * 100}%, var(--tt-surface-hover) ${(currentTime / (duration || 30)) * 100}%)`;
               }}
             />
-            <span className="text-[11px] text-[#a7a7a7] font-normal min-w-[40px]">{formatTime(duration)}</span>
+            <span className="text-[10px] lg:text-[11px] text-[#a7a7a7] font-normal min-w-[36px] lg:min-w-[40px]">{formatTime(duration)}</span>
           </div>
         </div>
 
-        <div className="flex md:hidden items-center justify-end gap-1 flex-shrink-0 pl-2">
-          {activeSyncSession && (
-            <button
-              onClick={handleUnsync}
-              className="p-2 text-green-400 transition-colors hover:text-red-400"
-              title="Leave sync session"
-            >
-              <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
-            </button>
-          )}
-          <button
-            onClick={() => song && setShowLyrics(true)}
-            className={`p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 transition-colors hover:text-white'} ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
-            aria-label="Lyrics"
-            disabled={!song}
-          >
-            <MicVocal size={18} />
-          </button>
-          <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
-          <SleepTimerMenu
-            timer={sleepTimer}
-            remainingMs={sleepRemainingMs}
-            onSetTimer={setSleepTimer}
-            onEndOfTrack={setEndOfTrack}
-            onEndOfQueue={setEndOfQueue}
-            onClear={clearSleepTimer}
-            disabled={!song}
-            hasTrack={!!song}
-          />
-          <button
-              onClick={handleQueueSong}
-              className={`p-2 transition-colors ${added ? 'text-green-500' : 'text-neutral-300 hover:text-white'}`}
-              aria-label="Add to Queue"
-              title="Add to Queue"
-            >
-              <ListMusic size={20} />
-            </button>
+        {/* Mobile right controls */}
+        <div className="flex md:hidden items-center justify-end gap-0.5 sm:gap-1 flex-shrink-0 pl-1 sm:pl-2">
+          {!song ? (
+            /* Empty state — just show a simple queue icon */
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
-              className="p-2 text-neutral-300 transition-colors hover:text-white"
+              className="p-2 text-neutral-500 hover:text-white transition-colors touch-manipulation"
               aria-label="View Queue"
               title="View Queue"
             >
               <Layers size={18} />
             </button>
-          <button
-            onClick={handlePlayPauseClick}
-            className={`bg-white text-black w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${(!song || isLoading) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'} transition-transform`}
-            disabled={!song || isLoading}
-            aria-label={isPlaying ? "Pause" : "Play"}
-          >
-            {isLoading ? (
-              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-            ) : isPlaying ? (
-              <FaPause size={15} />
-            ) : (
-              <FaPlay size={15} className="ml-0.5" />
-            )}
-          </button>
-          <button
-            onClick={onNext}
-            className={`text-neutral-300 transition-colors hover:text-white p-2 ${!song ? 'opacity-40 cursor-not-allowed' : ''}`}
-            aria-label="Next"
-            disabled={!song}
-          >
-            <FaForward size={18} />
-          </button>
+          ) : (
+            <>
+              {activeSyncSession && (
+                <button
+                  onClick={handleUnsync}
+                  className="p-1.5 sm:p-2 text-green-400 transition-colors hover:text-red-400 touch-manipulation"
+                  title="Leave sync session"
+                >
+                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-500 rounded-full animate-pulse" />
+                </button>
+              )}
+              <button
+                onClick={() => setShowLyrics(true)}
+                className={`p-1.5 sm:p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} transition-colors touch-manipulation`}
+                aria-label="Lyrics"
+              >
+                <MicVocal size={17} className="sm:w-[18px] sm:h-[18px]" />
+              </button>
+              <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
+              <SleepTimerMenu
+                timer={sleepTimer}
+                remainingMs={sleepRemainingMs}
+                onSetTimer={setSleepTimer}
+                onEndOfTrack={setEndOfTrack}
+                onEndOfQueue={setEndOfQueue}
+                onClear={clearSleepTimer}
+                disabled={!song}
+                hasTrack={!!song}
+              />
+              <button
+                onClick={handleQueueSong}
+                className={`p-1.5 sm:p-2 transition-colors ${added ? 'text-green-500' : 'text-neutral-300 hover:text-white'} touch-manipulation`}
+                aria-label="Add to Queue"
+                title="Add to Queue"
+              >
+                <ListMusic size={18} className="sm:w-5 sm:h-5" />
+              </button>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
+                className="p-1.5 sm:p-2 text-neutral-300 hover:text-white transition-colors touch-manipulation"
+                aria-label="View Queue"
+                title="View Queue"
+              >
+                <Layers size={17} className="sm:w-[18px] sm:h-[18px]" />
+              </button>
+              <button
+                onClick={handlePlayPauseClick}
+                className={`bg-white text-black w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform touch-manipulation ${isLoading ? 'opacity-70' : ''}`}
+                disabled={isLoading}
+                aria-label={isPlaying ? "Pause" : "Play"}
+              >
+                {isLoading ? (
+                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                ) : isPlaying ? (
+                  <FaPause size={14} className="sm:w-[15px] sm:h-[15px]" />
+                ) : (
+                  <FaPlay size={14} className="ml-0.5 sm:w-[15px] sm:h-[15px]" />
+                )}
+              </button>
+              <button
+                onClick={onNext}
+                className="text-neutral-300 hover:text-white transition-colors p-1.5 sm:p-2 touch-manipulation"
+                aria-label="Next"
+              >
+                <FaForward size={17} className="sm:w-[18px] sm:h-[18px]" />
+              </button>
+            </>
+          )}
         </div>
 
-        <div className="hidden md:flex items-center justify-end gap-2 lg:gap-3 w-[34%] min-w-[280px] group">
-          {activeSyncSession && (
-            <div className="flex items-center group/sync relative mr-2">
-               <button onClick={handleUnsync} className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-[11px] font-bold transition-colors hover:bg-red-500/20 hover:text-red-400 whitespace-nowrap border border-green-500/30 hover:border-red-500/30">
-                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse group-hover/sync:bg-red-500" />
-                 <span className="group-hover/sync:hidden">Sync: {activeSyncSession.partnerName}</span>
-                 <span className="hidden group-hover/sync:inline">Leave Session</span>
-               </button>
-            </div>
+        {/* Desktop right controls */}
+        <div className="hidden md:flex items-center justify-end gap-1.5 lg:gap-2 xl:gap-3 w-[34%] min-w-[240px] lg:min-w-[280px] group">
+          {song ? (
+            <>
+              {activeSyncSession && (
+                <div className="flex items-center group/sync relative mr-1 lg:mr-2">
+                   <button onClick={handleUnsync} className="flex items-center gap-1 lg:gap-1.5 px-2 lg:px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-[10px] lg:text-[11px] font-bold transition-colors hover:bg-red-500/20 hover:text-red-400 whitespace-nowrap border border-green-500/30 hover:border-red-500/30">
+                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse group-hover/sync:bg-red-500" />
+                     <span className="group-hover/sync:hidden">Sync: {activeSyncSession.partnerName}</span>
+                     <span className="hidden group-hover/sync:inline">Leave Session</span>
+                   </button>
+                </div>
+              )}
+              <button
+                onClick={() => setShowLyrics(true)}
+                className={`transition-colors ${showLyrics ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
+                aria-label="Lyrics"
+                title="Lyrics"
+              >
+                <MicVocal size={17} className="lg:w-[18px] lg:h-[18px]" />
+              </button>
+              <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
+              <SleepTimerMenu
+                timer={sleepTimer}
+                remainingMs={sleepRemainingMs}
+                onSetTimer={setSleepTimer}
+                onEndOfTrack={setEndOfTrack}
+                onEndOfQueue={setEndOfQueue}
+                onClear={clearSleepTimer}
+                disabled={!song}
+                hasTrack={!!song}
+              />
+              <CrossfadeMenu
+                fadeSeconds={fadeSeconds}
+                onSet={setCrossfade}
+                disabled={!song}
+              />
+              <EqualizerPanel
+                settings={eqSettings}
+                wired={eqWired}
+                bands={eqBands}
+                onSetGain={setEqGain}
+                onPreset={applyEqPreset}
+                onToggleEffect={toggleEqEffect}
+                onReset={resetEq}
+                disabled={!song}
+              />
+              <button
+                onClick={handleQueueSong}
+                className={`transition-colors ${added ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
+                aria-label="Add to Queue"
+                title="Add to Queue"
+              >
+                <ListMusic size={17} className="lg:w-[18px] lg:h-[18px]" />
+              </button>
+            </>
+          ) : (
+            /* Empty state — just show queue + volume */
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
+              className="text-neutral-500 hover:text-white transition-colors"
+              aria-label="View Queue"
+              title="View Queue"
+            >
+              <Layers size={18} />
+            </button>
           )}
-          <button
-            onClick={() => song && setShowLyrics(true)}
-            className={`transition-colors ${showLyrics ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'} ${!song ? 'opacity-50 cursor-not-allowed' : ''}`}
-            aria-label="Lyrics"
-            disabled={!song}
-            title="Lyrics"
-          >
-            <MicVocal size={18} />
-          </button>
-          <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
-          <SleepTimerMenu
-            timer={sleepTimer}
-            remainingMs={sleepRemainingMs}
-            onSetTimer={setSleepTimer}
-            onEndOfTrack={setEndOfTrack}
-            onEndOfQueue={setEndOfQueue}
-            onClear={clearSleepTimer}
-            disabled={!song}
-            hasTrack={!!song}
-          />
-          <CrossfadeMenu
-            fadeSeconds={fadeSeconds}
-            onSet={setCrossfade}
-            disabled={!song}
-          />
-          <EqualizerPanel
-            settings={eqSettings}
-            wired={eqWired}
-            bands={eqBands}
-            onSetGain={setEqGain}
-            onPreset={applyEqPreset}
-            onToggleEffect={toggleEqEffect}
-            onReset={resetEq}
-            disabled={!song}
-          />
-          <button
-            onClick={handleQueueSong}
-            className={`transition-colors ${added ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
-            aria-label="Add to Queue"
-            title="Add to Queue"
-          >
-            <ListMusic size={18} />
-          </button>
           <button
             onClick={toggleMute}
             className="text-[#b3b3b3] transition-colors hover:text-white"
             aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted || volume === 0 ? (
-              <BsFillVolumeMuteFill size={16} />
+              <BsFillVolumeMuteFill size={15} className="lg:w-4 lg:h-4" />
             ) : (
-              <BsFillVolumeUpFill size={16} />
+              <BsFillVolumeUpFill size={15} className="lg:w-4 lg:h-4" />
             )}
           </button>
-          <div className="w-[93px] flex items-center group/vol">
+          <div className="w-[80px] lg:w-[93px] flex items-center group/vol">
             <input
               type="range"
               min="0"

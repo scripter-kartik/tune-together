@@ -183,24 +183,24 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       {/* Header — pad the top for the mobile status bar / notch (safe area) so
           the title and buttons aren't clipped against the screen edge. */}
       <div
-        className="relative flex items-center justify-between gap-3 px-4 sm:px-5 py-4 flex-shrink-0"
-        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
+        className="relative flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 md:px-5 py-3 sm:py-4 flex-shrink-0"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           {song && (
             <img referrerPolicy="no-referrer"
               src={resolveCover(song.album?.cover_small, song.title || song.id)}
               alt={song.title}
-              className="w-12 h-12 rounded object-cover shadow-lg"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded object-cover shadow-lg flex-shrink-0"
               onError={coverError(song.title || song.id)}
             />
           )}
-          <div className="min-w-0">
-            <p className="text-white font-semibold truncate">{song?.title}</p>
-            <p className="text-white/60 text-sm truncate">{song?.artist?.name}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-white font-semibold text-sm sm:text-base truncate">{song?.title}</p>
+            <p className="text-white/60 text-xs sm:text-sm truncate">{song?.artist?.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
           {synced && synced.length > 0 && (
             <LyricsSyncAdjuster
               offset={lyricsOffset}
@@ -211,19 +211,19 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
           {hasLyrics && (
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-sm font-medium"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation"
               aria-label="Copy lyrics"
             >
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
               <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
             </button>
           )}
           <button
             onClick={onClose}
-            className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            className="p-1.5 sm:p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors touch-manipulation"
             aria-label="Close lyrics"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
       </div>
@@ -231,7 +231,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       {/* Body */}
       <div
         ref={bodyRef}
-        className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-6 md:px-10"
+        className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 sm:px-6 md:px-10"
         onPointerDown={handleManualBrowse}
         onTouchMove={handleManualBrowse}
         onWheel={handleManualBrowse}
@@ -239,21 +239,21 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       >
         <div className="max-w-3xl mx-auto">
           {status === "loading" && (
-            <div className="flex flex-col items-center justify-center gap-3 py-32 text-white/60">
-              <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-              <p>Finding lyrics…</p>
+            <div className="flex flex-col items-center justify-center gap-3 py-24 sm:py-32 text-white/60">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm sm:text-base">Finding lyrics…</p>
             </div>
           )}
 
           {status === "error" && (
-            <div className="flex flex-col items-center justify-center gap-2 py-32 text-center text-white/60">
-              <p className="text-2xl font-bold text-white">No lyrics found</p>
-              <p className="text-sm">We couldn&apos;t find lyrics for this track.</p>
+            <div className="flex flex-col items-center justify-center gap-2 py-24 sm:py-32 text-center text-white/60">
+              <p className="text-xl sm:text-2xl font-bold text-white">No lyrics found</p>
+              <p className="text-xs sm:text-sm">We couldn&apos;t find lyrics for this track.</p>
             </div>
           )}
 
           {status === "ready" && synced && (
-            <div className="pt-6 pb-[55vh] md:pb-[45vh]">
+            <div className="pt-4 sm:pt-6 pb-[50vh] sm:pb-[45vh]">
               {synced.map((line, i) => {
                 const isActive = i === activeIndex;
                 return (
@@ -261,7 +261,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
                     key={i}
                     ref={isActive ? activeLineRef : null}
                     onClick={() => handleLineSeek(line.time)}
-                    className={`cursor-pointer select-none text-3xl md:text-[2.75rem] leading-tight font-extrabold tracking-tight py-2 origin-left transition-all duration-300 ${
+                    className={`cursor-pointer select-none text-2xl sm:text-3xl md:text-[2.75rem] leading-tight font-extrabold tracking-tight py-1.5 sm:py-2 origin-left transition-all duration-300 touch-manipulation ${
                       isActive
                         ? "text-white scale-100"
                         : "text-white/40 hover:text-white/70 scale-[0.98]"
@@ -271,19 +271,19 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
                   </p>
                 );
               })}
-              <p className="text-xs text-white/30 pt-6">Lyrics provided by LRCLIB</p>
+              <p className="text-[10px] sm:text-xs text-white/30 pt-4 sm:pt-6">Lyrics provided by LRCLIB</p>
             </div>
           )}
 
           {status === "ready" && !synced && data?.plainLyrics && (
-            <div className="py-16">
-              <p className="text-xs uppercase tracking-wider text-white/40 mb-6">
+            <div className="py-12 sm:py-16">
+              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-white/40 mb-4 sm:mb-6">
                 Lyrics not time-synced
               </p>
-              <pre className="text-2xl md:text-3xl font-extrabold text-white/90 whitespace-pre-wrap font-sans leading-relaxed tracking-tight">
+              <pre className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white/90 whitespace-pre-wrap font-sans leading-relaxed tracking-tight">
                 {data.plainLyrics}
               </pre>
-              <p className="text-xs text-white/30 pt-8">Lyrics provided by LRCLIB</p>
+              <p className="text-[10px] sm:text-xs text-white/30 pt-6 sm:pt-8">Lyrics provided by LRCLIB</p>
             </div>
           )}
         </div>
@@ -292,10 +292,10 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       {status === "ready" && synced && !isFollowing && (
         <button
           onClick={handleJumpToCurrent}
-          className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black shadow-xl shadow-black/40 transition hover:scale-[1.03] active:scale-100"
+          className="fixed bottom-6 sm:bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 sm:gap-2 rounded-full bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-black shadow-xl shadow-black/40 transition hover:scale-[1.03] active:scale-100 touch-manipulation"
           aria-label="Sync to current lyric"
         >
-          <LocateFixed className="w-4 h-4" />
+          <LocateFixed className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           Sync lyrics
         </button>
       )}

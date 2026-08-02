@@ -27,7 +27,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
     <div className="relative flex items-center" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors text-sm font-medium ${
+        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation ${
           isOpen || active
             ? "text-green-500 bg-white/10"
             : "text-white/70 hover:text-white hover:bg-white/10"
@@ -35,9 +35,9 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
         aria-label="Adjust lyric timing"
         title="Adjust lyric timing"
       >
-        <Clock className="w-4 h-4" />
+        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         {active && (
-          <span className="tabular-nums">
+          <span className="tabular-nums hidden sm:inline">
             {offset > 0 ? "+" : ""}
             {offset.toFixed(1)}s
           </span>
@@ -45,9 +45,9 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-2 w-60 bg-[#242424] border border-[var(--tt-border)] rounded-xl shadow-2xl p-3 animate-fade-in-up z-50">
+        <div className="fixed sm:absolute bottom-20 sm:bottom-full left-1/2 sm:left-auto right-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 mb-2 w-[calc(100vw-2rem)] max-w-xs sm:w-60 bg-[#242424] border border-[var(--tt-border)] rounded-xl shadow-2xl p-3 animate-fade-in-up z-50">
           <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-400">
               Sync timing
             </span>
             {active && (
@@ -56,7 +56,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
                   onReset();
                   setIsOpen(false);
                 }}
-                className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white transition-colors"
+                className="flex items-center gap-1 text-[10px] sm:text-xs text-neutral-400 hover:text-white transition-colors touch-manipulation"
               >
                 <RotateCcw className="w-3 h-3" /> Reset
               </button>
@@ -66,7 +66,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => onAdjust(-0.5)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 text-white transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 active:bg-white/20 text-white transition-colors touch-manipulation"
               aria-label="Earlier by half a second"
               title="Earlier (−0.5s)"
             >
@@ -74,16 +74,16 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
             </button>
 
             <div className="flex-1 text-center">
-              <p className={`text-xl font-bold tabular-nums ${active ? "text-green-500" : "text-white"}`}>
+              <p className={`text-lg sm:text-xl font-bold tabular-nums ${active ? "text-green-500" : "text-white"}`}>
                 {offset > 0 ? "+" : ""}
                 {offset.toFixed(1)}s
               </p>
-              <p className="text-[10px] text-neutral-500 -mt-0.5">offset</p>
+              <p className="text-[9px] sm:text-[10px] text-neutral-500 -mt-0.5">offset</p>
             </div>
 
             <button
               onClick={() => onAdjust(0.5)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 text-white transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 active:bg-white/20 text-white transition-colors touch-manipulation"
               aria-label="Later by half a second"
               title="Later (+0.5s)"
             >
@@ -91,7 +91,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
             </button>
           </div>
 
-          <p className="text-[11px] text-neutral-500 mt-2.5 leading-snug">
+          <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-2.5 leading-snug">
             {offset < 0
               ? "Lyrics are showing late — moving them earlier."
               : offset > 0

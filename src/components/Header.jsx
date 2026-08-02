@@ -157,14 +157,14 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
     currentSong?.id === song.id;
 
   const searchBar = (
-    <div className="relative flex-1 min-w-0 max-w-[500px]">
-      <div className={`flex items-center gap-3 bg-[#242424] rounded-full px-4 h-11 md:h-12 w-full transition-all duration-200 ${focused ? 'ring-1 ring-[var(--tt-accent)]/40 bg-[#2a2a2a]' : 'transition-colors hover:bg-[#2a2a2a]'}`}>
+    <div className="relative flex-1 min-w-0 max-w-full lg:max-w-[500px]">
+      <div className={`flex items-center gap-2 sm:gap-3 bg-[#242424] rounded-full px-3 sm:px-4 h-10 sm:h-11 lg:h-12 w-full transition-all duration-200 ${focused ? 'ring-1 ring-[var(--tt-accent)]/40 bg-[#2a2a2a]' : 'transition-colors hover:bg-[#2a2a2a]'}`}>
         <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
         <input
           type="text"
           data-search-input
           placeholder="What do you want to play?"
-          className="text-white text-base md:text-sm font-medium outline-none border-0 bg-transparent flex-1 min-w-0 placeholder-neutral-400"
+          className="text-white text-sm sm:text-base lg:text-sm font-medium outline-none border-0 bg-transparent flex-1 min-w-0 placeholder-neutral-400"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -174,13 +174,13 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         {query && (
           <button
             onClick={() => setQuery("")}
-            className="text-neutral-400 transition-colors hover:text-white text-lg leading-none flex-shrink-0"
+            className="text-neutral-400 transition-colors hover:text-white text-lg leading-none flex-shrink-0 p-1"
             aria-label="Clear search"
           >
             ✕
           </button>
         )}
-        <div className="w-px h-5 bg-neutral-600 flex-shrink-0" />
+        <div className="w-px h-4 sm:h-5 bg-neutral-600 flex-shrink-0" />
         <Link href="/browse" className="flex-shrink-0" aria-label="Browse">
           <LayoutGrid className="w-4 h-4 text-neutral-400 transition-colors hover:text-white" />
         </Link>
@@ -359,29 +359,24 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
   );
 
   return (
-    <div className="bg-black px-4 md:px-6 py-2.5 md:py-3">
+    <div className="bg-black px-3 sm:px-4 md:px-6 py-2 md:py-3">
       {/* Top row */}
-      <div className="relative flex items-center justify-between gap-3 md:gap-4">
+      <div className="relative flex items-center justify-between gap-2 sm:gap-3 md:gap-4">
 
         {/* Left - Logo */}
-        <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
-          {/* Logo - mobile only */}
-          <Link href="/" className="flex md:hidden items-center min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
-            <span className="font-black text-base text-white truncate">tune<span className="text-green-500">together</span></span>
-          </Link>
-
-          {/* Logo - desktop */}
-          <Link href="/" className="hidden md:flex items-center hover:opacity-80 transition-opacity">
-            <span className="font-black text-lg tracking-tight text-white drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
+          {/* Logo - always visible, adapts size */}
+          <Link href="/" className="flex items-center min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
+            <span className="font-black text-sm sm:text-base md:text-lg tracking-tight text-white truncate drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
               tune<span className="text-green-500">together</span>
             </span>
           </Link>
         </div>
 
-        {/* Center - Nav + Search (desktop / tablet only), truly centered in the header */}
-        <div className="hidden md:flex items-center gap-2 absolute left-1/2 -translate-x-1/2 w-full max-w-[400px] lg:max-w-xl xl:max-w-2xl px-2">
+        {/* Center - Nav + Search (desktop only, lg breakpoint = 1024px+) */}
+        <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2 w-full max-w-[400px] xl:max-w-xl 2xl:max-w-2xl px-2">
           <Link href="/" className="flex-shrink-0">
-            <div className="w-12 h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
+            <div className="w-11 h-11 xl:w-12 xl:h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
               <Home className="w-5 h-5 text-white" />
             </div>
           </Link>
@@ -389,18 +384,18 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         </div>
 
         {/* Right - Auth */}
-        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0">
           {mounted && (
             <>
               <SignedOut>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <SignInButton mode="modal">
-                    <span className="hidden md:inline-block text-neutral-300 transition-colors hover:text-white text-sm font-bold cursor-pointer px-2 py-1">
+                    <span className="hidden sm:inline-block text-neutral-300 transition-colors hover:text-white text-xs sm:text-sm font-bold cursor-pointer px-2 py-1">
                       Log in
                     </span>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <span className="inline-block text-black bg-white transition-colors hover:bg-neutral-200 px-4 md:px-5 py-2 rounded-full text-sm font-bold cursor-pointer transition-all transition-transform hover:scale-105 whitespace-nowrap">
+                    <span className="inline-block text-black bg-white transition-colors hover:bg-neutral-200 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold cursor-pointer hover:scale-105 transition-transform whitespace-nowrap">
                       Sign up
                     </span>
                   </SignUpButton>
@@ -409,13 +404,15 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
               <SignedIn>
                 <button
                   onClick={() => setShowParties(true)}
-                  className="p-2 rounded-full text-neutral-300 transition-colors hover:text-purple-400 hover:bg-white/10"
+                  className="p-1.5 sm:p-2 rounded-full text-neutral-300 transition-colors hover:text-purple-400 hover:bg-white/10"
                   aria-label="Listening Parties"
                   title="Listening Parties"
                 >
-                  <PartyPopper className="w-5 h-5" />
+                  <PartyPopper className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
-                <UserButton />
+                <div className="scale-90 sm:scale-100 origin-right">
+                  <UserButton />
+                </div>
               </SignedIn>
               {showParties && (
                 <PartiesHub open={showParties} onClose={() => setShowParties(false)} />
@@ -425,8 +422,8 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         </div>
       </div>
 
-      {/* Mobile-only search row (full width, no cramming) */}
-      <div className="flex md:hidden mt-2.5">
+      {/* Mobile/Tablet search row (shown below 1024px) */}
+      <div className="flex lg:hidden mt-2 sm:mt-2.5">
         {searchBar}
       </div>
     </div>

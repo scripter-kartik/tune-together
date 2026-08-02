@@ -70,12 +70,12 @@ export default function FeaturedCards({ songs, onPlay, onQueue, onOpenCollection
   if (!tiles.length) return null;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 md:gap-3 px-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-4">
       {tiles.map((tile) => (
         <div
           key={tile.id}
           onClick={() => onOpenCollection?.(tile)}
-          className="group relative flex items-center gap-3 md:gap-4 rounded-lg bg-[#181818] hover:bg-[#282828] overflow-hidden cursor-pointer transition-colors duration-200 h-14 md:h-16 animate-fade-up"
+          className="group relative flex items-center gap-2.5 sm:gap-3 md:gap-4 rounded-md sm:rounded-lg bg-[#181818] hover:bg-[#282828] overflow-hidden cursor-pointer transition-colors duration-200 h-12 sm:h-14 md:h-16 animate-fade-up touch-manipulation"
         >
           <img referrerPolicy="no-referrer"
             src={tile.cover}
@@ -83,15 +83,15 @@ export default function FeaturedCards({ songs, onPlay, onQueue, onOpenCollection
             onError={coverError(tile.title)}
             className="h-full aspect-square object-cover flex-shrink-0"
           />
-          <span className="flex-1 min-w-0 pr-14 text-white font-bold text-sm md:text-base leading-tight line-clamp-2">
+          <span className="flex-1 min-w-0 pr-12 sm:pr-14 text-white font-bold text-xs sm:text-sm md:text-base leading-tight line-clamp-2">
             {tile.title}
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); playCollection(tile); }}
             aria-label={`Play ${tile.title}`}
-            className="absolute right-3 w-10 h-10 bg-green-500 hover:bg-green-400 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200"
+            className="absolute right-2 sm:right-3 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-green-500 hover:bg-green-400 hover:scale-105 active:scale-95 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 opacity-100 md:opacity-0 translate-y-0 md:translate-y-1 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-200 touch-manipulation"
           >
-            <Play className="w-4 h-4 fill-black text-black ml-0.5" />
+            <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
           </button>
         </div>
       ))}

@@ -147,7 +147,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 lg:gap-5 p-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5 px-3 sm:px-4">
       {songs.map((song) => {
         const isActive = currentSongId != null && song.id === currentSongId;
         const cover = resolveCover(song.album?.cover_medium || song.album?.cover_big || song.album?.cover_small, song.title || song.id);
@@ -158,20 +158,21 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
             onContextMenu={(e) => handleContextMenu(e, song)}
             className={`
               relative group
-              p-3 md:p-4
-              rounded-xl
+              p-2.5 sm:p-3 lg:p-4
+              rounded-lg sm:rounded-xl
               flex flex-col items-start
               truncate
               w-full
               cursor-pointer
-              transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50
+              transition-all duration-300 hover:-translate-y-0.5 sm:hover:-translate-y-1 hover:shadow-xl sm:hover:shadow-2xl hover:shadow-black/50
+              touch-manipulation
               ${isActive
                 ? "bg-gradient-to-b from-green-900/30 to-neutral-900/50 ring-1 ring-green-500/40"
                 : "bg-[#181818] hover:bg-[#282828]"}
             `}
           >
             {/* Cover art */}
-            <div className="relative w-full aspect-square overflow-hidden rounded-lg mb-4 shadow-lg">
+            <div className="relative w-full aspect-square overflow-hidden rounded-md sm:rounded-lg mb-3 sm:mb-4 shadow-lg">
               <img referrerPolicy="no-referrer"
                 src={cover}
                 alt={song.title}
@@ -179,24 +180,25 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-105"
               />
               {/* Play button overlay */}
-              <div className="absolute bottom-2 right-2 translate-y-0 md:translate-y-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-300">
+              <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 translate-y-0 opacity-100 md:translate-y-2 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-300">
                 <button
-                  className="w-10 h-10 bg-green-500 hover:bg-green-400 active:scale-95 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 transition-all duration-200"
+                  className="w-9 h-9 sm:w-10 sm:h-10 bg-green-500 hover:bg-green-400 active:scale-95 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 transition-all duration-200 touch-manipulation"
                   onClick={(e) => {
                     e.stopPropagation();
                     onPlay(song, songs);
                   }}
+                  aria-label={`Play ${song.title}`}
                 >
-                  <Play className="w-4 h-4 fill-black text-black ml-0.5" />
+                  <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
                 </button>
               </div>
             </div>
 
             {/* Now playing indicator */}
             {isActive && (
-              <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-black/70 rounded-full pl-2 pr-2.5 py-1 backdrop-blur-sm">
+              <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10 flex items-center gap-1 sm:gap-1.5 bg-black/70 rounded-full pl-1.5 sm:pl-2 pr-2 sm:pr-2.5 py-1 backdrop-blur-sm">
                 {isPlaying ? <Equalizer /> : <span className="w-1.5 h-1.5 rounded-full bg-green-400" />}
-                <span className="text-[10px] font-semibold text-green-400">
+                <span className="text-[9px] sm:text-[10px] font-semibold text-green-400">
                   {isPlaying ? "Playing" : "Paused"}
                 </span>
               </div>
@@ -205,11 +207,11 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
             {/* Three-dot menu button (always visible on mobile, hover on desktop) */}
             <button
               onClick={(e) => handleContextMenu(e, song)}
-              className="absolute top-3 right-3 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 rounded-full w-8 h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg transition-all duration-200"
+              className="absolute top-2 sm:top-3 right-2 sm:right-3 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg transition-all duration-200 touch-manipulation"
               title="More options"
               aria-label="More options"
             >
-              <MoreVertical className="w-4 h-4" />
+              <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             {/* Queue button */}
@@ -219,7 +221,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                   e.stopPropagation();
                   handleQueue(song);
                 }}
-                className={`absolute top-12 right-3 z-10 transition-all duration-200 rounded-full w-8 h-8 flex items-center justify-center shadow-lg ${
+                className={`absolute top-10 sm:top-12 right-2 sm:right-3 z-10 transition-all duration-200 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-lg touch-manipulation ${
                   addedId === song.id
                     ? "opacity-100 bg-green-500 text-white scale-110"
                     : "opacity-100 md:opacity-0 md:group-hover:opacity-100 bg-black/70 text-white hover:bg-green-500 active:bg-green-500 hover:scale-110"
@@ -228,20 +230,20 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 aria-label="Add to queue"
               >
                 {addedId === song.id ? (
-                  <Check className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 ) : (
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 )}
               </button>
             )}
 
             {/* Song info */}
-            <div className="mt-1 w-full px-1">
-              <p className={`text-sm font-semibold truncate leading-tight ${isActive ? "text-green-400" : "text-white"}`}>
+            <div className="mt-0.5 sm:mt-1 w-full px-0.5 sm:px-1">
+              <p className={`text-xs sm:text-sm font-semibold truncate leading-tight ${isActive ? "text-green-400" : "text-white"}`}>
                 {song.title}
               </p>
               <p
-                className="text-neutral-400 text-xs truncate mt-1 transition-colors hover:text-white cursor-pointer"
+                className="text-neutral-400 text-[10px] sm:text-xs truncate mt-0.5 sm:mt-1 transition-colors hover:text-white cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (song.artist?.id) onOpenArtist?.(song.artist.id);

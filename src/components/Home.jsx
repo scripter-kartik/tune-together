@@ -87,7 +87,7 @@ function SectionHeader({ title, subtitle, onPlayAll, onSeeAll, expanded }) {
 function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist }) {
   return (
     <section
-      className="relative overflow-hidden rounded-2xl border border-[var(--tt-border)] px-5 py-6 md:px-8 md:py-8"
+      className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-[var(--tt-border)] px-4 py-5 sm:px-5 sm:py-6 md:px-6 md:py-7 lg:px-8 lg:py-8"
       style={{
         background:
           "linear-gradient(135deg, var(--tt-hero-start), var(--tt-hero-mid) 48%, var(--tt-hero-end))",
@@ -124,23 +124,23 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
           filter: "blur(28px)",
         }}
       />
-      <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
+      <div className="relative flex flex-col md:flex-row md:items-center gap-4 sm:gap-6 md:gap-6 lg:gap-8">
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300/80 mb-2">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300/80 mb-1.5 sm:mb-2">
             Tune Together
           </p>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-[1.05]">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.05]">
             {greeting}{firstName ? <span className="text-indigo-300">, {firstName}</span> : ""}
           </h1>
-          <p className="text-neutral-300/80 text-sm md:text-base mt-3 max-w-md">
+          <p className="text-neutral-300/80 text-xs sm:text-sm md:text-base mt-2 sm:mt-3 max-w-md">
             Pick a track, jump into chat, and keep the queue moving together.
           </p>
           {onShuffle && (
             <button
               onClick={onShuffle}
-              className="mt-5 inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 hover:scale-[1.03] active:scale-100 text-black font-bold text-sm rounded-full pl-4 pr-5 py-2.5 shadow-xl shadow-green-500/25 transition-all"
+              className="mt-3 sm:mt-5 inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 hover:scale-[1.03] active:scale-100 text-black font-bold text-xs sm:text-sm rounded-full pl-3.5 sm:pl-4 pr-4 sm:pr-5 py-2 sm:py-2.5 shadow-xl shadow-green-500/25 transition-all touch-manipulation"
             >
-              <Shuffle className="w-4 h-4" /> Shuffle play
+              <Shuffle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Shuffle play
             </button>
           )}
         </div>
@@ -149,9 +149,9 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
         {spotlight && (
           <div
             onClick={() => onPlay(spotlight)}
-            className="group flex-shrink-0 w-full md:w-72 flex items-center gap-4 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm border border-[var(--tt-border)] p-3 cursor-pointer transition-colors"
+            className="group flex-shrink-0 w-full sm:w-64 md:w-56 lg:w-64 xl:w-72 flex items-center gap-3 sm:gap-4 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm border border-[var(--tt-border)] p-2.5 sm:p-3 cursor-pointer transition-colors touch-manipulation"
           >
-            <div className="relative w-16 h-16 md:w-20 md:h-20 flex-shrink-0 overflow-hidden rounded-lg shadow-lg">
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 flex-shrink-0 overflow-hidden rounded-lg shadow-lg">
               <img referrerPolicy="no-referrer"
                 src={coverOf(spotlight)}
                 alt={spotlight.title}
@@ -160,17 +160,17 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-green-400 mb-1">Today's spotlight</p>
-              <p className="text-white font-semibold text-sm truncate">{spotlight.title}</p>
+              <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-green-400 mb-0.5 sm:mb-1">Today's spotlight</p>
+              <p className="text-white font-semibold text-xs sm:text-sm truncate">{spotlight.title}</p>
               <p
-                className="text-neutral-400 text-xs truncate mt-0.5 hover:text-white transition-colors"
+                className="text-neutral-400 text-[10px] sm:text-xs truncate mt-0.5 hover:text-white transition-colors"
                 onClick={(e) => { e.stopPropagation(); if (spotlight.artist?.id) onOpenArtist?.(spotlight.artist.id); }}
               >
                 {spotlight.artist?.name || "Unknown Artist"}
               </p>
             </div>
-            <div className="w-9 h-9 flex-shrink-0 rounded-full bg-green-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg shadow-green-500/30">
-              <Play className="w-4 h-4 fill-black text-black ml-0.5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 rounded-full bg-green-500 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-lg shadow-green-500/30 touch-manipulation">
+              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
             </div>
           </div>
         )}
@@ -871,45 +871,48 @@ export default function Home({
         }}
       />
 
-      {/* Mobile / tablet top bar */}
-      <div className="flex lg:hidden gap-2 p-2 bg-[#121212] border-b border-[var(--tt-divider)] flex-shrink-0">
+      {/* Mobile / tablet top bar (shown below 1024px) */}
+      <div className="flex lg:hidden gap-2 p-2 sm:p-3 bg-[#121212] border-b border-[var(--tt-divider)] flex-shrink-0">
         <button
           onClick={() => setShowLeft(!showLeft)}
-          className="flex-1 bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-full text-sm font-medium transition flex items-center justify-center gap-2"
+          className="flex-1 bg-white/5 hover:bg-white/10 active:bg-white/15 text-white px-3 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-2"
         >
-          <Menu size={15} /><span>Library</span>
+          <Menu size={16} className="flex-shrink-0" /><span>Library</span>
         </button>
         <button
           onClick={() => setShowRight(!showRight)}
-          className="flex-1 bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-full text-sm font-medium transition flex items-center justify-center gap-2"
+          className="flex-1 bg-white/5 hover:bg-white/10 active:bg-white/15 text-white px-3 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-2"
         >
-          <Menu size={15} /><span>Queue</span>
+          <Menu size={16} className="flex-shrink-0" /><span>Queue</span>
         </button>
       </div>
 
-      {/* Left rail - desktop */}
+      {/* Left rail - desktop only (1024px+) */}
       <div className="hidden lg:flex flex-shrink-0 h-full rounded-l-xl overflow-hidden">
         <SidebarRail activeView={activeSidebarView} onTabChange={setActiveSidebarView} />
       </div>
 
-      {/* Left sidebar - desktop */}
+      {/* Left sidebar - desktop only (1024px+) */}
       <div className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 bg-[#121212] rounded-r-xl overflow-hidden flex-col h-full">
         {activeSidebarView === 'history' ? (
           <HistoryList history={recentHistory} onPlay={onPlay} />
         ) : (
           <PlaylistSidebar
             onOpenPlaylist={openPlaylist}
-            externalView={activeSidebarView} 
-            onExternalViewChange={setActiveSidebarView} 
+            externalView={activeSidebarView}
+            onExternalViewChange={setActiveSidebarView}
           />
         )}
       </div>
 
       {/* Mobile / tablet left drawer: Discord-style rail + library panel */}
       {showLeft && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setShowLeft(false)} />
-          <div className="absolute left-0 top-0 bottom-0 w-[92%] max-w-sm shadow-2xl flex z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-left">
+        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setShowLeft(false)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="absolute left-0 top-0 bottom-0 w-[85%] max-w-sm shadow-2xl flex z-50 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Icon rail (same one as desktop) */}
             <SidebarRail
               activeView={activeSidebarView}
@@ -917,10 +920,10 @@ export default function Home({
               onNavigate={() => setShowLeft(false)}
             />
             <div className="flex-1 bg-[#121212] flex flex-col overflow-hidden min-w-0">
-              <div className="flex items-center justify-between p-4 border-b border-[var(--tt-divider)]">
-                <h3 className="text-white font-bold">{activeSidebarView === 'history' ? 'History' : 'Your Library'}</h3>
-                <button onClick={() => setShowLeft(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
-                  <X size={20} className="text-white" />
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--tt-divider)] flex-shrink-0">
+                <h3 className="text-white font-bold text-sm sm:text-base">{activeSidebarView === 'history' ? 'History' : 'Your Library'}</h3>
+                <button onClick={() => setShowLeft(false)} className="p-1.5 hover:bg-white/10 rounded-full transition touch-manipulation">
+                  <X size={18} className="text-white" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto">
@@ -950,8 +953,8 @@ export default function Home({
         {renderMain()}
       </div>
 
-      {/* Right panel - desktop */}
-      <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
+      {/* Right panel - desktop (xl+ only, 1280px+; below that use the mobile drawer) */}
+      <div className="hidden xl:flex xl:w-80 2xl:w-[340px] flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
         <RightPanel
           queue={queue}
           currentSong={currentSong}
@@ -964,13 +967,16 @@ export default function Home({
 
       {/* Mobile / tablet right drawer */}
       {showRight && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setShowRight(false)} />
-          <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-xs bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden pb-[84px] md:pb-[104px] animate-slide-right">
-            <div className="flex items-center justify-between p-4 border-b border-[var(--tt-divider)] flex-shrink-0">
-              <h3 className="text-white font-bold">Queue</h3>
-              <button onClick={() => setShowRight(false)} className="p-1.5 hover:bg-white/10 rounded-full transition">
-                <X size={20} className="text-white" />
+        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setShowRight(false)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="absolute right-0 top-0 bottom-0 w-[85%] max-w-sm bg-[#121212] shadow-2xl flex flex-col z-50 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--tt-divider)] flex-shrink-0">
+              <h3 className="text-white font-bold text-sm sm:text-base">Queue</h3>
+              <button onClick={() => setShowRight(false)} className="p-1.5 hover:bg-white/10 rounded-full transition touch-manipulation">
+                <X size={18} className="text-white" />
               </button>
             </div>
             <div className="flex-1 overflow-hidden min-h-0">
