@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Play, Plus, Check, Music2, ListMusic } from "lucide-react";
+import { ArrowLeft, Play, Pause, Plus, Check, Music2, ListMusic } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 function formatTime(seconds) {
@@ -102,13 +102,21 @@ export default function CollectionView({
                 <div
                   key={track._uniqueKey || track.id || idx}
                   className={`grid grid-cols-[auto_1fr_auto] gap-4 items-center px-3 py-2.5 rounded-lg group cursor-pointer transition-colors ${isActive ? "bg-white/10" : "hover:bg-white/5"}`}
-                  onClick={() => onPlay(track, tracks)}
+                  onClick={() => {
+                    if (isActive && isPlaying) {
+                      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+                    } else if (isActive) {
+                      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "play" } }));
+                    } else {
+                      onPlay(track, tracks);
+                    }
+                  }}
                 >
                   <span className="text-neutral-500 w-5 text-right text-sm select-none">
                     {isActive && isPlaying ? (
                       <>
                         <Music2 className="w-4 h-4 text-green-400 animate-pulse group-hover:hidden" />
-                        <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
+                        <Pause className="w-4 h-4 text-white fill-white hidden group-hover:block" />
                       </>
                     ) : (
                       <>

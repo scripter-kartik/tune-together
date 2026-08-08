@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Check, Play, Music2, ListMusic, MoreVertical, X } from "lucide-react";
+import { Plus, Check, Play, Pause, Music2, ListMusic, MoreVertical, X } from "lucide-react";
 import SongDetailsModal from "./SongDetailsModal";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 import { useUser } from "@clerk/nextjs";
@@ -179,17 +179,27 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 onError={coverError(song.title || song.id)}
                 className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-105"
               />
-              {/* Play button overlay */}
+              {/* Play/Pause button overlay — reflects the current song's state */}
               <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 translate-y-0 opacity-100 md:translate-y-2 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-300">
                 <button
                   className="w-9 h-9 sm:w-10 sm:h-10 bg-green-500 hover:bg-green-400 active:scale-95 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 transition-all duration-200 touch-manipulation"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onPlay(song, songs);
+                    if (isActive && isPlaying) {
+                      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+                    } else if (isActive) {
+                      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "play" } }));
+                    } else {
+                      onPlay(song, songs);
+                    }
                   }}
-                  aria-label={`Play ${song.title}`}
+                  aria-label={`${isActive && isPlaying ? "Pause" : "Play"} ${song.title}`}
                 >
-                  <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
+                  {isActive && isPlaying ? (
+                    <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black" />
+                  ) : (
+                    <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
+                  )}
                 </button>
               </div>
             </div>

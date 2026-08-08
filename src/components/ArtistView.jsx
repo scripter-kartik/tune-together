@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Play, Plus, Music2, Users, Check, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Play, Pause, Plus, Music2, Users, Check, BadgeCheck } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
 export default function ArtistView({ artistId, onClose, onPlay, onQueue, currentSongId, isPlaying, onOpenAlbum, onOpenArtist }) {
@@ -190,7 +190,15 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                   <div
                     key={`${track.id || "track"}-${idx}`}
                     className={`flex items-center justify-between px-4 py-2.5 rounded-md group cursor-pointer transition-colors ${isActive ? 'bg-white/10' : 'hover:bg-white/10'}`}
-                    onClick={() => onPlay(track, topTracks)}
+                    onClick={() => {
+                      if (isActive && isPlaying) {
+                        window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+                      } else if (isActive) {
+                        window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "play" } }));
+                      } else {
+                        onPlay(track, topTracks);
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-4 min-w-0 flex-1">
                       <span className="text-neutral-400 w-6 text-center text-sm font-medium select-none flex-shrink-0 group-hover:hidden">
@@ -201,7 +209,11 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                         )}
                       </span>
                       <span className="w-6 text-center text-sm flex-shrink-0 hidden group-hover:flex items-center justify-center">
-                        <Play className="w-4 h-4 text-white fill-white" />
+                        {isActive && isPlaying ? (
+                          <Pause className="w-4 h-4 text-white fill-white" />
+                        ) : (
+                          <Play className="w-4 h-4 text-white fill-white" />
+                        )}
                       </span>
                       <img referrerPolicy="no-referrer"
                         src={cover}

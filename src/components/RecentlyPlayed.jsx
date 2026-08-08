@@ -1,19 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Play, Music2 } from "lucide-react";
+import { Play, Pause, Music2 } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
-
-/** Tiny animated equalizer bars — shown on the tile that's currently playing. */
-function MiniEqualizer() {
-  return (
-    <div className="flex gap-0.5 items-end h-3">
-      <span className="w-0.5 bg-green-400 animate-pulse h-1.5" />
-      <span className="w-0.5 bg-green-400 animate-pulse h-3" style={{ animationDelay: "0.2s" }} />
-      <span className="w-0.5 bg-green-400 animate-pulse h-2" style={{ animationDelay: "0.4s" }} />
-    </div>
-  );
-}
 
 /**
  * Spotify-style "Recently played" quick-picks grid.
@@ -76,22 +65,26 @@ export default function RecentlyPlayed({ history = [], onPlay, expanded = false,
                 {item.artist?.name || "Unknown Artist"}
               </p>
             </div>
-            {isActive && isPlaying ? (
-              <div className="absolute right-2 sm:right-3 flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9">
-                <MiniEqualizer />
-              </div>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isActive && isPlaying) {
+                  window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+                } else if (isActive) {
+                  window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "play" } }));
+                } else {
                   onPlay?.(item, deduped);
-                }}
-                aria-label={`Play ${item.title}`}
-                className="absolute right-2 sm:right-3 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-green-500 hover:bg-green-400 hover:scale-105 active:scale-95 flex items-center justify-center shadow-xl shadow-green-500/30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 touch-manipulation"
-              >
+                }
+              }}
+              aria-label={`${isActive && isPlaying ? "Pause" : "Play"} ${item.title}`}
+              className="absolute right-2 sm:right-3 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-green-500 hover:bg-green-400 hover:scale-105 active:scale-95 flex items-center justify-center shadow-xl shadow-green-500/30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 touch-manipulation"
+            >
+              {isActive && isPlaying ? (
+                <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black" />
+              ) : (
                 <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
-              </button>
-            )}
+              )}
+            </button>
           </div>
         );
       })}

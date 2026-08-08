@@ -16,7 +16,7 @@ import Footer from "./Footer";
 import ChatHub from "./chat/ChatHub";
 import ChatNotifications from "./chat/ChatNotifications";
 import HistoryList from "./HistoryList";
-import { Menu, X, Play, Shuffle, Music4 } from "lucide-react";
+import { Menu, X, Play, Pause, Shuffle, Music4 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
@@ -645,7 +645,15 @@ export default function Home({
                                 return (
                                   <div
                                     key={song.id + idx}
-                                    onClick={() => onPlay(song, songs)}
+                                    onClick={() => {
+                                      if (isActive && isPlaying) {
+                                        window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+                                      } else if (isActive) {
+                                        window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "play" } }));
+                                      } else {
+                                        onPlay(song, songs);
+                                      }
+                                    }}
                                     className={`group flex items-center gap-4 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
                                       isActive ? 'bg-white/10' : 'hover:bg-white/[0.07]'
                                     }`}
@@ -653,7 +661,10 @@ export default function Home({
                                     {/* Index / equalizer */}
                                     <div className="w-5 flex-shrink-0 flex items-center justify-center">
                                       {playing ? (
-                                        <Equalizer />
+                                        <>
+                                          <span className="group-hover:hidden"><Equalizer /></span>
+                                          <Pause className="w-4 h-4 text-white fill-white hidden group-hover:block" />
+                                        </>
                                       ) : (
                                         <>
                                           <span className={`text-sm font-medium group-hover:hidden ${isActive ? 'text-green-400' : 'text-neutral-400'}`}>
@@ -779,14 +790,25 @@ export default function Home({
                         return (
                           <div
                             key={song.id + idx}
-                            onClick={() => onPlay(song, songs)}
+                            onClick={() => {
+                              if (isActive && isPlaying) {
+                                window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+                              } else if (isActive) {
+                                window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "play" } }));
+                              } else {
+                                onPlay(song, songs);
+                              }
+                            }}
                             className={`group flex items-center gap-4 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
                               isActive ? 'bg-white/10' : 'hover:bg-white/[0.07]'
                             }`}
                           >
                             <div className="w-5 flex-shrink-0 flex items-center justify-center">
                               {playing ? (
-                                <Equalizer />
+                                <>
+                                  <span className="group-hover:hidden"><Equalizer /></span>
+                                  <Pause className="w-4 h-4 text-white fill-white hidden group-hover:block" />
+                                </>
                               ) : (
                                 <>
                                   <span className={`text-sm font-medium group-hover:hidden ${isActive ? 'text-green-400' : 'text-neutral-500'}`}>

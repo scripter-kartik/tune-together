@@ -10,7 +10,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { Search, Home, LayoutGrid, Clock, X, Play, ChevronRight, PartyPopper } from "lucide-react";
+import { Search, Home, LayoutGrid, Clock, X, Play, Pause, ChevronRight, PartyPopper } from "lucide-react";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 import PartiesHub from "./PartiesHub";
 
@@ -136,15 +136,17 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
     }
   };
 
-  // Play a song from suggestions - keeps dropdown open. The hover button is
-  // always a Play button (never Pause); pausing lives in the player bar.
+  // Play or pause a song from suggestions - keeps dropdown open
   const handleSuggestionPlay = (e, song) => {
     e.preventDefault();
     e.stopPropagation();
-    if (externalOnPlay) {
-      externalOnPlay(song);
+    const isCurrentlyPlaying = currentSong?.id === song.id && isPlaying;
+    if (isCurrentlyPlaying) {
+      // Pause
+      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
     } else {
-      window.dispatchEvent(new CustomEvent("tt-play-song", { detail: { song } }));
+      // Play
+      if (externalOnPlay) externalOnPlay(song);
     }
   };
 
@@ -283,14 +285,18 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                         {/* Thumbnail */}
                         <div className={`relative w-11 h-11 flex-shrink-0 bg-neutral-800 overflow-hidden shadow-md ${isArtist ? 'rounded-full' : 'rounded-md'}`}>
                           {img && <img referrerPolicy="no-referrer" src={img} alt={s.name || s.title} onError={coverError(s.name || s.title)} className="w-full h-full object-cover" />}
-                          {/* Play overlay for songs */}
+                          {/* Play/Pause overlay for songs */}
                           {!isArtist && (
                             <button
                               onClick={(e) => handleSuggestionPlay(e, s)}
                               onMouseDown={(e) => handleSuggestionPlay(e, s)}
                               className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                              {playing ? (
+                                <Pause className="w-4 h-4 text-white fill-white" />
+                              ) : (
+                                <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                              )}
                             </button>
                           )}
                         </div>
@@ -318,7 +324,11 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                                 : "bg-white/10 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-colors hover:bg-green-500 hover:text-black active:bg-green-500 active:text-black"
                             }`}
                           >
-                            <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                            {playing ? (
+                              <Pause className="w-3.5 h-3.5 fill-current" />
+                            ) : (
+                              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                            )}
                           </button>
                         )}
                         {/* Artist: arrow */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Play, Plus, Music2, Disc, ListPlus } from "lucide-react";
+import { ArrowLeft, Play, Pause, Plus, Music2, Disc, ListPlus } from "lucide-react";
 import { resolveCover } from "../lib/coverPlaceholder";
 
 export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSongId, isPlaying, onOpenArtist }) {
@@ -171,13 +171,21 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
                 <div
                   key={track.id || idx}
                   className={`grid grid-cols-[auto_1fr_auto] gap-4 items-center px-3 py-2.5 rounded-lg group cursor-pointer transition-colors ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}
-                  onClick={() => onPlay(fullTrack, fullTracks)}
+                  onClick={() => {
+                    if (isActive && isPlaying) {
+                      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+                    } else if (isActive) {
+                      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "play" } }));
+                    } else {
+                      onPlay(fullTrack, fullTracks);
+                    }
+                  }}
                 >
                   <span className="text-neutral-500 w-5 text-right text-sm select-none">
                     {isActive && isPlaying ? (
                       <>
                         <Music2 className="w-4 h-4 text-green-400 animate-pulse group-hover:hidden" />
-                        <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
+                        <Pause className="w-4 h-4 text-white fill-white hidden group-hover:block" />
                       </>
                     ) : (
                       <>
