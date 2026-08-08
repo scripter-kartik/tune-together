@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
 
   icons: {
-    icon: "/icon2.png", 
+    icon: "/favicon.svg",
   },
 
   openGraph: {
