@@ -253,6 +253,11 @@ input[type="range"]::-webkit-slider-thumb {
   100% { transform: scaleY(1); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Friends empty-state SVG animations */
 @keyframes tt-sway3d {
   0%, 100% { transform: perspective(500px) rotateY(-5deg) rotateX(2deg); }
@@ -475,6 +480,14 @@ button, a, [role="button"] {
   outline: 2px solid var(--tt-accent);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* The search pill already signals focus with a background change,
+   so don't draw a rectangular ring around it. */
+input[data-search-input]:focus,
+input[data-search-input]:focus-visible {
+  outline: none;
+  outline-offset: 0;
 }
 
 /* ------------------------------------------------------------------ *

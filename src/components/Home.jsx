@@ -12,6 +12,7 @@ import AlbumView from "./AlbumView";
 import CollectionView from "./CollectionView";
 import PlaylistView from "./PlaylistView";
 import SidebarRail from "./SidebarRail";
+import Footer from "./Footer";
 import ChatHub from "./chat/ChatHub";
 import ChatNotifications from "./chat/ChatNotifications";
 import HistoryList from "./HistoryList";
@@ -855,6 +856,8 @@ export default function Home({
               </button>
             </div>
           )}
+
+          <Footer />
         </div>
       </div>
     );

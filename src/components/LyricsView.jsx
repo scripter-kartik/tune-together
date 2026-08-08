@@ -163,6 +163,13 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
   );
   const hasLyrics = status === "ready" && (synced || data?.plainLyrics);
 
+  const providerName =
+    data?.provider === "youtube"
+      ? "YouTube Music"
+      : data?.provider === "genius"
+        ? "Genius"
+        : "LRCLIB";
+
   const overlay = (
     // Sits above the footer (70px mobile / 90px desktop) so the playback bar
     // with the current song stays visible — like Spotify's lyrics view.
@@ -271,7 +278,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
                   </p>
                 );
               })}
-              <p className="text-[10px] sm:text-xs text-white/30 pt-4 sm:pt-6">Lyrics provided by LRCLIB</p>
+              <p className="text-[10px] sm:text-xs text-white/30 pt-4 sm:pt-6">Lyrics provided by {providerName}</p>
             </div>
           )}
 
@@ -283,7 +290,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
               <pre className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white/90 whitespace-pre-wrap font-sans leading-relaxed tracking-tight">
                 {data.plainLyrics}
               </pre>
-              <p className="text-[10px] sm:text-xs text-white/30 pt-6 sm:pt-8">Lyrics provided by LRCLIB</p>
+              <p className="text-[10px] sm:text-xs text-white/30 pt-6 sm:pt-8">Lyrics provided by {providerName}</p>
             </div>
           )}
         </div>

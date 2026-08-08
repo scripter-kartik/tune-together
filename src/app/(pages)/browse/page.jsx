@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 import BrowseGrid from "../../../components/BrowseGrid";
 import CategoryCard from "../../../components/CategoryCard";
+import Footer from "../../../components/Footer";
 
 export default function BrowsePage() {
   const [query, setQuery] = useState("");
@@ -122,6 +123,8 @@ export default function BrowsePage() {
             ))}
           </BrowseGrid>
         </section>
+
+        <Footer />
       </div>
     </div>
   );

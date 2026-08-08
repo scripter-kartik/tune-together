@@ -31,6 +31,7 @@ export function useLyrics(song) {
       artist: song.artist?.name || "",
       album: song.album?.title || "",
       duration: song.duration ? String(song.duration) : "",
+      youtubeId: song.youtubeId || "",
     });
 
     fetch(`/api/lyrics?${params.toString()}`)

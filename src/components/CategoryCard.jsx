@@ -16,8 +16,8 @@ export default function CategoryCard({ name, color, query }) {
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${color}`} />
       
-      <div className="relative h-full flex items-center justify-center p-4">
-        <h3 className="text-white font-bold text-xl text-center z-10 drop-shadow-lg">
+      <div className="relative h-full flex items-center justify-center px-3 py-2">
+        <h3 className="text-white font-bold text-lg sm:text-xl text-center leading-tight z-10 drop-shadow-lg break-words max-w-full">
           {name}
         </h3>
       </div>

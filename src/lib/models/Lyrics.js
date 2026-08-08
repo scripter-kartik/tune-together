@@ -18,6 +18,12 @@ const lyricsSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Which source supplied the lyrics: "lrclib" | "youtube" | "genius".
+    provider: {
+      type: String,
+      enum: ["lrclib", "youtube", "genius"],
+      default: "lrclib",
+    },
     title: String,
     artist: String,
   },

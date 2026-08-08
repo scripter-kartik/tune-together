@@ -247,11 +247,14 @@ export default function PlaylistView({
                 >
                   <span className="text-neutral-500 w-5 text-right text-sm select-none">
                     {isActive && isPlaying ? (
-                      <Music2 className="w-4 h-4 text-green-400 animate-pulse" />
+                      <>
+                        <Music2 className="w-4 h-4 text-green-400 animate-pulse group-hover:hidden" />
+                        <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
+                      </>
                     ) : (
                       <>
                         <span className={`group-hover:hidden ${isActive ? "hidden" : ""}`}>{idx + 1}</span>
-                        <Play className={`w-4 h-4 text-white fill-white hidden ${!isActive ? "group-hover:block" : ""}`} />
+                        <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
                       </>
                     )}
                   </span>

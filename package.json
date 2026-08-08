@@ -17,6 +17,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "genius-lyrics": "^4.4.7",
     "lucide-react": "^0.553.0",
     "mongoose": "^8.19.3",
     "next": "15.5.20",

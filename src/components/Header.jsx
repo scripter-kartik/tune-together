@@ -10,7 +10,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { Search, Home, LayoutGrid, Clock, X, Play, Pause, ChevronRight, PartyPopper } from "lucide-react";
+import { Search, Home, LayoutGrid, Clock, X, Play, ChevronRight, PartyPopper } from "lucide-react";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 import PartiesHub from "./PartiesHub";
 
@@ -136,17 +136,15 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
     }
   };
 
-  // Play or pause a song from suggestions - keeps dropdown open
+  // Play a song from suggestions - keeps dropdown open. The hover button is
+  // always a Play button (never Pause); pausing lives in the player bar.
   const handleSuggestionPlay = (e, song) => {
     e.preventDefault();
     e.stopPropagation();
-    const isCurrentlyPlaying = currentSong?.id === song.id && isPlaying;
-    if (isCurrentlyPlaying) {
-      // Pause
-      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
+    if (externalOnPlay) {
+      externalOnPlay(song);
     } else {
-      // Play
-      if (externalOnPlay) externalOnPlay(song);
+      window.dispatchEvent(new CustomEvent("tt-play-song", { detail: { song } }));
     }
   };
 
@@ -156,9 +154,19 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
   const isThisSongCurrent = (song) =>
     currentSong?.id === song.id;
 
+  // Standalone round Browse button, shown beside the search bar on every breakpoint.
+  // Scales with the search bar height: small on mobile, larger on tablet/laptop.
+  const browseButton = (
+    <Link href="/browse" className="flex-shrink-0" aria-label="Browse" title="Browse">
+      <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
+        <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+      </div>
+    </Link>
+  );
+
   const searchBar = (
-    <div className="relative flex-1 min-w-0 max-w-full lg:max-w-[500px]">
-      <div className={`flex items-center gap-2 sm:gap-3 bg-[#242424] rounded-full px-3 sm:px-4 h-10 sm:h-11 lg:h-12 w-full transition-all duration-200 ${focused ? 'ring-1 ring-[var(--tt-accent)]/40 bg-[#2a2a2a]' : 'transition-colors hover:bg-[#2a2a2a]'}`}>
+    <div className="relative flex-1 min-w-0 max-w-full lg:max-w-[500px] xl:max-w-[560px] 2xl:max-w-[680px]">
+      <div className="flex items-center gap-2 sm:gap-3 bg-[#242424] hover:bg-[#2a2a2a] rounded-full px-3 sm:px-4 h-10 sm:h-11 lg:h-12 w-full transition-colors">
         <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
         <input
           type="text"
@@ -180,10 +188,6 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
             ✕
           </button>
         )}
-        <div className="w-px h-4 sm:h-5 bg-neutral-600 flex-shrink-0" />
-        <Link href="/browse" className="flex-shrink-0" aria-label="Browse">
-          <LayoutGrid className="w-4 h-4 text-neutral-400 transition-colors hover:text-white" />
-        </Link>
       </div>
 
       {/* Recent searches — Spotify-style, shown on focus with an empty query */}
@@ -279,18 +283,14 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                         {/* Thumbnail */}
                         <div className={`relative w-11 h-11 flex-shrink-0 bg-neutral-800 overflow-hidden shadow-md ${isArtist ? 'rounded-full' : 'rounded-md'}`}>
                           {img && <img referrerPolicy="no-referrer" src={img} alt={s.name || s.title} onError={coverError(s.name || s.title)} className="w-full h-full object-cover" />}
-                          {/* Play/Pause overlay for songs */}
+                          {/* Play overlay for songs */}
                           {!isArtist && (
                             <button
                               onClick={(e) => handleSuggestionPlay(e, s)}
                               onMouseDown={(e) => handleSuggestionPlay(e, s)}
                               className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              {playing ? (
-                                <Pause className="w-4 h-4 text-white fill-white" />
-                              ) : (
-                                <Play className="w-4 h-4 text-white fill-white ml-0.5" />
-                              )}
+                              <Play className="w-4 h-4 text-white fill-white ml-0.5" />
                             </button>
                           )}
                         </div>
@@ -318,11 +318,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                                 : "bg-white/10 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-colors hover:bg-green-500 hover:text-black active:bg-green-500 active:text-black"
                             }`}
                           >
-                            {playing ? (
-                              <Pause className="w-3.5 h-3.5 fill-current" />
-                            ) : (
-                              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                            )}
+                            <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
                           </button>
                         )}
                         {/* Artist: arrow */}
@@ -374,13 +370,14 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         </div>
 
         {/* Center - Nav + Search (desktop only, lg breakpoint = 1024px+) */}
-        <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2 w-full max-w-[400px] xl:max-w-xl 2xl:max-w-2xl px-2">
+        <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2 w-full max-w-[560px] xl:max-w-2xl 2xl:max-w-3xl px-2">
           <Link href="/" className="flex-shrink-0">
-            <div className="w-11 h-11 xl:w-12 xl:h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
+            <div className="w-12 h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
               <Home className="w-5 h-5 text-white" />
             </div>
           </Link>
           {searchBar}
+          {browseButton}
         </div>
 
         {/* Right - Auth */}
@@ -423,8 +420,9 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
       </div>
 
       {/* Mobile/Tablet search row (shown below 1024px) */}
-      <div className="flex lg:hidden mt-2 sm:mt-2.5">
+      <div className="flex lg:hidden items-center gap-2 sm:gap-3 mt-2 sm:mt-2.5">
         {searchBar}
+        {browseButton}
       </div>
     </div>
   );

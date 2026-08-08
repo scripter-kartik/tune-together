@@ -147,7 +147,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5 px-3 sm:px-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 px-3 sm:px-4">
       {songs.map((song) => {
         const isActive = currentSongId != null && song.id === currentSongId;
         const cover = resolveCover(song.album?.cover_medium || song.album?.cover_big || song.album?.cover_small, song.title || song.id);

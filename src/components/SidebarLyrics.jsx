@@ -53,6 +53,13 @@ export default function SidebarLyrics({ song }) {
     [lyricsData]
   );
 
+  const providerName =
+    lyricsData?.provider === "youtube"
+      ? "YouTube Music"
+      : lyricsData?.provider === "genius"
+        ? "Genius"
+        : "LRCLIB";
+
   const activeIndex = useMemo(() => {
     if (!synced || synced.length === 0) return -1;
     let idx = -1;
@@ -209,6 +216,9 @@ export default function SidebarLyrics({ song }) {
             <pre className="text-sm md:text-base font-bold text-white/80 whitespace-pre-wrap font-sans leading-relaxed">
               {lyricsData.plainLyrics}
             </pre>
+            <p className="text-[10px] text-neutral-600 pt-4">
+              Lyrics provided by {providerName}
+            </p>
           </div>
         )}
       </div>
