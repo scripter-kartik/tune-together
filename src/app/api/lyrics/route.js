@@ -100,8 +100,8 @@ async function fetchGeniusLyrics(title, artist) {
       const lyrics = await songs[0].lyrics();
       if (lyrics && lyrics.trim()) return lyrics.trim();
     }
-  } catch (err) {
-    console.error("lyrics: genius fetch failed", err);
+  } catch {
+    // Genius is blocked on some networks (Cloudflare 403). Expected, not logged.
   }
   return null;
 }

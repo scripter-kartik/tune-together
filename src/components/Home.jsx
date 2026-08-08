@@ -90,39 +90,27 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
     <section
       className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-[var(--tt-border)] px-4 py-5 sm:px-5 sm:py-6 md:px-6 md:py-7 lg:px-8 lg:py-8"
       style={{
-        background:
-          "linear-gradient(135deg, var(--tt-hero-start), var(--tt-hero-mid) 48%, var(--tt-hero-end))",
+        background: "var(--tt-bg)",
       }}
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-80"
-        style={{
-          background:
-            "linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--tt-accent) 18%, transparent) 55%, color-mix(in srgb, var(--tt-accent-2) 16%, transparent) 100%)",
-        }}
-      />
+      {/* Blurred spotlight cover art background — matches the hero to its featured song */}
+      {spotlight && coverOf(spotlight) && (
+        <img
+          referrerPolicy="no-referrer"
+          src={coverOf(spotlight)}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-40"
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/70" />
+      {/* Subtle top accent line */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
         style={{
           background:
             "linear-gradient(90deg, transparent, var(--tt-accent), var(--tt-accent-2), transparent)",
-        }}
-      />
-      {/* Soft accent glow orbs — depth without the old diagonal stripes */}
-      <div
-        className="pointer-events-none absolute top-[-60px] left-[-40px] w-72 h-72 rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, color-mix(in srgb, var(--tt-accent) 30%, transparent), transparent 70%)",
-          filter: "blur(28px)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute bottom-[-80px] right-[-40px] w-80 h-80 rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, color-mix(in srgb, var(--tt-accent-2) 26%, transparent), transparent 70%)",
-          filter: "blur(28px)",
         }}
       />
       <div className="relative flex flex-col md:flex-row md:items-center gap-4 sm:gap-6 md:gap-6 lg:gap-8">
