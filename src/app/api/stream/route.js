@@ -36,11 +36,13 @@ const YTDLP_BASE = [
 // Client fallbacks: the default client can be bot-blocked on some videos
 // while the same video resolves fine on another player client. Try each in
 // turn before giving up (each attempt is short — a success usually returns
-// in <3s, failures in ~1-2s).
+// in <3s, failures in ~1-2s). web_embedded is added because a handful of
+// videos are only served to the embedded player client.
 const YTDLP_CLIENTS = [
   [],
   ["--extractor-args", "youtube:player_client=web_safari"],
   ["--extractor-args", "youtube:player_client=tv"],
+  ["--extractor-args", "youtube:player_client=web_embedded"],
 ];
 
 async function extractUrl(videoId) {
@@ -51,7 +53,7 @@ async function extractUrl(videoId) {
       const { stdout } = await execFileAsync(
         "yt-dlp",
         [...YTDLP_BASE, ...extraArgs, watchUrl],
-        { timeout: 15000, maxBuffer: 1024 * 1024 }
+        { timeout: 20000, maxBuffer: 1024 * 1024 }
       );
       const url = stdout
         .split("\n")

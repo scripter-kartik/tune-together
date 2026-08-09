@@ -7,7 +7,7 @@ import { CROSSFADE_PRESETS } from "@/hooks/useCrossfade";
 /**
  * Crossfade duration picker — opens a popover above the player controls.
  */
-export default function CrossfadeMenu({ fadeSeconds, onSet, disabled }) {
+export default function CrossfadeMenu({ fadeSeconds, onSet, disabled, onOpen }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -26,7 +26,11 @@ export default function CrossfadeMenu({ fadeSeconds, onSet, disabled }) {
   return (
     <div className="relative flex items-center" ref={menuRef}>
       <button
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={() => {
+          if (disabled) return;
+          if (!isOpen) onOpen?.();
+          setIsOpen(!isOpen);
+        }}
         className={`p-2 rounded-full transition-colors ${
           isOpen || active ? "text-green-500" : "text-neutral-300 hover:text-white"
         } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}

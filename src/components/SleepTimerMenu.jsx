@@ -22,6 +22,7 @@ export default function SleepTimerMenu({
   onClear,
   disabled,
   hasTrack = true,
+  onOpen,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
@@ -42,7 +43,11 @@ export default function SleepTimerMenu({
   return (
     <div className="relative flex items-center" ref={menuRef}>
       <button
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={() => {
+          if (disabled) return;
+          if (!isOpen) onOpen?.();
+          setIsOpen(!isOpen);
+        }}
         className={`p-2 rounded-full transition-colors relative ${
           isOpen || isActive ? "text-green-500" : "text-neutral-300 hover:text-white"
         } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}

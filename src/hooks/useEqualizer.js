@@ -30,7 +30,7 @@ export const EQ_PRESETS = {
   "Electronic": [5, 4, 3, 1, -1, -1, 0, 2, 4, 5],
 };
 
-const DEFAULT_EFFECTS = { bassBoost: 0, spatial: 0, nightMode: false, loudness: true };
+const DEFAULT_EFFECTS = { bassBoost: 0, spatial: 0, nightMode: false, loudness: false };
 
 function readStored() {
   if (typeof window === "undefined") return { gains: EQ_PRESETS.Flat, effects: DEFAULT_EFFECTS };
@@ -268,7 +268,8 @@ export function useEqualizer({ playerRef }) {
     settings.gains.some((g) => g !== 0) ||
     settings.effects.bassBoost > 0 ||
     settings.effects.spatial > 0 ||
-    settings.effects.nightMode;
+    settings.effects.nightMode ||
+    settings.effects.loudness;
 
   return {
     settings,

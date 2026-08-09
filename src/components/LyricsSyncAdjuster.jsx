@@ -3,9 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Clock, Minus, Plus, RotateCcw } from "lucide-react";
 
+const MAX_OFFSET = 15; // ± seconds clamp
+
 /**
- * Compact lyric-timing offset control. Opens a small stepper panel that
- * shifts the synced lyric timing by ±0.5s steps, clamped to ±15s.
+ * Lyric-timing offset control. Opens a panel that shifts the synced lyric
+ * timing by ±0.5s steps, clamped to ±15s. Positive = lyrics later.
  */
 export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,12 +24,15 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
   }, []);
 
   const active = offset !== 0;
+  // -100..100 → marker position across the ±15s track (0 = center, on time).
+  const markerPct = Math.max(-100, Math.min(100, (offset / MAX_OFFSET) * 100));
+  const direction = offset < 0 ? "earlier" : offset > 0 ? "later" : "on time";
 
   return (
     <div className="relative flex items-center" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation ${
+        className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation ${
           isOpen || active
             ? "text-green-500 bg-white/10"
             : "text-white/70 hover:text-white hover:bg-white/10"
@@ -45,9 +50,11 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
       </button>
 
       {isOpen && (
-        <div className="fixed sm:absolute bottom-20 sm:bottom-full left-1/2 sm:left-auto right-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 mb-2 w-[calc(100vw-2rem)] max-w-xs sm:w-60 bg-[#242424] border border-[var(--tt-border)] rounded-xl shadow-2xl p-3 animate-fade-in-up z-50">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-400">
+        <div className="fixed sm:absolute bottom-20 sm:top-full left-1/2 sm:left-auto right-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 mb-2 sm:mb-0 sm:mt-2 w-[calc(100vw-2.5rem)] max-w-[280px] sm:w-64 bg-[#242424]/95 backdrop-blur border border-[var(--tt-border)] rounded-2xl shadow-2xl px-4 pb-4 pt-2.5 animate-fade-in-up z-50">
+          {/* Header — heading directly followed by the controls, no empty container */}
+          <div className="relative mb-3 flex items-center justify-center">
+            <span className="flex items-center gap-1.5 leading-none text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-400">
+              <Clock className="w-3.5 h-3.5" />
               Sync timing
             </span>
             {active && (
@@ -56,34 +63,41 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
                   onReset();
                   setIsOpen(false);
                 }}
-                className="flex items-center gap-1 text-[10px] sm:text-xs text-neutral-400 hover:text-white transition-colors touch-manipulation"
+                className="absolute right-0 inset-y-0 flex items-center gap-1 text-[11px] sm:text-xs text-neutral-400 hover:text-white transition-colors touch-manipulation"
               >
                 <RotateCcw className="w-3 h-3" /> Reset
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Stepper */}
+          <div className="flex items-center gap-3">
             <button
               onClick={() => onAdjust(-0.5)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 active:bg-white/20 text-white transition-colors touch-manipulation"
+              className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/15 active:bg-white/20 border border-white/5 text-white transition-colors touch-manipulation"
               aria-label="Earlier by half a second"
               title="Earlier (−0.5s)"
             >
               <Minus className="w-4 h-4" />
             </button>
 
-            <div className="flex-1 text-center">
-              <p className={`text-lg sm:text-xl font-bold tabular-nums ${active ? "text-green-500" : "text-white"}`}>
+            <div className="flex-1 flex flex-col items-center justify-center min-w-0">
+              <p
+                className={`text-xl sm:text-2xl font-bold tabular-nums leading-none ${
+                  active ? "text-green-500" : "text-white"
+                }`}
+              >
                 {offset > 0 ? "+" : ""}
                 {offset.toFixed(1)}s
               </p>
-              <p className="text-[9px] sm:text-[10px] text-neutral-500 -mt-0.5">offset</p>
+              <p className="mt-1 text-[10px] uppercase tracking-wider text-neutral-500">
+                {direction}
+              </p>
             </div>
 
             <button
               onClick={() => onAdjust(0.5)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/15 active:bg-white/20 text-white transition-colors touch-manipulation"
+              className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/15 active:bg-white/20 border border-white/5 text-white transition-colors touch-manipulation"
               aria-label="Later by half a second"
               title="Later (+0.5s)"
             >
@@ -91,12 +105,26 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
             </button>
           </div>
 
-          <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-2.5 leading-snug">
+          {/* Range indicator */}
+          <div className="relative mt-4 h-1.5 rounded-full bg-white/5">
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-500 shadow shadow-green-500/50 transition-all"
+              style={{ left: `calc(${50 + markerPct / 2}% - 4px)` }}
+            />
+          </div>
+          <div className="flex justify-between mt-1.5 text-[9px] text-neutral-600 font-medium">
+            <span>−15s</span>
+            <span>0</span>
+            <span>+15s</span>
+          </div>
+
+          {/* Help text */}
+          <p className="text-[11px] text-neutral-500 mt-3 text-center leading-snug">
             {offset < 0
-              ? "Lyrics are showing late — moving them earlier."
+              ? "Lyrics run late — nudging them earlier."
               : offset > 0
-              ? "Lyrics are showing early — moving them later."
-              : "If the lyrics feel off, nudge them forward or back."}
+              ? "Lyrics run early — nudging them later."
+              : "Lyrics feel off? Nudge them earlier or later."}
           </p>
         </div>
       )}

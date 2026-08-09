@@ -23,6 +23,7 @@ export default function EqualizerPanel({
   onToggleEffect,
   onReset,
   disabled,
+  onOpen,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
@@ -37,21 +38,22 @@ export default function EqualizerPanel({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // True whenever anything is customized vs the default settings (a moved band,
-  // an enabled effect, or loudness turned off) — drives the indicator dot.
+  // True whenever anything is customized vs the default settings (a moved band
+  // or an enabled effect, including loudness) — drives the indicator dot.
   const isActive =
     !!settings &&
     (settings.gains.some((g) => g !== 0) ||
       settings.effects.bassBoost !== 0 ||
       settings.effects.spatial !== 0 ||
       settings.effects.nightMode !== false ||
-      settings.effects.loudness !== true);
+      settings.effects.loudness === true);
 
   return (
     <div className="relative flex items-center" ref={menuRef}>
       <button
         onClick={() => {
           if (disabled) return;
+          if (!isOpen) onOpen?.();
           setIsOpen(!isOpen);
         }}
         className={`p-2 rounded-full transition-colors ${

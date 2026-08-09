@@ -20,6 +20,11 @@ import { useSleepTimer } from "@/hooks/useSleepTimer";
 import { useCrossfade } from "@/hooks/useCrossfade";
 import { useEqualizer } from "@/hooks/useEqualizer";
 
+// Same-origin proxy retries before falling back to the cross-origin YouTube
+// iframe. Each retry keeps playback on an <audio> element the equalizer can
+// route through its Web Audio chain; the iframe's audio can't be processed.
+const MAX_STREAM_RETRIES = 2;
+
 export default function PlayerFooter({
   song,
   isPlaying,
@@ -40,6 +45,8 @@ export default function PlayerFooter({
   const [source, setSource] = useState(null); // { kind, url } | null
   const sourceRef = useRef(null);
   const youtubeIdRef = useRef(null);
+  // Per-track proxy retry budget (reset when the song changes).
+  const streamRetriesRef = useRef({});
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -105,6 +112,8 @@ export default function PlayerFooter({
   // is the same-origin audio proxy (so the equalizer works); playback steps
   // down to the YouTube iframe, then Deezer's 30s preview, if that fails.
   useEffect(() => {
+    // Fresh proxy retry budget for the new track.
+    streamRetriesRef.current = {};
     if (!song) {
       setSource(null);
       sourceRef.current = null;
@@ -164,7 +173,11 @@ export default function PlayerFooter({
     };
   }, [song?.id]);
 
-  // Step down the source chain when playback fails (proxy → youtube → preview).
+  // Step down the source chain when playback fails. A failed same-origin proxy
+  // stream is retried (fresh URL so the <audio> reloads) before falling back to
+  // the cross-origin YouTube iframe — the retries keep YouTube audio on the Web
+  // Audio chain the equalizer processes. Only once the proxy is truly exhausted
+  // does playback drop to the iframe, whose audio can't be routed through EQ.
   const handleSourceError = useCallback((err, data) => {
     const cur = sourceRef.current;
     if (!cur) return;
@@ -176,20 +189,37 @@ export default function PlayerFooter({
       err?.message || err,
       data?.message || data?.type || ""
     );
+
     if (cur.kind === "stream" && youtubeIdRef.current) {
+      const id = youtubeIdRef.current;
+      const attempt = (streamRetriesRef.current[id] || 0) + 1;
+      if (attempt <= MAX_STREAM_RETRIES) {
+        streamRetriesRef.current[id] = attempt;
+        const next = {
+          kind: "stream",
+          url: `/api/stream?videoId=${id}&ext=.m4a&retry=${attempt}`,
+        };
+        sourceRef.current = next;
+        setSource(next);
+        return;
+      }
       const next = {
         kind: "youtube",
-        url: `https://www.youtube.com/watch?v=${youtubeIdRef.current}`,
+        url: `https://www.youtube.com/watch?v=${id}`,
       };
       sourceRef.current = next;
       setSource(next);
-    } else if (cur.kind === "youtube" && song?.preview) {
+      return;
+    }
+
+    if (cur.kind === "youtube" && song?.preview) {
       const next = { kind: "preview", url: song.preview };
       sourceRef.current = next;
       setSource(next);
-    } else {
-      setIsLoading(false);
+      return;
     }
+
+    setIsLoading(false);
   }, [song?.preview]);
 
   const { lyricsData, lyricsStatus } = useLyrics(song);
@@ -661,6 +691,7 @@ export default function PlayerFooter({
                 onClear={clearSleepTimer}
                 disabled={!song}
                 hasTrack={!!song}
+                onOpen={() => setShowLyrics(false)}
               />
               <button
                 onClick={handleQueueSong}
@@ -671,7 +702,10 @@ export default function PlayerFooter({
                 <ListMusic size={18} className="sm:w-5 sm:h-5" />
               </button>
               <button
-                onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
+                onClick={() => {
+                  setShowLyrics(false);
+                  window.dispatchEvent(new CustomEvent("tt-open-queue"));
+                }}
                 className="p-1.5 sm:p-2 text-neutral-300 hover:text-white transition-colors touch-manipulation"
                 aria-label="View Queue"
                 title="View Queue"
@@ -733,11 +767,13 @@ export default function PlayerFooter({
                 onClear={clearSleepTimer}
                 disabled={!song}
                 hasTrack={!!song}
+                onOpen={() => setShowLyrics(false)}
               />
               <CrossfadeMenu
                 fadeSeconds={fadeSeconds}
                 onSet={setCrossfade}
                 disabled={!song}
+                onOpen={() => setShowLyrics(false)}
               />
               <EqualizerPanel
                 settings={eqSettings}
@@ -749,6 +785,7 @@ export default function PlayerFooter({
                 onToggleEffect={toggleEqEffect}
                 onReset={resetEq}
                 disabled={!song}
+                onOpen={() => setShowLyrics(false)}
               />
               <button
                 onClick={handleQueueSong}

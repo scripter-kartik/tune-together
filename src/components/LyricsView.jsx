@@ -299,7 +299,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
       {status === "ready" && synced && !isFollowing && (
         <button
           onClick={handleJumpToCurrent}
-          className="fixed bottom-6 sm:bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 sm:gap-2 rounded-full bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-black shadow-xl shadow-black/40 transition hover:scale-[1.03] active:scale-100 touch-manipulation"
+          className="absolute bottom-6 sm:bottom-7 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 sm:gap-2 rounded-full bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-black shadow-xl shadow-black/40 transition hover:scale-[1.03] active:scale-100 touch-manipulation"
           aria-label="Sync to current lyric"
         >
           <LocateFixed className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
