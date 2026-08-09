@@ -70,7 +70,17 @@ export function useEqualizer({ playerRef }) {
   // because AudioContext creation and node wiring can throw in restricted
   // browser states or when the context is closed by strict-mode cleanup.
   const ensureGraph = useCallback(() => {
-    if (ctxRef.current) return ctxRef.current;
+    if (ctxRef.current) {
+      if (ctxRef.current.state !== "closed") return ctxRef.current;
+      // A closed context (e.g. strict-mode cleanup) can't be reused — reset
+      // the refs so the next wiring builds a fresh graph.
+      ctxRef.current = null;
+      filtersRef.current = [];
+      masterRef.current = null;
+      bassRef.current = null;
+      spatialRef.current = null;
+      makeupRef.current = null;
+    }
 
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -145,6 +155,13 @@ export function useEqualizer({ playerRef }) {
     try {
       const internal = playerRef.current?.getInternalPlayer?.();
       if (!(internal instanceof HTMLMediaElement)) {
+        if (internal) {
+          console.warn(
+            "[TT EQ] internal player is not a media element:",
+            internal?.constructor?.name || typeof internal,
+            internal?.getInternalPlayer ? "nested" : ""
+          );
+        }
         setWired(false);
         return;
       }
@@ -155,6 +172,9 @@ export function useEqualizer({ playerRef }) {
       const ctx = ensureGraph();
       if (!ctx) return;
       ctx.resume?.().catch(() => {});
+      // Drop the previously wired element (e.g. the last track's <audio>) so
+      // it doesn't keep feeding the graph after ReactPlayer swaps it out.
+      sourceRef.current?.disconnect?.();
       const source = ctx.createMediaElementSource(internal);
       source.connect(filtersRef.current[0]);
       sourceRef.current = source;

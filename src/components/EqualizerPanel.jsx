@@ -17,6 +17,7 @@ export default function EqualizerPanel({
   settings,
   wired,
   bands,
+  sourceKind,
   onSetGain,
   onPreset,
   onToggleEffect,
@@ -72,7 +73,10 @@ export default function EqualizerPanel({
           {!wired && (
             <div className="flex items-center gap-2 mb-2 px-2.5 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300/90 text-[11px]">
               <Info className="w-3.5 h-3.5 flex-shrink-0" />
-              Preview sources get full EQ. YouTube streams aren't routable in-browser, so effects apply to supported sources.
+              <span>
+                This source fell back to <span className="font-semibold">“{sourceKind || "unknown"}”</span>,
+                which can't be routed through the equalizer. EQ applies whenever the proxy stream or a preview is playing.
+              </span>
             </div>
           )}
 

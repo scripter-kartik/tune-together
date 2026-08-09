@@ -379,6 +379,24 @@ input[type="range"]::-webkit-slider-thumb {
   to { transform: rotate(-360deg); }
 }
 
+/* Hero aurora blobs — drift + breathe so the theme glows feel alive */
+@keyframes tt-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(28px, -20px, 0) scale(1.12); }
+  100% { transform: translate3d(-22px, 14px, 0) scale(0.94); }
+}
+
+.tt-hero-blob {
+  animation: tt-drift 20s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Hero floating notes — bubble up and fade away */
+.tt-hero-note {
+  animation: tt-rise 9s ease-out infinite;
+  will-change: transform, opacity;
+}
+
 .tt-empty-svg {
   animation: tt-sway3d 8s ease-in-out infinite;
   transform-style: preserve-3d;
@@ -460,7 +478,9 @@ input[type="range"]::-webkit-slider-thumb {
   .tt-empty-beat,
   .tt-empty-rise,
   .tt-empty-arm,
-  .tt-empty-sheen {
+  .tt-empty-sheen,
+  .tt-hero-blob,
+  .tt-hero-note {
     animation: none;
   }
 }

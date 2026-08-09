@@ -5,7 +5,6 @@ import { Music4, Shuffle } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import { resolveRoomId, joinRoomId } from "@/lib/room";
 import PlayerFooter from "./PlayerFooter";
-import ReactionOverlay from "./ReactionOverlay";
 import toast from "react-hot-toast";
 
 export default function GlobalPlayer() {
@@ -318,7 +317,6 @@ export default function GlobalPlayer() {
 
   return (
     <div className="flex-shrink-0 z-50 bg-black border-t border-[var(--tt-divider)]">
-      <ReactionOverlay socketRef={socketRef} roomId={roomId} />
       <PlayerFooter
         song={currentSong}
         isPlaying={isPlaying}
@@ -328,6 +326,7 @@ export default function GlobalPlayer() {
         roomId={roomId}
         socketRef={socketRef}
         hasSongs={playContextRef.current.length > 0 || currentSong != null}
+        queueLength={queue.length}
       />
     </div>
   );

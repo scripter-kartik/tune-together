@@ -4,6 +4,7 @@ import ReactPlayer from "react-player";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
 import { MicVocal, ListMusic, Layers } from "lucide-react";
+import toast from "react-hot-toast";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
 import { useLyrics } from "@/hooks/useLyrics";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
@@ -11,7 +12,6 @@ import LyricsView from "./LyricsView";
 import NowPlayingView from "./NowPlayingView";
 import { getSyncSession, endSyncSession } from "@/lib/syncSession";
 import { joinRoomId } from "@/lib/room";
-import ReactionMenu from "./ReactionMenu";
 import SleepTimerMenu from "./SleepTimerMenu";
 import CrossfadeMenu from "./CrossfadeMenu";
 import EqualizerPanel from "./EqualizerPanel";
@@ -29,11 +29,17 @@ export default function PlayerFooter({
   roomId,
   socketRef,
   hasSongs,
+  queueLength = 0,
   syncSession,
   onUnsync,
 }) {
   const playerRef = useRef(null);
-  const [playerUrl, setPlayerUrl] = useState(null);
+  // Playback source chain: same-origin proxy stream → YouTube iframe → preview.
+  // The proxy stream is a plain <audio> element, which is what lets the
+  // equalizer (Web Audio) process every track.
+  const [source, setSource] = useState(null); // { kind, url } | null
+  const sourceRef = useRef(null);
+  const youtubeIdRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -95,11 +101,14 @@ export default function PlayerFooter({
     }
   }, []);
 
-  // Resolve the current Deezer track to a full-length YouTube source.
-  // Falls back to Deezer's 30s preview if no match is found.
+  // Resolve the current Deezer track to a full-length source. Primary source
+  // is the same-origin audio proxy (so the equalizer works); playback steps
+  // down to the YouTube iframe, then Deezer's 30s preview, if that fails.
   useEffect(() => {
     if (!song) {
-      setPlayerUrl(null);
+      setSource(null);
+      sourceRef.current = null;
+      youtubeIdRef.current = null;
       return;
     }
 
@@ -109,8 +118,25 @@ export default function PlayerFooter({
     setCurrentTime(0);
     setDuration(0);
 
+    const applyStream = (youtubeId) => {
+      youtubeIdRef.current = youtubeId;
+      // The trailing `&ext=.m4a` makes react-player treat the proxied audio as
+      // a file (it picks players by URL extension) and render an <audio> element.
+      const next = {
+        kind: "stream",
+        url: `/api/stream?videoId=${youtubeId}&ext=.m4a`,
+      };
+      sourceRef.current = next;
+      if (!cancelled) setSource(next);
+    };
+    const applyPreview = () => {
+      const next = { kind: "preview", url: song.preview || null };
+      sourceRef.current = next;
+      if (!cancelled) setSource(next);
+    };
+
     if (song.youtubeId) {
-      setPlayerUrl(`https://www.youtube.com/watch?v=${song.youtubeId}`);
+      applyStream(song.youtubeId);
       return () => {
         cancelled = true;
       };
@@ -126,21 +152,45 @@ export default function PlayerFooter({
       .then((r) => r.json())
       .then(({ youtubeId }) => {
         if (cancelled) return;
-        if (youtubeId) {
-          setPlayerUrl(`https://www.youtube.com/watch?v=${youtubeId}`);
-        } else {
-          // Graceful fallback: the 30s preview beats nothing.
-          setPlayerUrl(song.preview || null);
-        }
+        if (youtubeId) applyStream(youtubeId);
+        else applyPreview();
       })
       .catch(() => {
-        if (!cancelled) setPlayerUrl(song.preview || null);
+        if (!cancelled) applyPreview();
       });
 
     return () => {
       cancelled = true;
     };
   }, [song?.id]);
+
+  // Step down the source chain when playback fails (proxy → youtube → preview).
+  const handleSourceError = useCallback((err, data) => {
+    const cur = sourceRef.current;
+    if (!cur) return;
+    console.warn(
+      "[TT playback] source error",
+      cur.kind,
+      cur.url,
+      "→",
+      err?.message || err,
+      data?.message || data?.type || ""
+    );
+    if (cur.kind === "stream" && youtubeIdRef.current) {
+      const next = {
+        kind: "youtube",
+        url: `https://www.youtube.com/watch?v=${youtubeIdRef.current}`,
+      };
+      sourceRef.current = next;
+      setSource(next);
+    } else if (cur.kind === "youtube" && song?.preview) {
+      const next = { kind: "preview", url: song.preview };
+      sourceRef.current = next;
+      setSource(next);
+    } else {
+      setIsLoading(false);
+    }
+  }, [song?.preview]);
 
   const { lyricsData, lyricsStatus } = useLyrics(song);
 
@@ -214,6 +264,7 @@ export default function PlayerFooter({
   const handleReady = () => {
     playerReadyRef.current = true;
     setIsLoading(false);
+    console.info("[TT playback] ready, source kind:", sourceRef.current?.kind, sourceRef.current?.url);
     wireEq();
     if (pendingSeekRef.current != null) {
       const pos = pendingSeekRef.current;
@@ -287,19 +338,23 @@ export default function PlayerFooter({
     enabled: shortcutsEnabled,
   });
 
-  // Sleep timer — pause playback (and sync the room) when it fires.
+  // Sleep timer — pause playback (and sync the room) when it fires. Uses an
+  // explicit "pause" command rather than toggling, so it can never no-op on
+  // a stale isPlaying read.
   const pausePlayback = useCallback(() => {
-    if (isPlaying && song) {
-      if (roomId && socketRef.current) {
-        socketRef.current.emit("toggle-play", {
-          roomId,
-          isPlaying: false,
-          position: playerRef.current?.getCurrentTime?.() || 0,
-        });
-      }
-      onPlayPause();
+    if (!song) return;
+    if (roomId && socketRef.current) {
+      socketRef.current.emit("toggle-play", {
+        roomId,
+        isPlaying: false,
+        position: playerRef.current?.getCurrentTime?.() || 0,
+      });
     }
-  }, [isPlaying, song, roomId, socketRef, onPlayPause]);
+    window.dispatchEvent(
+      new CustomEvent("tt-player-command", { detail: { action: "pause" } })
+    );
+    toast("Sleep timer — playback paused");
+  }, [song, roomId, socketRef]);
 
   const {
     timer: sleepTimer,
@@ -311,7 +366,7 @@ export default function PlayerFooter({
   } = useSleepTimer({
     onFire: pausePlayback,
     currentSongId: song?.id,
-    queueLength: hasSongs ? 1 : 0,
+    queueLength,
   });
 
   // Crossfade — fades out the tail of each track and fades in the next head.
@@ -597,7 +652,6 @@ export default function PlayerFooter({
               >
                 <MicVocal size={17} className="sm:w-[18px] sm:h-[18px]" />
               </button>
-              <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
               <SleepTimerMenu
                 timer={sleepTimer}
                 remainingMs={sleepRemainingMs}
@@ -670,7 +724,6 @@ export default function PlayerFooter({
               >
                 <MicVocal size={17} className="lg:w-[18px] lg:h-[18px]" />
               </button>
-              <ReactionMenu socketRef={socketRef} roomId={roomId} disabled={!song} />
               <SleepTimerMenu
                 timer={sleepTimer}
                 remainingMs={sleepRemainingMs}
@@ -690,6 +743,7 @@ export default function PlayerFooter({
                 settings={eqSettings}
                 wired={eqWired}
                 bands={eqBands}
+                sourceKind={source?.kind}
                 onSetGain={setEqGain}
                 onPreset={applyEqPreset}
                 onToggleEffect={toggleEqEffect}
@@ -780,6 +834,7 @@ export default function PlayerFooter({
           settings: eqSettings,
           wired: eqWired,
           bands: eqBands,
+          sourceKind: source?.kind,
           onSetGain: setEqGain,
           onPreset: applyEqPreset,
           onToggleEffect: toggleEqEffect,
@@ -819,7 +874,7 @@ export default function PlayerFooter({
         {mounted && (
           <ReactPlayer
             ref={playerRef}
-            url={playerUrl}
+            url={source?.url || null}
             playing={isPlaying}
             controls={false}
             volume={effectiveVolume}
@@ -834,11 +889,12 @@ export default function PlayerFooter({
             onProgress={handleProgress}
             onDuration={handleDuration}
             onEnded={onNext}
-            onError={() => setIsLoading(false)}
+            onError={handleSourceError}
             config={{
               youtube: {
                 playerVars: { playsinline: 1, disablekb: 1, modestbranding: 1 },
               },
+              file: { forceAudio: true },
             }}
           />
         )}

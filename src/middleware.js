@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   '/playlist(.*)',
   '/api/webhooks(.*)',
   '/api/resolve(.*)',
+  '/api/stream(.*)',
   '/api/lyrics(.*)',
   '/api/search(.*)',
   '/api/artist(.*)',

@@ -99,10 +99,15 @@ export function useSleepTimer({ onFire, currentSongId = null, queueLength = 0 } 
     }
   }, [currentSongId, timer]);
 
-  // Queue mode: pause when the queue drains (queueLength becomes 0).
+  // Queue mode: pause when the queue drains. Only fires when the queue goes
+  // from non-empty to 0 (tracking the previous length), so selecting it while
+  // the queue is already empty doesn't pause mid-song immediately.
+  const prevQueueLengthRef = useRef(queueLength);
   useEffect(() => {
+    const prev = prevQueueLengthRef.current;
+    prevQueueLengthRef.current = queueLength;
     if (timer?.type !== "queue") return;
-    if (queueLength === 0) {
+    if (prev > 0 && queueLength === 0) {
       onFireRef.current?.();
       setTimer(null);
     }

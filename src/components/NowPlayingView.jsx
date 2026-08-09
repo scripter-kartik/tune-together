@@ -240,6 +240,7 @@ export default function NowPlayingView({
               settings={equalizer?.settings}
               wired={equalizer?.wired}
               bands={equalizer?.bands}
+              sourceKind={equalizer?.sourceKind}
               onSetGain={equalizer?.onSetGain}
               onPreset={equalizer?.onPreset}
               onToggleEffect={equalizer?.onToggleEffect}
