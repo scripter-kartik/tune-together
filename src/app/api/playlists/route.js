@@ -1,26 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import Playlist from "@/lib/models/Playlist";
-import User from "@/lib/models/User";
-
-// Attach owner/collaborator display info so the UI can render avatars.
-async function hydratePlaylists(playlists) {
-  const clerkIds = new Set();
-  playlists.forEach((p) => {
-    clerkIds.add(p.userId);
-    (p.collaborators || []).forEach((c) => clerkIds.add(c));
-  });
-  const users = await User.find({ clerkId: { $in: [...clerkIds] } }).lean();
-  const byId = new Map(users.map((u) => [u.clerkId, u]));
-
-  return playlists.map((p) => ({
-    ...p,
-    owner: byId.get(p.userId) || null,
-    collaboratorInfo: (p.collaborators || [])
-      .map((c) => byId.get(c) || null)
-      .filter(Boolean),
-  }));
-}
+import { hydratePlaylists } from "@/lib/playlistHydrate";
 
 export async function GET(req) {
   try {
@@ -70,7 +51,7 @@ export async function PUT(req) {
     const user = await currentUser();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { playlistId, song, action } = await req.json();
+    const { playlistId, song, action, name } = await req.json();
     if (!playlistId || !action) {
       return Response.json({ error: "Missing parameters" }, { status: 400 });
     }
@@ -104,6 +85,10 @@ export async function PUT(req) {
     } else if (action === "remove") {
       playlist.songs = playlist.songs.filter((s) => String(s.id) !== String(song.id));
       playlist.markModified("songs");
+    } else if (action === "rename" && isOwner) {
+      // Only the owner may rename (like Spotify).
+      if (!name || !name.trim()) return Response.json({ error: "Missing name" }, { status: 400 });
+      playlist.name = name.trim();
     } else if (action === "addCollaborator" && isOwner) {
       const collaboratorId = song; // reuse `song` field to carry the Clerk id
       if (!collaboratorId) return Response.json({ error: "Missing collaborator" }, { status: 400 });

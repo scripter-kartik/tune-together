@@ -1,52 +1,35 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Header from "../../../../components/Header";
-import { FaPlay, FaPause, FaShuffle } from "react-icons/fa6";
+import { FaPlay, FaPause } from "react-icons/fa6";
 import { IoMdTime } from "react-icons/io";
-import Link from "next/link";
-import { Menu, X, Plus, Check } from "lucide-react";
-import { PLAYLISTS } from "../../../../lib/constants";
+import { Plus, Check, Music2, ListMusic } from "lucide-react";
 import { resolveCover, coverError } from "../../../../lib/coverPlaceholder";
 
-function PlaylistSidebarContent({ currentId }) {
-  return (
-    <>
-      {PLAYLISTS.map((playlist) => (
-        <Link
-          key={playlist.id}
-          href={`/playlist/${playlist.id}?name=${encodeURIComponent(playlist.name)}&artist=${encodeURIComponent(playlist.artist)}&gradient=${encodeURIComponent(playlist.gradient)}`}
-        >
-          <div className={`flex items-center gap-3 p-2 rounded-md hover:bg-[#1a1a1a] transition cursor-pointer group ${currentId === playlist.id ? "bg-[#1a1a1a]" : ""}`}>
-            <img referrerPolicy="no-referrer" src={playlist.image} alt={playlist.name} className="w-14 h-14 rounded object-cover flex-shrink-0" />
-            <div className="flex-1 overflow-hidden">
-              <p className={`text-sm font-medium truncate transition ${currentId === playlist.id ? "text-green-400" : "text-white group-hover:text-green-400"}`}>
-                {playlist.name}
-              </p>
-              <p className="text-gray-400 text-xs truncate">
-                {playlist.type} • {playlist.artist}
-              </p>
-            </div>
-          </div>
-        </Link>
-      ))}
-    </>
-  );
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
 }
 
+// Standalone public playlist page (linked from user profiles). Reads the real
+// playlist from the API — not the hardcoded presets — and plays through the
+// global player footer via custom events, so the player keeps working.
 export default function PlaylistPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
+  const router = useRouter();
   const [query, setQuery] = useState("");
-  const [songs, setSongs] = useState([]);
+  const [playlist, setPlaylist] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [showLeft, setShowLeft] = useState(false);
   const [addedId, setAddedId] = useState(null);
-  const router = useRouter();
+
+  const id = params?.id;
 
   useEffect(() => {
     if (query.trim() !== "") {
@@ -57,9 +40,26 @@ export default function PlaylistPage() {
     }
   }, [query, router]);
 
-  const playlistName = searchParams.get("name") || "Playlist";
-  const artist = searchParams.get("artist") || "Various Artists";
-  const gradient = searchParams.get("gradient") || "from-purple-600 to-blue-600";
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setIsLoading(true);
+    setNotFound(false);
+    fetch(`/api/playlists/${id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.success) setPlaylist(data.playlist);
+        else setNotFound(true);
+      })
+      .catch(() => {
+        if (!cancelled) setNotFound(true);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
 
   useEffect(() => {
     const onGlobalState = (e) => {
@@ -72,26 +72,8 @@ export default function PlaylistPage() {
     return () => window.removeEventListener("tt-global-state", onGlobalState);
   }, []);
 
-  const currentSongIndex = currentSong ? songs.findIndex(s => s.id === currentSong.id) : -1;
-
-  useEffect(() => {
-    const fetchSongs = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(artist)}`);
-        if (!response.ok) throw new Error("Failed to load playlist");
-        const data = await response.json();
-        if (data?.songs?.length) {
-          setSongs(data.songs.slice(0, 26));
-        }
-      } catch (err) {
-        console.error("Error fetching:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSongs();
-  }, [artist]);
+  const songs = playlist?.songs || [];
+  const currentSongIndex = currentSong ? songs.findIndex((s) => s.id === currentSong.id) : -1;
 
   const handlePlaySong = (song) => {
     window.dispatchEvent(new CustomEvent("tt-play-song", { detail: { song, list: songs } }));
@@ -106,95 +88,113 @@ export default function PlaylistPage() {
   const handlePlayAll = () => {
     if (songs.length > 0) handlePlaySong(songs[0]);
   };
-  
-  const handleShuffle = () => {
-    if (songs.length === 0) return;
-    const i = Math.floor(Math.random() * songs.length);
-    handlePlaySong(songs[i]);
-  };
 
   const handleMainPlayPause = () => {
-    if (songs.length > 0) {
-      if (currentSongIndex === -1) {
-        handlePlayAll();
-      }
+    if (songs.length === 0) return;
+    if (currentSongIndex === -1) {
+      handlePlayAll();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent("tt-player-command", { detail: { action: isPlaying ? "pause" : "play" } })
+      );
     }
   };
 
+  const coverUrl = resolveCover(playlist?.image, playlist?.name || "Playlist");
+  const owner = playlist?.owner;
+
   return (
     <div className="h-full w-full flex flex-col bg-black overflow-hidden">
-      <Header query={query} setQuery={setQuery} handleSearch={() => {
-        if (query.trim() !== "") {
-          router.push(`/?q=${encodeURIComponent(query)}`);
-        }
-      }} />
+      <Header
+        query={query}
+        setQuery={setQuery}
+        handleSearch={() => {
+          if (query.trim() !== "") router.push(`/?q=${encodeURIComponent(query)}`);
+        }}
+      />
 
-      <div className="flex lg:hidden p-2 bg-black border-b border-neutral-800 flex-shrink-0">
-        <button
-          onClick={() => setShowLeft(true)}
-          className="flex items-center gap-2 bg-[#1f1f1f] hover:bg-[#2a2a2a] text-white px-3 py-2 rounded-md text-sm"
-        >
-          <Menu size={18} />
-          Playlists
-        </button>
-      </div>
-
-      <div className="flex-1 flex flex-col lg:flex-row gap-2 min-h-0 overflow-hidden">
-        <div className="hidden lg:flex lg:w-80 flex-shrink-0 overflow-hidden rounded-md">
-          <div className="flex flex-col h-full w-full bg-[#121212] rounded-md overflow-hidden">
-            <div className="flex items-center px-4 py-4 gap-3 border-b border-gray-800 flex-shrink-0">
-              <h2 className="text-lg font-bold text-white">Playlists</h2>
-            </div>
-            <div className="flex-1 overflow-y-auto scrollbar-thin px-2 py-2">
-              <PlaylistSidebarContent currentId={params.id} />
-            </div>
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-32">
+            <div className="w-12 h-12 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin" />
+            <p className="text-neutral-400 animate-pulse">Loading playlist…</p>
           </div>
-        </div>
-
-        {showLeft && (
-          <div className="fixed inset-0 bg-black/60 z-40 lg:hidden">
-            <div className="absolute inset-0" onClick={() => setShowLeft(false)} />
-            <div className="absolute left-0 top-0 bottom-0 w-72 bg-[#121212] rounded-r-lg shadow-lg z-50 overflow-y-auto flex flex-col">
-              <div className="flex justify-between items-center p-3 border-b border-neutral-800 flex-shrink-0">
-                <h2 className="text-white font-semibold">Playlists</h2>
-                <button onClick={() => setShowLeft(false)} className="p-1 hover:bg-[#222] rounded">
-                  <X size={20} className="text-white" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-2 py-2">
-                <PlaylistSidebarContent currentId={params.id} />
-              </div>
-            </div>
+        ) : notFound || !playlist ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-32 text-neutral-400">
+            <ListMusic className="w-10 h-10" />
+            <p className="text-sm font-medium">Playlist not found.</p>
+            <button
+              onClick={() => router.push("/")}
+              className="mt-2 px-5 py-2 bg-green-500 hover:bg-green-400 text-black text-sm font-bold rounded-full transition-colors"
+            >
+              Go to Home
+            </button>
           </div>
-        )}
-
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-md">
-          <div className="flex-1 overflow-y-auto">
-            <div className={`bg-gradient-to-b ${gradient} to-black px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 flex-shrink-0`}>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="bg-gradient-to-b from-purple-600 via-[#3a2d5f] to-black px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6 mt-4 sm:mt-0">
-                <div className="w-40 h-40 sm:w-40 sm:h-40 md:w-56 md:h-56 bg-black/20 rounded shadow-xl overflow-hidden flex-shrink-0">
-                  <img referrerPolicy="no-referrer" src={resolveCover(songs[0]?.album?.cover_xl || songs[0]?.album?.cover_medium || songs[0]?.album?.cover_small, songs[0]?.title)} onError={coverError(songs[0]?.title)} className="w-full h-full object-cover" />
-                </div>
-
-                <div className="flex-1 pb-2 sm:pb-4 text-center sm:text-left mt-2 sm:mt-0">
-                  <p className="text-xs sm:text-sm text-white mb-1 uppercase tracking-wider font-bold">Album</p>
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-2 sm:mb-3 line-clamp-2">
-                    {playlistName}
+                {coverUrl ? (
+                  <img referrerPolicy="no-referrer"
+                    src={coverUrl}
+                    alt={playlist.name}
+                    className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded shadow-xl object-cover bg-black/30"
+                    onError={coverError(playlist.name || "Playlist")}
+                  />
+                ) : (
+                  <div className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded shadow-xl bg-gradient-to-br from-purple-600 via-[#3a2d5f] to-indigo-600 flex items-center justify-center">
+                    <Music2 className="w-16 h-16 sm:w-20 sm:h-20 text-white/80 drop-shadow-lg" />
+                  </div>
+                )}
+                <div className="flex-1 pb-1 text-center sm:text-left min-w-0">
+                  <p className="text-xs sm:text-sm text-white/70 mb-1 uppercase tracking-widest font-bold">Playlist</p>
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white line-clamp-2">
+                    {playlist.name}
                   </h1>
-
-                  <div className="flex flex-wrap justify-center sm:justify-start items-center gap-1 text-white text-xs sm:text-sm">
-                    <span>{artist}</span>•<span>{songs.length} songs</span>
+                  <div className="flex flex-wrap justify-center sm:justify-start items-center gap-1.5 text-white/70 text-xs sm:text-sm mt-2">
+                    {owner && (
+                      <>
+                        <span className="flex items-center gap-1.5 font-semibold text-white">
+                          {owner.imageUrl ? (
+                            <img referrerPolicy="no-referrer"
+                              src={owner.imageUrl}
+                              alt={owner.name}
+                              className="w-5 h-5 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[9px] font-bold text-black">
+                              {getInitials(owner.name)}
+                            </span>
+                          )}
+                          {owner.name}
+                        </span>
+                        <span className="text-white/40">•</span>
+                      </>
+                    )}
+                    <span>
+                      {songs.length} {songs.length === 1 ? "song" : "songs"}
+                    </span>
+                    {playlist.isCollaborative && (
+                      <>
+                        <span className="text-white/40">•</span>
+                        <span className="text-green-400 font-semibold">Collaborative</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-black px-3 sm:px-6 py-4 sm:py-6">
+            {/* Body */}
+            <div className="px-3 sm:px-6 py-4 sm:py-6">
               <div className="max-w-6xl mx-auto">
-                <div className="flex items-center gap-4 sm:gap-6 pb-6 flex-shrink-0">
+                <div className="flex items-center gap-4 sm:gap-6 pb-6">
                   <button
                     onClick={handleMainPlayPause}
-                    className="w-12 h-12 sm:w-14 sm:h-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-400 hover:scale-105 transition shadow-lg flex-shrink-0"
+                    disabled={songs.length === 0}
+                    className="w-12 h-12 sm:w-14 sm:h-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-400 hover:scale-105 transition shadow-lg flex-shrink-0 disabled:opacity-40 disabled:hover:scale-100"
+                    title={songs.length === 0 ? "No songs yet" : isPlaying ? "Pause" : "Play"}
                   >
                     {isPlaying && currentSongIndex !== -1 ? (
                       <FaPause className="text-black text-lg sm:text-2xl" />
@@ -202,81 +202,82 @@ export default function PlaylistPage() {
                       <FaPlay className="text-black text-lg sm:text-2xl ml-1" />
                     )}
                   </button>
-                  <button onClick={handleShuffle} className="text-gray-400 hover:text-white text-lg sm:text-xl transition">
-                    <FaShuffle />
-                  </button>
                 </div>
 
-                <div className="hidden md:grid grid-cols-[16px_4fr_2fr_1fr] gap-4 px-4 py-2 border-b border-gray-800 text-gray-400 text-sm flex-shrink-0">
-                  <div className="text-center">#</div>
-                  <div>Title</div>
-                  <div>Released</div>
-                  <div className="text-right">
-                    <IoMdTime className="text-lg" />
+                {songs.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 py-20 text-neutral-500">
+                    <ListMusic className="w-10 h-10" />
+                    <p className="text-sm">This playlist is empty.</p>
                   </div>
-                </div>
-
-                {isLoading ? (
-                  <div className="text-center py-20 text-gray-400">Loading...</div>
                 ) : (
-                  <div className="space-y-1">
-                    {songs.map((song, index) => (
-                      <div
-                        key={song.id}
-                        onMouseEnter={() => setHoveredIndex(index)}
-                        onMouseLeave={() => setHoveredIndex(null)}
-                        onClick={() => handlePlaySong(song)}
-                        className={`
-                          grid 
-                          grid-cols-[16px_1fr_auto]
-                          md:grid-cols-[16px_4fr_2fr_1fr]
-                          gap-3 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3
-                          rounded cursor-pointer
-                          hover:bg-white/10
-                          transition
-                          ${currentSongIndex === index ? "bg-white/10" : ""}
-                        `}
-                      >
-                        <div className="flex items-center justify-center">
-                          {hoveredIndex === index || currentSongIndex === index ? (
-                            <FaPlay className="text-white text-xs" />
-                          ) : (
-                            <span className={currentSongIndex === index ? "text-green-500" : "text-gray-400"}>
-                              {index + 1}
-                            </span>
-                          )}
-                        </div>
+                  <>
+                    <div className="hidden md:grid grid-cols-[24px_1fr_auto] gap-4 px-4 py-2 border-b border-white/10 text-neutral-400 text-sm">
+                      <div className="text-center">#</div>
+                      <div>Title</div>
+                      <div className="flex items-center justify-end gap-2">
+                        <IoMdTime className="text-lg" />
+                      </div>
+                    </div>
 
-                        <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-                          <img referrerPolicy="no-referrer" src={resolveCover(song.album?.cover_small || song.album?.cover_medium, song.title)} onError={coverError(song.title)} className="w-8 h-8 sm:w-10 sm:h-10 rounded flex-shrink-0 object-cover" />
-                          <div className="overflow-hidden min-w-0">
-                            <p className={`text-xs sm:text-sm truncate ${currentSongIndex === index ? "text-green-500" : "text-white"}`}>
-                              {song.title}
-                            </p>
-                            <p className="text-xs text-gray-400 truncate">{song.artist?.name || "Unknown Artist"}</p>
+                    <div className="space-y-1">
+                      {songs.map((song, index) => (
+                        <div
+                          key={song.id}
+                          onMouseEnter={() => setHoveredIndex(index)}
+                          onMouseLeave={() => setHoveredIndex(null)}
+                          onClick={() => handlePlaySong(song)}
+                          className={`grid grid-cols-[24px_1fr_auto] gap-3 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 rounded-lg cursor-pointer transition ${
+                            currentSongIndex === index ? "bg-white/10" : "hover:bg-white/5"
+                          }`}
+                        >
+                          <div className="flex items-center justify-center">
+                            {hoveredIndex === index || currentSongIndex === index ? (
+                              isPlaying && currentSongIndex === index ? (
+                                <Music2 className="text-green-400 w-4 h-4" />
+                              ) : (
+                                <FaPlay className="text-white text-xs" />
+                              )
+                            ) : (
+                              <span className={currentSongIndex === index ? "text-green-400" : "text-neutral-500"}>
+                                {index + 1}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden min-w-0">
+                            <img referrerPolicy="no-referrer"
+                              src={resolveCover(song.album?.cover_small || song.album?.cover_medium, song.title)}
+                              onError={coverError(song.title)}
+                              className="w-9 h-9 sm:w-10 sm:h-10 rounded flex-shrink-0 object-cover"
+                              alt=""
+                            />
+                            <div className="overflow-hidden min-w-0">
+                              <p className={`text-xs sm:text-sm truncate ${currentSongIndex === index ? "text-green-400" : "text-white"}`}>
+                                {song.title}
+                              </p>
+                              <p className="text-xs text-neutral-400 truncate">{song.artist?.name || "Unknown Artist"}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 sm:gap-3 text-xs sm:text-sm text-neutral-400">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleQueue(song); }}
+                              className={`transition p-1 rounded ${addedId === song.id ? "text-green-400" : "text-neutral-400 hover:text-white"}`}
+                              title="Add to queue"
+                            >
+                              {addedId === song.id ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                            </button>
+                            <span className="tabular-nums">{Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, "0")}</span>
                           </div>
                         </div>
-
-                        <div className="hidden md:flex items-center text-sm text-gray-400">2024</div>
-
-                        <div className="flex items-center justify-end gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleQueue(song); }}
-                            className={`transition p-1 ${addedId === song.id ? "text-green-400 opacity-100" : "text-neutral-400 hover:text-white opacity-0 group-hover:opacity-100"}`}
-                            title="Add to queue"
-                          >
-                            {addedId === song.id ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                          </button>
-                          {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, "0")}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

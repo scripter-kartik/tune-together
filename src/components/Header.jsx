@@ -10,9 +10,8 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { Search, Home, LayoutGrid, Clock, X, Play, Pause, ChevronRight, PartyPopper } from "lucide-react";
+import { Search, Home, LayoutGrid, Clock, X, Play, Pause, ChevronRight } from "lucide-react";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
-import PartiesHub from "./PartiesHub";
 
 function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId, externalOnPlay, externalOnOpenArtist }) {
   const router = useRouter();
@@ -28,7 +27,6 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
   const [suggestions, setSuggestions] = useState([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
-  const [showParties, setShowParties] = useState(false);
 
   // Track currently playing song & state from global events
   const [currentSong, setCurrentSong] = useState(null);
@@ -409,21 +407,10 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                 </div>
               </SignedOut>
               <SignedIn>
-                <button
-                  onClick={() => setShowParties(true)}
-                  className="p-1.5 sm:p-2 rounded-full text-neutral-300 transition-colors hover:text-purple-400 hover:bg-white/10"
-                  aria-label="Listening Parties"
-                  title="Listening Parties"
-                >
-                  <PartyPopper className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
                 <div className="scale-90 sm:scale-100 origin-right">
                   <UserButton />
                 </div>
               </SignedIn>
-              {showParties && (
-                <PartiesHub open={showParties} onClose={() => setShowParties(false)} />
-              )}
             </>
           )}
         </div>

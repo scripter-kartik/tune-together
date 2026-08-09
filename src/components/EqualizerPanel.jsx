@@ -37,7 +37,15 @@ export default function EqualizerPanel({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const isActive = !!settings && settings.gains.some((g) => g !== 0);
+  // True whenever anything is customized vs the default settings (a moved band,
+  // an enabled effect, or loudness turned off) — drives the indicator dot.
+  const isActive =
+    !!settings &&
+    (settings.gains.some((g) => g !== 0) ||
+      settings.effects.bassBoost !== 0 ||
+      settings.effects.spatial !== 0 ||
+      settings.effects.nightMode !== false ||
+      settings.effects.loudness !== true);
 
   return (
     <div className="relative flex items-center" ref={menuRef}>
@@ -47,10 +55,10 @@ export default function EqualizerPanel({
           setIsOpen(!isOpen);
         }}
         className={`p-2 rounded-full transition-colors ${
-          isOpen || isActive ? "text-green-500" : "text-neutral-300 hover:text-white"
+          isOpen || isActive ? "text-[var(--tt-accent)]" : "text-neutral-300 hover:text-white"
         } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         aria-label="Equalizer"
-        title="Equalizer & effects"
+        title={isActive ? "Equalizer & effects — active" : "Equalizer & effects"}
         disabled={disabled}
       >
         <SlidersHorizontal size={18} />

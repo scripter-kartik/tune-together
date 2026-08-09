@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import GlobalPlayer from "@/components/GlobalPlayer";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 import {
   DEFAULT_THEME_ID,
   THEME_STORAGE_KEY,
@@ -94,10 +95,12 @@ export default function RootLayout({
               },
             }}
           />
-          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-            {children}
-          </div>
-          <GlobalPlayer />
+          <ConfirmProvider>
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+              {children}
+            </div>
+            <GlobalPlayer />
+          </ConfirmProvider>
         </body>
       </html>
     </ClerkProvider>

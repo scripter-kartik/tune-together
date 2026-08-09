@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MessageCircle, X, ArrowLeft, Circle, Music, Plus, Library, Home, Trash2, Users } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import { useConfirm } from "./ConfirmDialog";
 
 import { PLAYLISTS } from "../lib/constants";
 
@@ -17,6 +18,7 @@ const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orang
 
 export default function PlaylistSidebar({ onOpenPlaylist }) {
   const { isSignedIn, isLoaded } = useUser();
+  const confirmAction = useConfirm();
   const [customPlaylists, setCustomPlaylists] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
@@ -57,16 +59,24 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
       setCustomPlaylists([data.playlist, ...customPlaylists]);
       setNewPlaylistName("");
       setIsCreating(false);
+      // Open it right away so the user can start adding songs, like Spotify.
+      onOpenPlaylist?.({ ...data.playlist, id: data.playlist._id, type: "User Playlist" });
     }
   };
 
-  const handleDeletePlaylist = async (e, id) => {
+  const handleDeletePlaylist = async (e, pl) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this playlist?")) return;
-    const res = await fetch(`/api/playlists?id=${id}`, { method: "DELETE" });
+    const ok = await confirmAction({
+      title: "Delete playlist?",
+      message: `"${pl.name}" and all its songs will be permanently deleted.`,
+      confirmText: "Delete",
+      tone: "danger",
+    });
+    if (!ok) return;
+    const res = await fetch(`/api/playlists?id=${pl._id}`, { method: "DELETE" });
     const data = await res.json();
     if (data.success) {
-      setCustomPlaylists(customPlaylists.filter(p => p._id !== id));
+      setCustomPlaylists(customPlaylists.filter(p => p._id !== pl._id));
     }
   };
 
@@ -137,7 +147,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
                 </p>
               </div>
               <button 
-                onClick={(e) => handleDeletePlaylist(e, pl._id)}
+                onClick={(e) => handleDeletePlaylist(e, pl)}
                 className="absolute right-3 opacity-0 group-hover:opacity-100 p-1.5 text-neutral-500 transition-colors hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
                 title="Delete Playlist"
               >

@@ -22,6 +22,7 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
   const [playlists, setPlaylists] = useState([]);
   const [showPlaylists, setShowPlaylists] = useState(false);
   const [addedToId, setAddedToId] = useState(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -43,12 +44,34 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
 
   const addToPlaylist = async (playlistId) => {
     setAddedToId(playlistId);
-    await fetch("/api/playlists", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playlistId, song, action: "add" }),
-    });
+    try {
+      const res = await fetch("/api/playlists", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playlistId, song, action: "add" }),
+      });
+      const data = await res.json();
+      if (data.success) window.dispatchEvent(new CustomEvent("tt-playlists-updated"));
+    } catch {}
     setTimeout(() => { setAddedToId(null); onClose(); }, 800);
+  };
+
+  // Create a new playlist and add this song in one step, Spotify style.
+  const createAndAdd = async () => {
+    setIsCreatingNew(true);
+    try {
+      const res = await fetch("/api/playlists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "New Playlist", song }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.dispatchEvent(new CustomEvent("tt-playlists-updated"));
+        onClose();
+      }
+    } catch {}
+    setIsCreatingNew(false);
   };
 
   // Clamp menu so it doesn't go off screen
@@ -92,16 +115,38 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
 
           {showPlaylists && (
             <div className="border-t border-[var(--tt-border)] bg-[#1a1a1a]">
+              <button
+                onClick={createAndAdd}
+                disabled={isCreatingNew}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-green-400 font-semibold transition-colors hover:bg-white/10 hover:text-green-300 text-left disabled:opacity-60"
+              >
+                {isCreatingNew ? (
+                  <span className="w-4 h-4 border-2 border-green-400/30 border-t-green-400 rounded-full animate-spin flex-shrink-0" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                New playlist
+              </button>
+              <div className="h-px bg-[var(--tt-divider)] my-1" />
               {playlists.length === 0 ? (
-                <p className="px-4 py-2 text-neutral-500 text-xs">No playlists yet. Create one in Your Library.</p>
+                <p className="px-4 py-2 text-neutral-500 text-xs">No playlists yet.</p>
               ) : (
                 playlists.map(pl => (
                   <button
                     key={pl._id}
                     onClick={() => addToPlaylist(pl._id)}
-                    className="w-full flex items-center justify-between px-4 py-2 text-neutral-300 transition-colors hover:text-white hover:bg-white/10 text-left"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-neutral-300 transition-colors hover:text-white hover:bg-white/10 text-left"
                   >
-                    <span className="truncate">{pl.name}</span>
+                    <span className="w-8 h-8 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
+                      {pl.image ? (
+                        <img referrerPolicy="no-referrer" src={pl.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-500/70 to-indigo-500/70">
+                          <Music2 className="w-4 h-4 text-white/80" />
+                        </span>
+                      )}
+                    </span>
+                    <span className="truncate flex-1">{pl.name}</span>
                     {addedToId === pl._id && <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />}
                   </button>
                 ))
