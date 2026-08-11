@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, X, ArrowLeft, Circle, Music, Plus, Library, Home, Trash2, Users } from "lucide-react";
+import { MessageCircle, X, ArrowLeft, Circle, Music, Plus, Library, Home, Trash2, Pencil, Users } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useConfirm } from "./ConfirmDialog";
 
@@ -17,11 +17,13 @@ function getInitials(name) {
 const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-red-500'];
 
 export default function PlaylistSidebar({ onOpenPlaylist }) {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
   const confirmAction = useConfirm();
   const [customPlaylists, setCustomPlaylists] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameDraft, setRenameDraft] = useState("");
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -80,6 +82,23 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
     }
   };
 
+  const handleRenamePlaylist = async (pl) => {
+    const name = renameDraft.trim();
+    setRenamingId(null);
+    if (!name || name === pl.name || !pl._id) return;
+    const res = await fetch("/api/playlists", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playlistId: pl._id, action: "rename", name }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setCustomPlaylists(prev =>
+        prev.map(p => (String(p._id) === String(pl._id) ? { ...p, name } : p))
+      );
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#121212]">
 
@@ -122,39 +141,77 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
             </div>
           )}
 
-          {customPlaylists.map((pl, idx) => (
-            <div
-              key={pl._id || pl.id || `pl-${idx}`}
-              onClick={() => onOpenPlaylist?.({ ...pl, id: pl._id, type: "User Playlist" })}
-              className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-white/5 cursor-pointer group relative"
-            >
-              <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
-                {pl.image ? (
-                  <img referrerPolicy="no-referrer" src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className={`absolute inset-0 bg-gradient-to-br from-green-500 to-indigo-500 flex items-center justify-center`}>
-                    <Music className="w-5 h-5 text-white/70" />
-                  </div>
+          {customPlaylists.map((pl, idx) => {
+            const isOwner = pl.userId && user?.id && String(pl.userId) === String(user.id);
+            const isRenaming = renamingId === pl._id;
+            return (
+              <div
+                key={pl._id || pl.id || `pl-${idx}`}
+                onClick={() => onOpenPlaylist?.({ ...pl, id: pl._id, type: "User Playlist" })}
+                className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-white/5 cursor-pointer group relative"
+              >
+                <div className="relative w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
+                  {pl.image ? (
+                    <img referrerPolicy="no-referrer" src={pl.image} alt={pl.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={`absolute inset-0 bg-gradient-to-br from-green-500 to-indigo-500 flex items-center justify-center`}>
+                      <Music className="w-5 h-5 text-white/70" />
+                    </div>
+                  )}
+                </div>
+                <div className={`flex-1 min-w-0 ${isOwner ? "pr-20" : "pr-6"}`}>
+                  {isRenaming ? (
+                    <input
+                      autoFocus
+                      value={renameDraft}
+                      onChange={(e) => setRenameDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleRenamePlaylist(pl);
+                        if (e.key === "Escape") setRenamingId(null);
+                      }}
+                      onBlur={() => handleRenamePlaylist(pl)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full bg-black border border-green-500/60 text-white text-sm font-medium rounded px-1.5 py-0.5 outline-none"
+                    />
+                  ) : (
+                    <>
+                      <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{pl.name}</p>
+                      <p className="text-neutral-400 text-xs truncate flex items-center gap-1">
+                        {pl.collaborators?.length > 0 && (
+                          <Users className="w-3 h-3 text-green-400 flex-shrink-0 inline" />
+                        )}
+                        <span className="truncate">Playlist • {pl.songs?.length || 0} songs</span>
+                      </p>
+                    </>
+                  )}
+                </div>
+                {!isRenaming && (
+                  <>
+                    {isOwner && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRenameDraft(pl.name);
+                          setRenamingId(pl._id);
+                        }}
+                        className="absolute right-10 opacity-0 group-hover:opacity-100 p-1.5 text-neutral-500 transition-colors hover:text-green-400 hover:bg-green-400/10 rounded"
+                        title="Rename Playlist"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => handleDeletePlaylist(e, pl)}
+                      className="absolute right-3 opacity-0 group-hover:opacity-100 p-1.5 text-neutral-500 transition-colors hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
+                      title="Delete Playlist"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
               </div>
-              <div className="flex-1 min-w-0 pr-6">
-                <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{pl.name}</p>
-                <p className="text-neutral-400 text-xs truncate flex items-center gap-1">
-                  {pl.collaborators?.length > 0 && (
-                    <Users className="w-3 h-3 text-green-400 flex-shrink-0 inline" />
-                  )}
-                  <span className="truncate">Playlist • {pl.songs?.length || 0} songs</span>
-                </p>
-              </div>
-              <button 
-                onClick={(e) => handleDeletePlaylist(e, pl)}
-                className="absolute right-3 opacity-0 group-hover:opacity-100 p-1.5 text-neutral-500 transition-colors hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
-                title="Delete Playlist"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
 
           {PLAYLISTS.map((pl, idx) => (
               <div
