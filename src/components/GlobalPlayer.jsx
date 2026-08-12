@@ -211,6 +211,14 @@ export default function GlobalPlayer() {
 
   const handleNext = () => {
     if (queue.length > 0) {
+      const nextSong = queue[0];
+      const remaining = queue.slice(1);
+      setCurrentSong(nextSong);
+      setQueue(remaining);
+      setIsPlaying(true);
+      window.dispatchEvent(new CustomEvent("tt-global-state", {
+        detail: { currentSong: nextSong, isPlaying: true, queue: remaining },
+      }));
       socketRef.current?.emit("next-song", { roomId });
       return;
     }
@@ -220,9 +228,12 @@ export default function GlobalPlayer() {
     const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;
     const nextIndex = curIdx === -1 ? 0 : (curIdx + 1) % list.length;
     const nextSong = list[nextIndex];
-    
+
     setCurrentSong(nextSong);
     setIsPlaying(true);
+    window.dispatchEvent(new CustomEvent("tt-global-state", {
+      detail: { currentSong: nextSong, isPlaying: true },
+    }));
     socketRef.current?.emit("next-song", { roomId, song: nextSong });
   };
 
@@ -233,9 +244,12 @@ export default function GlobalPlayer() {
     const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;
     const prevIndex = curIdx === -1 ? 0 : (curIdx - 1 + list.length) % list.length;
     const prevSong = list[prevIndex];
-    
+
     setCurrentSong(prevSong);
     setIsPlaying(true);
+    window.dispatchEvent(new CustomEvent("tt-global-state", {
+      detail: { currentSong: prevSong, isPlaying: true },
+    }));
     socketRef.current?.emit("prev-song", { roomId, song: prevSong });
   };
 
