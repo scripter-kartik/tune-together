@@ -34,20 +34,15 @@ html {
   --tt-accent-strong: color-mix(in srgb, #1ed760 84%, white);
   --tt-bg: #121212;
   --tt-rail: #000000;
-  --tt-surface: rgba(255, 255, 255, 0.04);
-  --tt-surface-elevated: rgba(255, 255, 255, 0.06);
-  --tt-surface-hover: rgba(255, 255, 255, 0.09);
-  --tt-border: rgba(255, 255, 255, 0.06);
-  --tt-divider: rgba(255, 255, 255, 0.08);
+  --tt-surface: #181818;
+  --tt-surface-elevated: #242424;
+  --tt-surface-hover: #2a2a2a;
+  --tt-border: color-mix(in srgb, var(--tt-accent) 8%, rgba(255, 255, 255, 0.05));
+  --tt-divider: color-mix(in srgb, var(--tt-accent) 12%, rgba(255, 255, 255, 0.06));
   --tt-page-start: #1c2a20;
   --tt-hero-start: #0e3a23;
   --tt-hero-mid: #11271f;
   --tt-hero-end: #121212;
-  /* Glassmorphism tokens */
-  --tt-glass-bg: rgba(255, 255, 255, 0.04);
-  --tt-glass-bg-strong: rgba(255, 255, 255, 0.07);
-  --tt-glass-border: rgba(255, 255, 255, 0.08);
-  --tt-glass-border-strong: rgba(255, 255, 255, 0.12);
 }
 
 html,
@@ -59,26 +54,6 @@ body,
 .bg-\[\#1e1e1e\],
 .bg-\[\#282828\] {
   transition: background-color 0.28s ease, border-color 0.28s ease, color 0.28s ease;
-}
-
-/* ─── Glassmorphism utilities ──────────────────────────────────────────────── */
-.glass {
-  background: var(--tt-glass-bg);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  border: 1px solid var(--tt-glass-border);
-}
-.glass-strong {
-  background: var(--tt-glass-bg-strong);
-  backdrop-filter: blur(24px) saturate(1.3);
-  -webkit-backdrop-filter: blur(24px) saturate(1.3);
-  border: 1px solid var(--tt-glass-border-strong);
-}
-.glass-subtle {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 /* Theme overrides: remap the app's green accent utilities to the selected theme. */
@@ -130,50 +105,21 @@ body,
 .text-indigo-300 { color: var(--tt-accent) !important; filter: brightness(1.3); }
 .bg-indigo-500\/20 { background-color: color-mix(in srgb, var(--tt-accent) 20%, transparent) !important; }
 
-/* Override common hardcoded dark grays with glass surfaces. */
+/* Override common hardcoded dark grays with theme surfaces. */
 .bg-black { background-color: var(--tt-rail) !important; }
-.bg-\[\#121212\] {
-  background-color: var(--tt-bg) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-}
+.bg-\[\#121212\] { background-color: var(--tt-bg) !important; }
 .bg-\[\#121212\]\/80 { background-color: color-mix(in srgb, var(--tt-bg) 80%, transparent) !important; }
 .bg-\[\#000000\] { background-color: var(--tt-rail) !important; }
-.bg-\[\#181818\] {
-  background-color: var(--tt-surface) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-}
-.bg-\[\#1e1e1e\] {
-  background-color: var(--tt-surface-elevated) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-}
-.bg-\[\#242424\] {
-  background-color: var(--tt-surface-elevated) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-}
-.bg-\[\#282828\] {
-  background-color: var(--tt-surface-hover) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-}
-.bg-\[\#2a2a2a\] {
-  background-color: var(--tt-surface-hover) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-}
+.bg-\[\#181818\] { background-color: var(--tt-surface) !important; }
+.bg-\[\#1e1e1e\] { background-color: var(--tt-surface-elevated) !important; }
+.bg-\[\#242424\] { background-color: var(--tt-surface-elevated) !important; }
+.bg-\[\#282828\] { background-color: var(--tt-surface-hover) !important; }
+.bg-\[\#2a2a2a\] { background-color: var(--tt-surface-hover) !important; }
 .hover\:bg-\[\#282828\]:hover { background-color: var(--tt-surface-hover) !important; }
 .hover\:bg-\[\#2a2a2a\]:hover { background-color: var(--tt-surface-hover) !important; }
 .border-neutral-800 { border-color: var(--tt-border) !important; }
 .border-\[\#121212\] { border-color: var(--tt-bg) !important; }
 .border-t-\[\#282828\] { border-top-color: var(--tt-surface-hover) !important; }
-.bg-\[\#1a1a1a\] {
-  background-color: var(--tt-surface) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-}
 
 /* ─── Soften white borders into theme-consistent hairlines ─────────────────
    These Tailwind utilities hardcode rgba(255,255,255,N) which always reads as

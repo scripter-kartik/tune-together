@@ -27,7 +27,7 @@ const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutra
 /**
  * The full DM chat UI (sidebar + message pane). Renders in two modes:
  *  - embedded (inside the home page's main area, above the player footer) so
- *    music keeps playing while chatting — this is the primary mode;
+ *    music keeps playing while chatting — this is the primary mode;np
  *  - standalone (the /chat route) kept for deep links and old bookmarks.
  *
  * `initialDm` is `{ id, ts }` — ts makes each request unique so clicking the
@@ -256,10 +256,6 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
 
   return (
     <div className={rootClass}>
-      {/* Background blobs for glassy effect */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-green-500/10 rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-pulse pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
-
       <div className="relative z-10 flex w-full h-full">
       {/* ── Left sidebar: conversation list ──
           Desktop: static column. Mobile with a chat open: hidden, but slides

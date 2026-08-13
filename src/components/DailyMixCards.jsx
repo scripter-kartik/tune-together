@@ -35,21 +35,12 @@ export default function DailyMixCards({ mixes = [], onPlay, onOpenCollection, cu
             className={`group relative flex-shrink-0 w-40 sm:w-44 rounded-lg overflow-hidden cursor-pointer transition-transform duration-200 hover:-translate-y-0.5 sm:hover:-translate-y-1 animate-fade-up touch-manipulation ${
               mixPlaying ? "ring-2 ring-[var(--tt-accent)]" : ""
             }`}
+            style={{
+              background:
+                "linear-gradient(135deg, color-mix(in srgb, var(--tt-accent) 55%, #000), var(--tt-accent-2))",
+            }}
           >
-            {/* Blurred cover art background — matches each card to its own art */}
-            {cover && (
-              <img
-                referrerPolicy="no-referrer"
-                src={cover}
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover scale-125 blur-xl opacity-60"
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-
-            <div className="relative z-10 p-2.5 sm:p-3 flex flex-col gap-2.5 sm:gap-3">
+            <div className="relative p-2.5 sm:p-3 flex flex-col gap-2.5 sm:gap-3">
               <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-md shadow-lg overflow-hidden bg-black/30 flex-shrink-0">
                 {cover ? (
                   <img referrerPolicy="no-referrer"
@@ -84,7 +75,7 @@ export default function DailyMixCards({ mixes = [], onPlay, onOpenCollection, cu
                   onPlay?.(mix.songs[0], mix.songs);
                 }}
                 aria-label={`Play ${mix.title}`}
-                className="absolute bottom-2 right-2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-green-500 hover:bg-green-400 hover:scale-105 active:scale-95 flex items-center justify-center shadow-xl shadow-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 translate-y-0 transition-all duration-200 touch-manipulation"
+                className="absolute bottom-2 right-2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-green-500 hover:bg-green-400 hover:scale-105 active:scale-95 flex items-center justify-center shadow-xl shadow-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 translate-y-0 transition-all duration-200 touch-manipulation"
               >
                 <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
               </button>

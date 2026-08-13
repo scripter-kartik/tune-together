@@ -82,56 +82,25 @@ function SectionHeader({ title, subtitle, onPlayAll, onSeeAll, expanded }) {
 }
 
 /* ------------------------------------------------------------------ *
- * Hero — greeting band with a floating "vinyl" spotlight and a
- * shuffle-play call to action. The backdrop is built from theme tokens
- * (drifting accent glows + dot grid) so it reads well in every theme,
- * instead of being washed out by whichever album art is the spotlight.
+ * Hero — greeting band with a "spotlight" featured track and a
+ * shuffle-play call to action built purely from the current feed.
  * ------------------------------------------------------------------ */
 function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist }) {
   return (
     <section
       className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-[var(--tt-border)] px-4 py-5 sm:px-5 sm:py-6 md:px-6 md:py-7 lg:px-8 lg:py-8"
+      style={{
+        background:
+          "linear-gradient(135deg, var(--tt-hero-start), var(--tt-hero-mid) 48%, var(--tt-hero-end))",
+      }}
     >
-      {/* Base wash — dark and theme-neutral */}
       <div
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0 opacity-80"
         style={{
           background:
-            "linear-gradient(135deg, var(--tt-bg), #0a0a0c 52%, var(--tt-page-start))",
+            "linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--tt-accent) 18%, transparent) 55%, color-mix(in srgb, var(--tt-accent-2) 16%, transparent) 100%)",
         }}
       />
-
-      {/* Aurora glows — theme accent colours drifting slowly */}
-      <div
-        className="tt-hero-blob absolute -top-16 -right-10 w-72 h-72 sm:w-[22rem] sm:h-[22rem] rounded-full opacity-25 blur-3xl"
-        style={{ background: "var(--tt-accent)" }}
-      />
-      <div
-        className="tt-hero-blob absolute -bottom-24 -left-12 w-80 h-80 sm:w-[26rem] sm:h-[26rem] rounded-full opacity-20 blur-3xl"
-        style={{ background: "var(--tt-accent-2)", animationDelay: "-9s" }}
-      />
-      <div
-        className="tt-hero-blob absolute top-1/3 left-1/3 w-40 h-40 rounded-full opacity-10 blur-2xl"
-        style={{ background: "var(--tt-accent-strong)", animationDelay: "-14s" }}
-      />
-
-      {/* Subtle dot grid, faded toward the left */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: "radial-gradient(rgba(255,255,255,0.14) 1px, transparent 1px)",
-          backgroundSize: "22px 22px",
-          maskImage: "radial-gradient(ellipse 75% 65% at 72% 28%, black, transparent 78%)",
-          WebkitMaskImage: "radial-gradient(ellipse 75% 65% at 72% 28%, black, transparent 78%)",
-        }}
-      />
-
-      {/* Floating notes */}
-      <span aria-hidden className="tt-hero-note absolute left-[10%] top-6 text-lg text-white/10 select-none">♪</span>
-      <span aria-hidden className="tt-hero-note absolute left-[36%] top-9 text-sm text-white/10 select-none" style={{ animationDelay: "-3.2s" }}>♫</span>
-      <span aria-hidden className="tt-hero-note absolute right-[20%] top-8 text-2xl text-white/10 select-none" style={{ animationDelay: "-6.4s" }}>♪</span>
-
-      {/* Subtle top accent line */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
         style={{
@@ -139,8 +108,24 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
             "linear-gradient(90deg, transparent, var(--tt-accent), var(--tt-accent-2), transparent)",
         }}
       />
-
-      <div className="relative flex flex-col md:flex-row md:items-center gap-5 sm:gap-6 md:gap-6 lg:gap-10">
+      {/* Soft accent glow orbs — depth without the old diagonal stripes */}
+      <div
+        className="pointer-events-none absolute top-[-60px] left-[-40px] w-72 h-72 rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in srgb, var(--tt-accent) 30%, transparent), transparent 70%)",
+          filter: "blur(28px)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-[-80px] right-[-40px] w-80 h-80 rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in srgb, var(--tt-accent-2) 26%, transparent), transparent 70%)",
+          filter: "blur(28px)",
+        }}
+      />
+      <div className="relative flex flex-col md:flex-row md:items-center gap-4 sm:gap-6 md:gap-6 lg:gap-8">
         <div className="flex-1 min-w-0">
           <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300/80 mb-1.5 sm:mb-2">
             Tune Together
@@ -161,24 +146,20 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
           )}
         </div>
 
-        {/* Spotlight — the track's cover art */}
+        {/* Spotlight track card */}
         {spotlight && (
           <div
             onClick={() => onPlay(spotlight)}
-            className="group flex-shrink-0 w-full sm:w-72 md:w-64 lg:w-80 flex items-center gap-4 sm:gap-5 rounded-xl border border-[var(--tt-border)] bg-[#0a0a0c]/55 backdrop-blur-md p-3 sm:p-4 cursor-pointer transition-colors touch-manipulation hover:bg-[#0a0a0c]/70"
+            className="group flex-shrink-0 w-full sm:w-64 md:w-56 lg:w-64 xl:w-72 flex items-center gap-3 sm:gap-4 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm border border-[var(--tt-border)] p-2.5 sm:p-3 cursor-pointer transition-colors touch-manipulation"
           >
-            {/* Cover art */}
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 flex-shrink-0 overflow-hidden rounded-lg shadow-lg">
-              <img
-                referrerPolicy="no-referrer"
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 flex-shrink-0 overflow-hidden rounded-lg shadow-lg">
+              <img referrerPolicy="no-referrer"
                 src={coverOf(spotlight)}
                 alt={spotlight.title}
                 onError={coverError(spotlight.title || spotlight.id)}
                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
               />
             </div>
-
-            {/* Title + artist */}
             <div className="min-w-0 flex-1">
               <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-green-400 mb-0.5 sm:mb-1">Today's spotlight</p>
               <p className="text-white font-semibold text-xs sm:text-sm truncate">{spotlight.title}</p>

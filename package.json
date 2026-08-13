@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.34.5",
+    "@distube/ytdl-core": "github:distubejs/ytdl-core",
     "@hello-pangea/dnd": "^18.0.1",
     "@heyputer/puter.js": "^2.6.0",
     "@hookform/resolvers": "^5.2.2",
@@ -33,6 +34,7 @@
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.3.1",
     "uuid": "^11.1.0",
+    "youtubei.js": "^18.0.0",
     "ytmusic-api": "^5.3.1",
     "zod": "^4.1.12"
   },

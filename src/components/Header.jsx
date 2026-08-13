@@ -166,7 +166,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 
   const searchBar = (
     <div className="relative flex-1 min-w-0 max-w-full lg:max-w-[500px] xl:max-w-[560px] 2xl:max-w-[680px]">
-      <div className="flex items-center gap-2 sm:gap-3 glass-strong rounded-full px-3 sm:px-4 h-10 sm:h-11 lg:h-12 w-full transition-colors hover:bg-white/[0.09]">
+      <div className="flex items-center gap-2 sm:gap-3 bg-[#242424] hover:bg-[#2a2a2a] rounded-full px-3 sm:px-4 h-10 sm:h-11 lg:h-12 w-full transition-colors">
         <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
         <input
           type="text"
@@ -192,7 +192,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 
       {/* Recent searches — Spotify-style, shown on focus with an empty query */}
       {focused && !query.trim() && recentSearches.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 glass-strong rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-xl shadow-2xl border border-[var(--tt-border)] overflow-hidden z-50">
           <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
             <p className="text-white text-sm font-bold">Recent searches</p>
             <button
@@ -235,7 +235,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
       )}
 
       {focused && query.trim() && (suggestions.length > 0 || isFetchingSuggestions) && (
-        <div className="absolute top-full left-0 right-0 mt-2 glass-strong rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden z-50 flex flex-col max-h-[520px]">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] border border-[var(--tt-border)] overflow-hidden z-50 flex flex-col max-h-[520px]">
 
           {/* Scrollable body */}
           <div className="overflow-y-auto flex-1 scrollbar-hide">

@@ -1,5 +1,4 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import ytdl from "@distube/ytdl-core";
 
 // Server-side audio proxy.
 //
@@ -7,17 +6,13 @@ import { promisify } from "node:util";
 // (Web Audio) can process the audio: a cross-origin YouTube iframe can't be
 // routed through an AudioContext, but a same-origin <audio> element can.
 //
-// YouTube's InnerTube `player` endpoint no longer returns streaming data
-// without a PO token, so the direct audio URL is extracted with `yt-dlp`
-// (which handles the signatures/PO-token clients), then proxied with Range
-// support so seeking keeps working. Extracted URLs are IP-signed and expire,
-// so cache entries carry the URL's own expiry (minus a margin) capped at 2h —
-// and if a cached URL's upstream fetch ever fails, it's evicted and a fresh
-// URL is extracted on the spot instead of handing the client a 502.
-//
-// NOTE: requires the `yt-dlp` binary to be installed where the server runs.
-
-const execFileAsync = promisify(execFile);
+// URLs are extracted with `@distube/ytdl-core` (pure JS — no native binary),
+// which works in serverless/Vercel Runtimes where `yt-dlp` is unavailable.
+// Multiple player clients are tried so PO-token-gated videos still resolve.
+// Extracted googlevideo URLs are IP-signed and expire, so cache entries carry
+// the URL's own expiry (minus a margin), and if a cached URL's upstream fetch
+// ever fails it's evicted and re-extracted on the spot instead of handing the
+// client a dead 206.
 
 // videoId -> { url, mime, expires }
 const streamCache = new Map();
@@ -33,51 +28,32 @@ const EXPIRE_MARGIN = 5 * 60 * 1000;
 // giving up and letting the client fall back to the YouTube iframe.
 const MAX_EXTRACT_ATTEMPTS = 3;
 
-const YTDLP_BASE = [
-  "--no-playlist",
-  "--no-warnings",
-  "--no-update",
-  "-f",
-  "bestaudio[ext=m4a]/bestaudio",
-  "-g",
-];
+// Preferred player clients. The first that yields a usable format wins. Order
+// matters: WEB_EMBEDDED is most permissive for the embedded audio, then the
+// mobile/standalone clients which often bypass the PO-token gate.
+const PLAYER_CLIENTS = ["WEB_EMBEDDED", "IOS", "ANDROID", "TV"];
 
-// Client fallbacks: the default client can be bot-blocked on some videos
-// while the same video resolves fine on another player client. Try each in
-// turn before giving up (each attempt is short — a success usually returns
-// in <3s, failures in ~1-2s). web_embedded is added because a handful of
-// videos are only served to the embedded player client.
-const YTDLP_CLIENTS = [
-  [],
-  ["--extractor-args", "youtube:player_client=web_safari"],
-  ["--extractor-args", "youtube:player_client=tv"],
-  ["--extractor-args", "youtube:player_client=web_embedded"],
-];
-
-async function extractUrl(videoId) {
-  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  let lastErr;
-  for (const extraArgs of YTDLP_CLIENTS) {
-    try {
-      const { stdout } = await execFileAsync(
-        "yt-dlp",
-        [...YTDLP_BASE, ...extraArgs, watchUrl],
-        { timeout: 20000, maxBuffer: 1024 * 1024 }
-      );
-      const url = stdout
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .at(-1);
-      if (!url || !url.startsWith("http")) {
-        throw new Error("yt-dlp returned no audio URL");
-      }
-      return url;
-    } catch (err) {
-      lastErr = err;
-    }
+// Pick the best audio-only m4a; fall back to any audio-only, then to a
+// combined format as a last resort (rare — combined is heavier to proxy).
+function pickFormat(info) {
+  const formats = info.formats || [];
+  const audioOnly = ytdl.filterFormats(formats, "audioonly");
+  if (audioOnly.length) {
+    const m4a = audioOnly
+      .filter((f) => (f.container || "").includes("mp4") || (f.mimeType || "").includes("mp4"))
+      .sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
+    if (m4a.length) return { format: m4a[0], mime: "audio/mp4" };
+    const byBitrate = [...audioOnly].sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
+    return { format: byBitrate[0], mime: byBitrate[0].mimeType?.split(";")[0] || "audio/webm" };
   }
-  throw lastErr;
+  // Combined (has audio + video) — proxied as-is; browser <audio> ignores video.
+  const combined = formats
+    .filter((f) => f.hasAudio && f.hasVideo)
+    .sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
+  if (combined.length) {
+    return { format: combined[0], mime: combined[0].mimeType?.split(";")[0] || "audio/mp4" };
+  }
+  return null;
 }
 
 // googlevideo URLs carry their own `expire` timestamp in the query string.
@@ -102,13 +78,17 @@ function expireAt(url) {
 }
 
 async function makeEntry(videoId) {
-  const url = await extractUrl(videoId);
+  const info = await ytdl.getInfo(videoId, {
+    playerClients: PLAYER_CLIENTS,
+  });
+  const picked = pickFormat(info);
+  if (!picked || !picked.format?.url) {
+    throw new Error("no playable audio format found");
+  }
   return {
-    url,
-    // bestaudio[ext=m4a] → m4a; the fallback may be webm/opus. The upstream
-    // Content-Type is passed through when present, so this is only a fallback.
-    mime: "audio/mp4",
-    expires: expireAt(url),
+    url: picked.format.url,
+    mime: picked.mime,
+    expires: expireAt(picked.format.url),
   };
 }
 
@@ -142,11 +122,7 @@ export async function GET(req) {
   try {
     entry = await resolveStream(videoId);
   } catch (err) {
-    const reason = (err?.stderr || err?.message || String(err))
-      .split("\n")
-      .filter(Boolean)
-      .at(-1)
-      ?.slice(0, 200);
+    const reason = (err?.message || String(err)).split("\n").filter(Boolean).at(-1)?.slice(0, 200);
     console.error("stream: resolve failed", videoId, reason);
     return Response.json({ error: "stream unavailable", reason }, { status: 502 });
   }
@@ -201,11 +177,7 @@ export async function GET(req) {
     try {
       entry = await resolveStream(videoId);
     } catch (err) {
-      const reason = (err?.stderr || err?.message || String(err))
-        .split("\n")
-        .filter(Boolean)
-        .at(-1)
-        ?.slice(0, 200);
+      const reason = (err?.message || String(err)).split("\n").filter(Boolean).at(-1)?.slice(0, 200);
       console.error("stream: re-extract failed", videoId, reason);
       break;
     }
