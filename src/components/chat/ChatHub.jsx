@@ -27,7 +27,7 @@ const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutra
 /**
  * The full DM chat UI (sidebar + message pane). Renders in two modes:
  *  - embedded (inside the home page's main area, above the player footer) so
- *    music keeps playing while chatting — this is the primary mode;np
+ *    music keeps playing while chatting — this is the primary mode;npcll
  *  - standalone (the /chat route) kept for deep links and old bookmarks.
  *
  * `initialDm` is `{ id, ts }` — ts makes each request unique so clicking the
