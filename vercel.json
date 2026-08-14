@@ -5,20 +5,10 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "functions": {
-    "python-api/stream.py": {
+    "api/stream.py": {
       "maxDuration": 30
     }
   },
-  "rewrites": [
-    {
-      "source": "/api/stream/:path*",
-      "destination": "/python-api/stream/:path*"
-    },
-    {
-      "source": "/api/stream",
-      "destination": "/python-api/stream"
-    }
-  ],
   "headers": [
     {
       "source": "/api/stream(.*)",
