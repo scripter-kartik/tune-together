@@ -6,7 +6,6 @@
   "framework": "nextjs",
   "functions": {
     "api/stream.py": {
-      "runtime": "python3.11",
       "maxDuration": 30
     }
   },
