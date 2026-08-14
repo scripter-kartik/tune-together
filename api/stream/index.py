@@ -23,7 +23,7 @@ EXPIRE_MARGIN = 5 * 60   # 5 minutes before URL's own expiry
 MAX_EXTRACT_ATTEMPTS = 3
 
 YTDLP_BASE = [
-    "yt-dlp",
+    "python", "-m", "yt_dlp",
     "--no-playlist",
     "--no-warnings",
     "--no-update",
