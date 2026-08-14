@@ -1,60 +1,31 @@
-import ytdl from "@distube/ytdl-core";
+import { NextResponse } from "next/server";
+import { spawn } from "child_process";
 
-// Server-side audio proxy.
-//
-// Playback runs through this same-origin endpoint so the equalizer/effects
-// (Web Audio) can process the audio: a cross-origin YouTube iframe can't be
-// routed through an AudioContext, but a same-origin <audio> element can.
-//
-// URLs are extracted with `@distube/ytdl-core` (pure JS — no native binary),
-// which works in serverless/Vercel Runtimes where `yt-dlp` is unavailable.
-// Multiple player clients are tried so PO-token-gated videos still resolve.
-// Extracted googlevideo URLs are IP-signed and expire, so cache entries carry
-// the URL's own expiry (minus a margin), and if a cached URL's upstream fetch
-// ever fails it's evicted and re-extracted on the spot instead of handing the
-// client a dead 206.
+// Server-side audio proxy using yt-dlp (pure JS version for local dev, Python
+// function on Vercel). Extracts a direct audio URL from YouTube then proxies
+// the stream with Range support so seeking works.
+// - URLs are cached in-memory with their own upstream expiry.
+// - On upstream failure the bad entry is evicted and a fresh URL is extracted.
 
 // videoId -> { url, mime, expires }
 const streamCache = new Map();
 // videoId -> Promise — dedup concurrent requests for the same video.
 const inflight = new Map();
 
-const CACHE_TTL = 2 * 60 * 60 * 1000;
-// Never hand the client a URL that's within this much of its own expiry — a
-// stream that dies mid-playback is worse than re-extracting a fresh one.
-const EXPIRE_MARGIN = 5 * 60 * 1000;
-// Cached stream URLs are IP-signed and can silently go stale. On an upstream
-// failure we evict the bad entry and re-extract up to this many times before
-// giving up and letting the client fall back to the YouTube iframe.
+const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
+const EXPIRE_MARGIN = 5 * 60 * 1000; // 5 minutes before URL's own expiry
 const MAX_EXTRACT_ATTEMPTS = 3;
 
-// Preferred player clients. The first that yields a usable format wins. Order
-// matters: WEB_EMBEDDED is most permissive for the embedded audio, then the
-// mobile/standalone clients which often bypass the PO-token gate.
-const PLAYER_CLIENTS = ["WEB_EMBEDDED", "IOS", "ANDROID", "TV"];
-
-// Pick the best audio-only m4a; fall back to any audio-only, then to a
-// combined format as a last resort (rare — combined is heavier to proxy).
-function pickFormat(info) {
-  const formats = info.formats || [];
-  const audioOnly = ytdl.filterFormats(formats, "audioonly");
-  if (audioOnly.length) {
-    const m4a = audioOnly
-      .filter((f) => (f.container || "").includes("mp4") || (f.mimeType || "").includes("mp4"))
-      .sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
-    if (m4a.length) return { format: m4a[0], mime: "audio/mp4" };
-    const byBitrate = [...audioOnly].sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
-    return { format: byBitrate[0], mime: byBitrate[0].mimeType?.split(";")[0] || "audio/webm" };
-  }
-  // Combined (has audio + video) — proxied as-is; browser <audio> ignores video.
-  const combined = formats
-    .filter((f) => f.hasAudio && f.hasVideo)
-    .sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
-  if (combined.length) {
-    return { format: combined[0], mime: combined[0].mimeType?.split(";")[0] || "audio/mp4" };
-  }
-  return null;
-}
+// Preferred player clients. The first that yields a usable format wins.
+// Order matters: WEB_EMBEDDED is most permissive for embedded audio,
+// then mobile/standalone clients which often bypass the PO-token gate.
+const YTDLP_CLIENTS = [
+  [], // default
+  ["--extractor-args", "youtube:player_client=web_embedded"],
+  ["--extractor-args", "youtube:player_client=ios"],
+  ["--extractor-args", "youtube:player_client=android"],
+  ["--extractor-args", "youtube:player_client=tv"],
+];
 
 // googlevideo URLs carry their own `expire` timestamp in the query string.
 function urlExpiry(url) {
@@ -77,19 +48,73 @@ function expireAt(url) {
   return now + CACHE_TTL;
 }
 
-async function makeEntry(videoId) {
-  const info = await ytdl.getInfo(videoId, {
-    playerClients: PLAYER_CLIENTS,
+function runYtDlp(videoId, extraArgs = []) {
+  return new Promise((resolve, reject) => {
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const args = [
+      "--no-playlist",
+      "--no-warnings",
+      "--no-update",
+      "-f", "bestaudio[ext=m4a]/bestaudio",
+      "-g",
+      ...extraArgs,
+      watchUrl,
+    ];
+
+    const proc = spawn("yt-dlp", args, {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    proc.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+    proc.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    proc.on("close", (code) => {
+      if (code === 0) {
+        const url = stdout.trim().split("\n").pop().trim();
+        if (url && url.startsWith("http")) {
+          resolve({ url, mime: "audio/mp4" });
+        } else {
+          reject(new Error(`yt-dlp returned no URL: ${stderr || stdout}`));
+        }
+      } else {
+        reject(new Error(`yt-dlp exited with ${code}: ${stderr || "unknown"}`));
+      }
+    });
+
+    proc.on("error", (err) => {
+      reject(new Error(`yt-dlp spawn failed: ${err.message}`));
+    });
+
+    // Timeout after 20 seconds
+    setTimeout(() => {
+      proc.kill();
+      reject(new Error("yt-dlp timeout"));
+    }, 20000);
   });
-  const picked = pickFormat(info);
-  if (!picked || !picked.format?.url) {
-    throw new Error("no playable audio format found");
+}
+
+async function makeEntry(videoId) {
+  let lastErr = null;
+  for (const extra of YTDLP_CLIENTS) {
+    try {
+      const result = await runYtDlp(videoId, extra);
+      return {
+        url: result.url,
+        mime: result.mime,
+        expires: expireAt(result.url),
+      };
+    } catch (err) {
+      lastErr = err;
+    }
   }
-  return {
-    url: picked.format.url,
-    mime: picked.mime,
-    expires: expireAt(picked.format.url),
-  };
+  throw new Error(`all yt-dlp clients failed: ${lastErr?.message || lastErr}`);
 }
 
 async function resolveStream(videoId) {
