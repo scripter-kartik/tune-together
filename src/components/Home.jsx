@@ -274,7 +274,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
 
       {/* Made for you — Daily Mixes built from top artists */}
       {mixes.length > 0 && (
-        <section>
+        <section className="bg-[#0d0d0d] rounded-xl sm:rounded-2xl border border-[var(--tt-border)] p-4 sm:p-5 md:p-6 -mx-4 md:-mx-6 lg:-mx-8">
           <SectionHeader title="Made for you" subtitle="Made from your top artists" />
           <DailyMixCards
             mixes={mixes}

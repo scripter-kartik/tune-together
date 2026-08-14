@@ -207,7 +207,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
             <p className="text-white/60 text-xs sm:text-sm truncate">{song?.artist?.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {synced && synced.length > 0 && (
             <LyricsSyncAdjuster
               offset={lyricsOffset}
@@ -218,19 +218,19 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
           {hasLyrics && (
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation"
+              className="flex items-center gap-1.5 px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation"
               aria-label="Copy lyrics"
             >
-              {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
               <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
             </button>
           )}
           <button
             onClick={onClose}
-            className="p-1.5 sm:p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors touch-manipulation"
+            className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors touch-manipulation"
             aria-label="Close lyrics"
           >
-            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
       </div>

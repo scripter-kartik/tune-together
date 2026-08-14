@@ -269,14 +269,14 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
               <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
-            {/* Queue button */}
+            {/* Queue button — positioned below three-dots on mobile, side-by-side on desktop */}
             {onQueue && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleQueue(song);
                 }}
-                className={`absolute top-10 sm:top-12 right-2 sm:right-3 z-10 transition-all duration-200 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-lg touch-manipulation ${
+                className={`absolute top-10 sm:top-3 right-2 sm:right-10 z-10 transition-all duration-200 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-lg touch-manipulation ${
                   addedId === song.id
                     ? "opacity-100 bg-green-500 text-white scale-110"
                     : "opacity-100 md:opacity-0 md:group-hover:opacity-100 bg-black/70 text-white hover:bg-green-500 active:bg-green-500 hover:scale-110"
