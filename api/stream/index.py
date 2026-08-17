@@ -109,6 +109,29 @@ async def resolve_stream(video_id: str) -> dict:
         _inflight.pop(video_id, None)
 
 class handler(BaseHTTPRequestHandler):
+    def do_HEAD(self):
+        """Handle HEAD requests — browsers send these for audio preload/metadata."""
+        qs = parse_qs(urlparse(self.path).query)
+        video_id = qs.get("videoId", [""])[0].strip()
+        if "&" in video_id:
+            video_id = video_id.split("&")[0]
+        if not video_id or not all(c.isalnum() or c in "-_" for c in video_id) or len(video_id) != 11:
+            self._json(400, {"error": "videoId is required"})
+            return
+
+        try:
+            entry = asyncio.run(resolve_stream(video_id))
+        except Exception as e:
+            self._json(502, {"error": "stream unavailable", "reason": str(e)[:200]})
+            return
+
+        # Return headers only (no body)
+        self.send_response(200)
+        self.send_header("Content-Type", entry["mime"])
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+
     def do_GET(self):
         qs = parse_qs(urlparse(self.path).query)
         video_id = qs.get("videoId", [""])[0].strip()
