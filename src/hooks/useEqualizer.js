@@ -154,12 +154,20 @@ export function useEqualizer({ playerRef }) {
   const wirePlayer = useCallback(() => {
     try {
       const internal = playerRef.current?.getInternalPlayer?.();
-      if (!(internal instanceof HTMLMediaElement)) {
-        if (internal) {
+      console.log("[TT EQ] getInternalPlayer() returned:", internal?.constructor?.name, internal?.tagName, internal?.currentSrc?.slice(0, 100));
+
+      // If internal is a wrapper that has its own getInternalPlayer (nested), unwrap
+      let mediaElement = internal;
+      if (mediaElement && typeof mediaElement.getInternalPlayer === "function") {
+        mediaElement = mediaElement.getInternalPlayer();
+        console.log("[TT EQ] unwrapped to:", mediaElement?.constructor?.name, mediaElement?.tagName);
+      }
+
+      if (!(mediaElement instanceof HTMLMediaElement)) {
+        if (mediaElement) {
           console.warn(
             "[TT EQ] internal player is not a media element:",
-            internal?.constructor?.name || typeof internal,
-            internal?.getInternalPlayer ? "nested" : ""
+            mediaElement?.constructor?.name || typeof mediaElement
           );
         }
         setWired(false);
