@@ -927,6 +927,7 @@ export default function PlayerFooter({
             onDuration={handleDuration}
             onEnded={onNext}
             onError={handleSourceError}
+            type={source?.kind === "stream" ? "file" : undefined}
             config={{
               youtube: {
                 playerVars: { playsinline: 1, disablekb: 1, modestbranding: 1 },
