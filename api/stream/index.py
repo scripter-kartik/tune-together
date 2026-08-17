@@ -137,6 +137,9 @@ class handler(BaseHTTPRequestHandler):
                 req = urllib.request.Request(entry["url"], headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                     "Range": range_header,
+                    # Prevent upstream compression: urllib auto-decompresses but would
+                    # forward the compressed Content-Length, breaking <audio> playback.
+                    "Accept-Encoding": "identity",
                 })
                 with urllib.request.urlopen(req, timeout=30) as upstream:
                     if upstream.status not in (200, 206):
@@ -146,7 +149,8 @@ class handler(BaseHTTPRequestHandler):
                     self.send_header("Accept-Ranges", "bytes")
                     if upstream.headers.get("Content-Range"):
                         self.send_header("Content-Range", upstream.headers.get("Content-Range"))
-                    if upstream.headers.get("Content-Length"):
+                    # Use upstream Content-Length only if no Content-Encoding (identity mode)
+                    if upstream.headers.get("Content-Length") and not upstream.headers.get("Content-Encoding"):
                         self.send_header("Content-Length", upstream.headers.get("Content-Length"))
                     self.send_header("Cache-Control", "no-store")
                     self.end_headers()
