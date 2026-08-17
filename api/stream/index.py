@@ -110,7 +110,8 @@ async def resolve_stream(video_id: str) -> dict:
 
 class handler(BaseHTTPRequestHandler):
     def do_HEAD(self):
-        """Handle HEAD requests — browsers send these for audio preload/metadata."""
+        """Handle HEAD requests — browsers send these for audio preload/metadata.
+        Must forward Range header to upstream to get proper Content-Range/Content-Length."""
         qs = parse_qs(urlparse(self.path).query)
         video_id = qs.get("videoId", [""])[0].strip()
         if "&" in video_id:
@@ -119,13 +120,39 @@ class handler(BaseHTTPRequestHandler):
             self._json(400, {"error": "videoId is required"})
             return
 
+        range_header = self.headers.get("Range", "bytes=0-")
+
         try:
             entry = asyncio.run(resolve_stream(video_id))
         except Exception as e:
             self._json(502, {"error": "stream unavailable", "reason": str(e)[:200]})
             return
 
-        # Return headers only (no body)
+        # Forward HEAD to upstream to get correct Content-Range/Content-Length
+        import urllib.request
+        req = urllib.request.Request(entry["url"], headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Range": range_header,
+            "Accept-Encoding": "identity",
+        }, method="HEAD")
+        try:
+            with urllib.request.urlopen(req, timeout=30) as upstream:
+                if upstream.status not in (200, 206):
+                    raise RuntimeError(f"upstream {upstream.status}")
+                self.send_response(upstream.status)
+                self.send_header("Content-Type", upstream.headers.get("Content-Type", entry["mime"]))
+                self.send_header("Accept-Ranges", "bytes")
+                if upstream.headers.get("Content-Range"):
+                    self.send_header("Content-Range", upstream.headers.get("Content-Range"))
+                if upstream.headers.get("Content-Length") and not upstream.headers.get("Content-Encoding"):
+                    self.send_header("Content-Length", upstream.headers.get("Content-Length"))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                return
+        except Exception as e:
+            print(f"stream: HEAD upstream error {video_id} {e}")
+
+        # Fallback: return basic headers from cache
         self.send_response(200)
         self.send_header("Content-Type", entry["mime"])
         self.send_header("Accept-Ranges", "bytes")
