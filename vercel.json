@@ -17,6 +17,10 @@
     {
       "source": "/api/stream",
       "destination": "/api/stream/index.py"
+    },
+    {
+      "source": "/api/stream/:videoId.m4a",
+      "destination": "/api/stream/index.py/:videoId.m4a"
     }
   ],
   "headers": [

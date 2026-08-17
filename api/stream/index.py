@@ -110,11 +110,17 @@ async def resolve_stream(video_id: str) -> dict:
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        qs = parse_qs(urlparse(self.path).query)
-        video_id = qs.get("videoId", [""])[0].strip()
-        # Strip any trailing params like '&ext=.m4a' that ReactPlayer appends
-        if "&" in video_id:
-            video_id = video_id.split("&")[0]
+        parsed = urlparse(self.path)
+        # Support both /api/stream?videoId=... and /api/stream/{videoId}.m4a
+        path = parsed.path.rstrip("/")
+        if path.endswith(".m4a"):
+            video_id = path.split("/")[-1].replace(".m4a", "")
+        else:
+            qs = parse_qs(parsed.query)
+            video_id = qs.get("videoId", [""])[0].strip()
+            # Strip any trailing params like '&ext=.m4a' that ReactPlayer appends
+            if "&" in video_id:
+                video_id = video_id.split("&")[0]
         if not video_id or not all(c.isalnum() or c in "-_" for c in video_id) or len(video_id) != 11:
             self._json(400, {"error": "videoId is required"})
             return

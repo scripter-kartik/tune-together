@@ -129,11 +129,11 @@ export default function PlayerFooter({
 
     const applyStream = (youtubeId) => {
       youtubeIdRef.current = youtubeId;
-      // The trailing `&ext=.m4a` makes react-player treat the proxied audio as
-      // a file (it picks players by URL extension) and render an <audio> element.
+      // Path-based .m4a extension makes react-player use the "file" player
+      // (renders <audio> element) which the equalizer can route via Web Audio.
       const next = {
         kind: "stream",
-        url: `/api/stream?videoId=${youtubeId}&ext=.m4a`,
+        url: `/api/stream/${youtubeId}.m4a`,
       };
       sourceRef.current = next;
       if (!cancelled) setSource(next);
@@ -197,7 +197,7 @@ export default function PlayerFooter({
         streamRetriesRef.current[id] = attempt;
         const next = {
           kind: "stream",
-          url: `/api/stream?videoId=${id}&ext=.m4a&retry=${attempt}`,
+          url: `/api/stream/${id}.m4a?retry=${attempt}`,
         };
         sourceRef.current = next;
         setSource(next);
