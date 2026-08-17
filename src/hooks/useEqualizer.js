@@ -173,7 +173,7 @@ export function useEqualizer({ playerRef }) {
         setWired(false);
         return;
       }
-      if (wiredElements.has(internal)) {
+      if (wiredElements.has(mediaElement)) {
         setWired(true);
         return;
       }
@@ -183,11 +183,12 @@ export function useEqualizer({ playerRef }) {
       // Drop the previously wired element (e.g. the last track's <audio>) so
       // it doesn't keep feeding the graph after ReactPlayer swaps it out.
       sourceRef.current?.disconnect?.();
-      const source = ctx.createMediaElementSource(internal);
+      const source = ctx.createMediaElementSource(mediaElement);
       source.connect(filtersRef.current[0]);
       sourceRef.current = source;
-      wiredElements.add(internal);
+      wiredElements.add(mediaElement);
       setWired(true);
+      console.log("[TT EQ] Successfully wired audio element:", mediaElement.tagName, mediaElement.currentSrc?.slice(0, 100));
     } catch (err) {
       console.warn("EQ: could not wire audio source:", err);
       setWired(false);
