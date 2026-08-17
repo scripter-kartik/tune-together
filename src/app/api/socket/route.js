@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 
-// Socket.IO is handled by the custom server.js on this same port; this route
-// is just a liveness probe. Mark it dynamic so Next.js doesn't try to
-// statically prerender it during `next build` (which fails the build).
+// Socket.IO is handled by a separate standalone server (socket-server/).
+// This route is just a liveness probe for the Next.js frontend.
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
   return NextResponse.json({
-    message: "Socket.IO server is running on the same port as Next.js",
+    message: "Frontend is running. Socket.IO connects to: " + socketUrl,
+    socketUrl,
     status: "active",
   });
 }

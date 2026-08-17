@@ -1,0 +1,19 @@
+# Render Blueprint for Socket.IO Server
+# Connect your GitHub repo to Render and this will auto-deploy
+
+services:
+  - type: webservice
+    name: tune-together-socket
+    runtime: node
+    plan: free
+    buildCommand: cd socket-server && npm install
+    startCommand: cd socket-server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false  # Set in Render dashboard
+    healthCheckPath: /health
+    autoDeploy: true
