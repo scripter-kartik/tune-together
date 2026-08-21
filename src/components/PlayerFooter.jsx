@@ -295,7 +295,32 @@ export default function PlayerFooter({
     playerReadyRef.current = true;
     setIsLoading(false);
     console.info("[TT playback] ready, source kind:", sourceRef.current?.kind, sourceRef.current?.url);
+
+    // Attempt to wire equalizer
     wireEq();
+
+    // Schedule automatic retry after 2 seconds if not wired
+    const retryTimer = setTimeout(() => {
+      if (!eqWired) {
+        console.warn("[TT playback] EQ not wired after initial attempt, retrying...");
+        wireEq();
+
+        // Schedule second retry after another 3 seconds
+        const secondRetryTimer = setTimeout(() => {
+          if (!eqWired) {
+            console.error("[TT playback] EQ still not wired after retry, reporting diagnostics");
+            reportEqDiagnostics();
+          }
+        }, 3000);
+
+        // Cleanup timer
+        return () => clearTimeout(secondRetryTimer);
+      }
+    }, 2000);
+
+    // Cleanup timer
+    return () => clearTimeout(retryTimer);
+
     if (pendingSeekRef.current != null) {
       const pos = pendingSeekRef.current;
       pendingSeekRef.current = null;
@@ -417,6 +442,8 @@ export default function PlayerFooter({
     applyPreset: applyEqPreset,
     toggleEffect: toggleEqEffect,
     resetAll: resetEq,
+    retryWiring: retryEqWiring,
+    reportDiagnostics: reportEqDiagnostics,
   } = useEqualizer({ playerRef });
 
   // Master volume = user volume × crossfade fade factor.
