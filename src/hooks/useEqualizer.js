@@ -45,7 +45,7 @@ function readStored() {
 }
 
 // Diagnostic tracking for equalizer wiring
-const EQ_DEBUG = true; // Set to false in production
+const EQ_DEBUG = false; // Set to true only when debugging EQ issues
 
 // Module-level tracking (temporary for diagnostics)
 const elementTracking = {
@@ -275,14 +275,10 @@ export function useEqualizer({ playerRef }) {
 
       // Step 3: Check if we have a valid media element
       if (!(mediaElement instanceof HTMLMediaElement)) {
-        logError('Step 3 - NOT a HTMLMediaElement:', {
+        // This is expected for preview tracks and YouTube iframes - not an error
+        logDebug('Step 3 - NOT a HTMLMediaElement (expected for previews/YouTube):', {
           mediaElement,
           constructor: mediaElement?.constructor?.name,
-          typeof: typeof mediaElement,
-          isElement: mediaElement instanceof Element,
-          isHTMLElement: mediaElement instanceof HTMLElement,
-          isHTMLAudioElement: mediaElement instanceof HTMLAudioElement,
-          isHTMLVideoElement: mediaElement instanceof HTMLVideoElement,
         });
 
         elementTracking.lastFailedElement = mediaElement;

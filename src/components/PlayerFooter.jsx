@@ -111,6 +111,11 @@ export default function PlayerFooter({
   // Resolve the current Deezer track to a full-length source. Primary source
   // is the same-origin audio proxy (so the equalizer works); playback steps
   // down to the YouTube iframe, then Deezer's 30s preview, if that fails.
+  //
+  // INSTANT PLAYBACK STRATEGY:
+  // 1. Start with the 30s preview immediately (no network wait)
+  // 2. Resolve the full YouTube track in the background
+  // 3. Seamlessly switch to the full track when ready, preserving position
   useEffect(() => {
     // Fresh proxy retry budget for the new track.
     streamRetriesRef.current = {};
@@ -144,6 +149,7 @@ export default function PlayerFooter({
       if (!cancelled) setSource(next);
     };
 
+    // Already have a YouTube ID cached on the song object - play immediately
     if (song.youtubeId) {
       applyStream(song.youtubeId);
       return () => {
@@ -151,6 +157,13 @@ export default function PlayerFooter({
       };
     }
 
+    // INSTANT PLAYBACK: Start with preview immediately while resolving full track
+    if (song.preview) {
+      applyPreview();
+      setIsLoading(false); // Preview starts immediately
+    }
+
+    // Resolve full track in the background
     const params = new URLSearchParams({
       id: String(song.id),
       title: song.title || "",
@@ -161,11 +174,20 @@ export default function PlayerFooter({
       .then((r) => r.json())
       .then(({ youtubeId }) => {
         if (cancelled) return;
-        if (youtubeId) applyStream(youtubeId);
-        else applyPreview();
+        if (youtubeId) {
+          // Capture current playback position before switching
+          const currentPos = playerRef.current?.getCurrentTime?.() || 0;
+          applyStream(youtubeId);
+          // Restore position after the new source loads
+          if (currentPos > 0) {
+            pendingSeekRef.current = currentPos;
+          }
+        } else if (!song.preview) {
+          applyPreview();
+        }
       })
       .catch(() => {
-        if (!cancelled) applyPreview();
+        if (!cancelled && !song.preview) applyPreview();
       });
 
     return () => {
@@ -294,33 +316,11 @@ export default function PlayerFooter({
   const handleReady = () => {
     playerReadyRef.current = true;
     setIsLoading(false);
-    console.info("[TT playback] ready, source kind:", sourceRef.current?.kind, sourceRef.current?.url);
 
-    // Attempt to wire equalizer
+    // Attempt to wire equalizer (silently fails for preview tracks/YouTube iframes)
     wireEq();
 
-    // Schedule automatic retry after 2 seconds if not wired
-    const retryTimer = setTimeout(() => {
-      if (!eqWired) {
-        console.warn("[TT playback] EQ not wired after initial attempt, retrying...");
-        wireEq();
-
-        // Schedule second retry after another 3 seconds
-        const secondRetryTimer = setTimeout(() => {
-          if (!eqWired) {
-            console.error("[TT playback] EQ still not wired after retry, reporting diagnostics");
-            reportEqDiagnostics();
-          }
-        }, 3000);
-
-        // Cleanup timer
-        return () => clearTimeout(secondRetryTimer);
-      }
-    }, 2000);
-
-    // Cleanup timer
-    return () => clearTimeout(retryTimer);
-
+    // Apply pending seek from instant-playback preview switch
     if (pendingSeekRef.current != null) {
       const pos = pendingSeekRef.current;
       pendingSeekRef.current = null;
