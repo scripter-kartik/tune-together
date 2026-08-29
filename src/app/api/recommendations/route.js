@@ -5,11 +5,11 @@ import { getYTMusic } from "@/lib/ytmusic";
 
 const lastThumb = (item) => item.thumbnails?.[item.thumbnails.length - 1]?.url || "/icon2.png";
 
-// Generic discovery seeds mixed in when the user has little/no history, so the
-// recommendations section is never empty.
+
+
 const DISCOVERY_SEEDS = ["chill", "focus", "indie", "lofi", "pop", "electronic"];
 
-// Time-of-day mood seed — keeps "Made for you" feeling fresh.
+
 function moodSeed() {
   const h = new Date().getHours();
   if (h < 5) return "late night";
@@ -47,7 +47,7 @@ export async function GET() {
 
     await connectDB();
 
-    // Top artists from listening history — these drive the seed searches.
+    
     const artistRows = await PlayHistory.aggregate([
       { $match: { clerkId: clerkUser.id } },
       { $sort: { playedAt: -1 } },
@@ -67,7 +67,7 @@ export async function GET() {
       .filter((r) => r._id && r._id !== "Unknown Artist")
       .map((r) => ({ id: r.artistId, name: r._id }));
 
-    // Recently-played ids — never re-recommend these.
+    
     const recent = await PlayHistory.find({ clerkId: clerkUser.id })
       .sort({ playedAt: -1 })
       .limit(25)
@@ -75,12 +75,12 @@ export async function GET() {
       .lean();
     const recentIds = new Set(recent.map((r) => r.songId));
 
-    // Seed searches: top artists (as "artist X" queries) + discovery + mood.
+    
     const artistQueries = topArtists.slice(0, 3).map((a) => a.name);
     const seeds = [...artistQueries, ...DISCOVERY_SEEDS.slice(0, 2), moodSeed()];
 
-    // Daily Mixes — a dedicated per-artist search so each mix is a clean,
-    // personalized "made for you" collection.
+    
+    
     const mixArtists = topArtists.slice(0, 4);
     const mixQueries = mixArtists.map((a) => `${a.name} songs`);
 
@@ -91,7 +91,7 @@ export async function GET() {
     const seedBatches = results.slice(0, seeds.length);
     const mixBatches = results.slice(seeds.length);
 
-    // Flatten, normalize, filter out history + placeholders, dedupe.
+    
     const seen = new Set(recentIds);
     const out = [];
     for (const batch of seedBatches) {
@@ -103,8 +103,8 @@ export async function GET() {
       }
     }
 
-    // Build Daily Mixes from the per-artist batches. Each mix is isolated in
-    // its own try/catch so one bad batch can never sink the whole route.
+    
+    
     let mixes = [];
     try {
       const mixSeen = new Set(recentIds);

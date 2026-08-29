@@ -1,12 +1,12 @@
-// Shared listening-room identity.
-//
-// The sync backend keys everything off a single roomId. For "listen together"
-// to survive navigation across the whole site (home -> playlist -> chat and
-// back), every page must resolve to the SAME room instead of minting its own.
-//
-// Resolution order: explicit ?room= in the URL wins (that's how invites land),
-// then the persisted room in localStorage, then a fresh one. Whatever we land
-// on is written back to both localStorage and the URL so the next page agrees.
+
+
+
+
+
+
+
+
+
 
 const KEY = "tt-room";
 
@@ -18,7 +18,7 @@ function newId() {
   }
 }
 
-// Resolve (and persist) the room for the current page load.
+
 export function resolveRoomId() {
   if (typeof window === "undefined") return "";
   const url = new URL(window.location.href);
@@ -40,7 +40,7 @@ export function resolveRoomId() {
 }
 
 // Switch to a room (e.g. accepting a "listen together" invite) and persist it
-// so it keeps following the user as they move around the site.
+
 export function joinRoomId(room) {
   if (typeof window === "undefined" || !room) return;
   localStorage.setItem(KEY, room);
@@ -57,7 +57,7 @@ export function currentRoomId() {
 
 // Deterministic shared room for a 1:1 chat: both friends compute the same id
 // from their two clerk ids, so "listen together" needs no link-passing —
-// each side lands in the same room independently.
+
 export function dmRoomId(a, b) {
   return `dm-${[a, b].sort().join("_")}`;
 }

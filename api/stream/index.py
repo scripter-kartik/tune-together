@@ -62,7 +62,7 @@ def expire_at(url: str) -> int:
 
 async def extract_url(video_id: str) -> tuple[str, str]:
     """Run yt-dlp to get a direct audio URL. Returns (url, mime)."""
-    watch_url = f"https://www.youtube.com/watch?v={video_id}"
+    watch_url = f"https:
     last_err = None
     for extra in YTDLP_CLIENTS:
         cmd = YTDLP_BASE + extra + [watch_url]

@@ -14,9 +14,9 @@ function getInitials(name) {
   return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
 }
 
-// Standalone public playlist page (linked from user profiles). Reads the real
-// playlist from the API — not the hardcoded presets — and plays through the
-// global player footer via custom events, so the player keeps working.
+
+
+
 export default function PlaylistPage() {
   const params = useParams();
   const router = useRouter();
@@ -132,7 +132,7 @@ export default function PlaylistPage() {
           </div>
         ) : (
           <>
-            {/* Header */}
+            {}
             <div className="bg-gradient-to-b from-purple-600 via-[#3a2d5f] to-black px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6 mt-4 sm:mt-0">
                 {coverUrl ? (
@@ -186,7 +186,7 @@ export default function PlaylistPage() {
               </div>
             </div>
 
-            {/* Body */}
+            {}
             <div className="px-3 sm:px-6 py-4 sm:py-6">
               <div className="max-w-6xl mx-auto">
                 <div className="flex items-center gap-4 sm:gap-6 pb-6">

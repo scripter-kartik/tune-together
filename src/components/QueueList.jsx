@@ -102,7 +102,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
                               : "hover:bg-white/5"
                           }`}
                         >
-                          {/* Drag handle */}
+                          {}
                           <div
                             {...provided.dragHandleProps}
                             className="hidden md:block md:opacity-0 md:group-hover:opacity-100 text-gray-600 hover:text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0 transition-opacity"
@@ -144,7 +144,7 @@ export default function QueueList({ queue = [], currentSong, onRemove, onClear }
           </DragDropContext>
         )}
 
-        {/* Suggested / Autoplay Section */}
+        {}
         {(suggestions.length > 0 || loading) && (
           <div className="mt-4 pb-6 border-t border-[var(--tt-divider)]/50">
             <div className="px-4 py-3">

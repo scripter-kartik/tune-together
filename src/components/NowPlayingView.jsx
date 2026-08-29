@@ -15,9 +15,9 @@ const fmt = (t) => {
   return `${m}:${s}`;
 };
 
-// Full-screen "Now Playing" sheet (Spotify-style), opened by tapping the
-// mobile mini-player. Rendered through a portal so it sits above everything
-// including the footer. Playback state/handlers come from PlayerFooter.
+
+
+
 export default function NowPlayingView({
   song,
   isOpen,
@@ -43,7 +43,7 @@ export default function NowPlayingView({
   useEffect(() => setMounted(true), []);
   useEffect(() => setLiked(false), [song?.id]);
 
-  // Lock background scroll while the sheet is open.
+  
   useEffect(() => {
     if (!isOpen) return;
     const prev = document.body.style.overflow;
@@ -66,7 +66,7 @@ export default function NowPlayingView({
 
   const overlay = (
     <div className="fixed inset-0 z-[9990] flex flex-col overflow-hidden animate-slide-up">
-      {/* Immersive blurred album-art backdrop */}
+      {}
       <img referrerPolicy="no-referrer"
         src={cover}
         alt=""
@@ -75,7 +75,7 @@ export default function NowPlayingView({
       />
       <div className="absolute inset-0 bg-gradient-to-b from-[#33333f]/40 via-black/85 to-black" />
 
-      {/* Content */}
+      {}
       <div
         className="relative z-10 flex flex-col h-full px-4 sm:px-6"
         style={{
@@ -83,7 +83,7 @@ export default function NowPlayingView({
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)",
         }}
       >
-        {/* Top bar */}
+        {}
         <div className="flex items-center justify-between py-2.5 sm:py-3 flex-shrink-0">
           <button
             onClick={onClose}
@@ -109,7 +109,7 @@ export default function NowPlayingView({
           </button>
         </div>
 
-        {/* Album art */}
+        {}
         <div className="flex-1 flex items-center justify-center min-h-0 py-3 sm:py-4">
           <img referrerPolicy="no-referrer"
             src={cover}
@@ -119,7 +119,7 @@ export default function NowPlayingView({
           />
         </div>
 
-        {/* Title + like */}
+        {}
         <div className="flex items-end justify-between gap-3 sm:gap-4 flex-shrink-0 mb-4 sm:mb-5">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-[22px] font-extrabold text-white truncate leading-tight">
@@ -141,7 +141,7 @@ export default function NowPlayingView({
           </button>
         </div>
 
-        {/* Seek bar */}
+        {}
         <div className="flex-shrink-0 mb-3 sm:mb-4">
           <input
             type="range"
@@ -162,7 +162,7 @@ export default function NowPlayingView({
           </div>
         </div>
 
-        {/* Transport controls */}
+        {}
         <div className="flex items-center justify-center gap-7 sm:gap-9 flex-shrink-0 mb-5 sm:mb-6">
           <button
             onClick={onPrev}
@@ -196,7 +196,7 @@ export default function NowPlayingView({
           </button>
         </div>
 
-        {/* Utility row */}
+        {}
         <div className="flex items-center justify-center gap-6 sm:gap-8 md:gap-14 flex-shrink-0 flex-wrap">
           <button
             onClick={onOpenLyrics}

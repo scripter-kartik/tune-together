@@ -2,7 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import UserKey from "@/lib/models/UserKey";
 
-// Publish (or replace) my E2EE public key. The private key stays on-device.
+
 export async function POST(req) {
   try {
     const user = await currentUser();
@@ -35,7 +35,7 @@ export async function POST(req) {
   }
 }
 
-// Fetch public keys for a comma-separated list of user ids: /api/keys?ids=a,b
+
 export async function GET(req) {
   try {
     const user = await currentUser();

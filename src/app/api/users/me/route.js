@@ -2,8 +2,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import User from "@/lib/models/User";
 
-// Return the signed-in user's profile (creating the record if this is their
-// first visit), so the client knows whether they've claimed a @username yet.
+
+
 export async function GET() {
   try {
     const clerkUser = await currentUser();

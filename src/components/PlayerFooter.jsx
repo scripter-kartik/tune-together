@@ -20,9 +20,9 @@ import { useSleepTimer } from "@/hooks/useSleepTimer";
 import { useCrossfade } from "@/hooks/useCrossfade";
 import { useEqualizer } from "@/hooks/useEqualizer";
 
-// Same-origin proxy retries before falling back to the cross-origin YouTube
-// iframe. Each retry keeps playback on an <audio> element the equalizer can
-// route through its Web Audio chain; the iframe's audio can't be processed.
+
+
+
 const MAX_STREAM_RETRIES = 2;
 
 export default function PlayerFooter({
@@ -39,13 +39,13 @@ export default function PlayerFooter({
   onUnsync,
 }) {
   const playerRef = useRef(null);
-  // Playback source chain: same-origin proxy stream → YouTube iframe → preview.
-  // The proxy stream is a plain <audio> element, which is what lets the
-  // equalizer (Web Audio) process every track.
-  const [source, setSource] = useState(null); // { kind, url } | null
+  
+  
+  
+  const [source, setSource] = useState(null); 
   const sourceRef = useRef(null);
   const youtubeIdRef = useRef(null);
-  // Per-track proxy retry budget (reset when the song changes).
+  
   const streamRetriesRef = useRef({});
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -57,8 +57,8 @@ export default function PlayerFooter({
   const [mounted, setMounted] = useState(false);
   const isSeeking = useRef(false);
 
-  // react-player renders a <Suspense> internally, which mismatches during SSR.
-  // Only mount it on the client to avoid a hydration error.
+  
+  
   useEffect(() => setMounted(true), []);
 
   const [internalSyncSession, setInternalSyncSession] = useState(null);
@@ -90,13 +90,13 @@ export default function PlayerFooter({
     );
   };
 
-  // Player readiness + a seek we couldn't apply yet (media still loading).
+  
   const playerReadyRef = useRef(false);
   const pendingSeekRef = useRef(null);
 
   const { updateNowPlaying } = useUpdateNowPlaying();
 
-  // Seek helper: apply now if the media is ready, otherwise defer until onReady.
+  
   const seekTo = useCallback((t) => {
     const pos = Math.max(0, t || 0);
     if (playerRef.current && playerReadyRef.current) {
@@ -108,16 +108,16 @@ export default function PlayerFooter({
     }
   }, []);
 
-  // Resolve the current Deezer track to a full-length source. Primary source
-  // is the same-origin audio proxy (so the equalizer works); playback steps
-  // down to the YouTube iframe, then Deezer's 30s preview, if that fails.
-  //
-  // INSTANT PLAYBACK STRATEGY:
-  // 1. Start with the 30s preview immediately (no network wait)
-  // 2. Resolve the full YouTube track in the background
-  // 3. Seamlessly switch to the full track when ready, preserving position
+  
+  
+  
+  
+  
+  
+  
+  
   useEffect(() => {
-    // Fresh proxy retry budget for the new track.
+    
     streamRetriesRef.current = {};
     if (!song) {
       setSource(null);
@@ -134,8 +134,8 @@ export default function PlayerFooter({
 
     const applyStream = (youtubeId) => {
       youtubeIdRef.current = youtubeId;
-      // Query param with .m4a extension makes react-player use the "file" player
-      // (renders <audio> element) which the equalizer can route via Web Audio.
+      
+      
       const next = {
         kind: "stream",
         url: `/api/stream?videoId=${youtubeId}&ext=.m4a`,
@@ -149,7 +149,7 @@ export default function PlayerFooter({
       if (!cancelled) setSource(next);
     };
 
-    // Already have a YouTube ID cached on the song object - play immediately
+    
     if (song.youtubeId) {
       applyStream(song.youtubeId);
       return () => {
@@ -157,13 +157,13 @@ export default function PlayerFooter({
       };
     }
 
-    // INSTANT PLAYBACK: Start with preview immediately while resolving full track
+    
     if (song.preview) {
       applyPreview();
-      setIsLoading(false); // Preview starts immediately
+      setIsLoading(false); 
     }
 
-    // Resolve full track in the background
+    
     const params = new URLSearchParams({
       id: String(song.id),
       title: song.title || "",
@@ -246,7 +246,7 @@ export default function PlayerFooter({
 
   const { lyricsData, lyricsStatus } = useLyrics(song);
 
-  // Broadcast "now playing" for the activity/presence feature.
+  
   useEffect(() => {
     if (!song || !isPlaying) {
       updateNowPlaying(null);
@@ -265,9 +265,9 @@ export default function PlayerFooter({
     });
   }, [song, isPlaying, updateNowPlaying]);
 
-  // Room sync: play/pause state is driven by the `isPlaying` prop (parent
-  // updates it from sync-play/sync-song), so here we only apply the shared
-  // playback POSITION by seeking.
+  
+  
+  
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;
@@ -297,8 +297,8 @@ export default function PlayerFooter({
     };
     window.addEventListener("tt-sync", onTTSync);
 
-    // Synchronous position probe: dispatchers read e.detail.position after
-    // dispatch (used to carry playback into a shared room).
+    
+    
     const onGetPosition = (e) => {
       if (e.detail) e.detail.position = playerRef.current?.getCurrentTime?.() || 0;
     };
@@ -317,10 +317,10 @@ export default function PlayerFooter({
     playerReadyRef.current = true;
     setIsLoading(false);
 
-    // Attempt to wire equalizer (silently fails for preview tracks/YouTube iframes)
+    
     wireEq();
 
-    // Apply pending seek from instant-playback preview switch
+    
     if (pendingSeekRef.current != null) {
       const pos = pendingSeekRef.current;
       pendingSeekRef.current = null;
@@ -349,11 +349,11 @@ export default function PlayerFooter({
     onPlayPause();
   };
 
-  // Full keyboard shortcuts: space play/pause, arrows seek, shift+arrows
-  // prev/next, m mute, / focus search, q queue, l lyrics, ? help.
+  
+  
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
 
-  // Relative seek used by arrow-key shortcuts.
+  
   const seekRelative = useCallback((delta) => {
     if (!song || isLoading) return;
     const target = Math.max(0, Math.min(duration || 0, currentTime + delta));
@@ -393,9 +393,9 @@ export default function PlayerFooter({
     enabled: shortcutsEnabled,
   });
 
-  // Sleep timer — pause playback (and sync the room) when it fires. Uses an
-  // explicit "pause" command rather than toggling, so it can never no-op on
-  // a stale isPlaying read.
+  
+  
+  
   const pausePlayback = useCallback(() => {
     if (!song) return;
     if (roomId && socketRef.current) {
@@ -424,7 +424,7 @@ export default function PlayerFooter({
     queueLength,
   });
 
-  // Crossfade — fades out the tail of each track and fades in the next head.
+  
   const { fadeSeconds, setCrossfade, fadeFactor } = useCrossfade({
     playerRef,
     duration,
@@ -432,7 +432,7 @@ export default function PlayerFooter({
     song,
   });
 
-  // Equalizer + effects (Web Audio). Wired to the media element when possible.
+  
   const {
     settings: eqSettings,
     wired: eqWired,
@@ -446,7 +446,7 @@ export default function PlayerFooter({
     reportDiagnostics: reportEqDiagnostics,
   } = useEqualizer({ playerRef });
 
-  // Master volume = user volume × crossfade fade factor.
+  
   const effectiveVolume = isMuted || volume === 0 ? 0 : volume * fadeFactor;
 
   const handleSeek = (e) => {
@@ -467,7 +467,7 @@ export default function PlayerFooter({
     }, 100);
   };
 
-  // Jump to a lyric line (Spotify-style click-to-seek), and keep the room in sync.
+  
   const handleLyricSeek = useCallback((t) => {
     if (!song) return;
     seekTo(t);
@@ -492,7 +492,7 @@ export default function PlayerFooter({
     if (newVolume > 0 && isMuted) setIsMuted(false);
   };
 
-  // Add current song to queue instead of opening the queue tab
+  
   const [added, setAdded] = useState(false);
   const handleQueueSong = () => {
     if (song) {
@@ -502,8 +502,8 @@ export default function PlayerFooter({
     }
   };
 
-  // Tapping the mini-player opens the full-screen "Now Playing" sheet — but
-  // only on mobile/tablet, where there's no room for the full desktop player.
+  
+  
   const openNowPlaying = () => {
     if (song && typeof window !== "undefined" && window.innerWidth < 768) {
       setShowNowPlaying(true);
@@ -520,7 +520,7 @@ export default function PlayerFooter({
   return (
     <div className="relative w-full bg-[#121212]/80 backdrop-blur-xl border-t border-[var(--tt-border)] text-white px-2 sm:px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[68px] sm:h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
 
-      {/* Mobile progress bar at top */}
+      {}
       <div className="md:hidden absolute top-0 left-0 right-0 z-10">
         <div className="flex items-center w-full">
           <input
@@ -555,7 +555,7 @@ export default function PlayerFooter({
                   className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 object-cover rounded shadow-md"
                   onError={coverError(song.title || song.id)}
                 />
-                {/* Visualizer overlay on album art */}
+                {}
                 {isPlaying && (
                   <div className="absolute inset-0 rounded flex items-end justify-center gap-[2px] pb-1.5 bg-black/30 backdrop-blur-[1px] opacity-0 hover:opacity-100 transition-opacity">
                     {[1,2,3,4,5].map((i) => (
@@ -616,7 +616,7 @@ export default function PlayerFooter({
           )}
         </div>
 
-        {/* Desktop center controls */}
+        {}
         <div className="hidden md:flex flex-col items-center justify-center w-[40%] max-w-[722px] gap-2">
           <div className="flex items-center gap-4 lg:gap-6">
             <button
@@ -679,11 +679,10 @@ export default function PlayerFooter({
           </div>
         </div>
 
-        {/* Mobile right controls */}
+        {}
         <div className="flex md:hidden items-center justify-end gap-0.5 sm:gap-1 flex-shrink-0 pl-1 sm:pl-2">
           {!song ? (
-            /* Empty state — just show a simple queue icon */
-            <button
+                        <button
               onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
               className="p-2 text-neutral-500 hover:text-white transition-colors touch-manipulation"
               aria-label="View Queue"
@@ -764,7 +763,7 @@ export default function PlayerFooter({
           )}
         </div>
 
-        {/* Desktop right controls */}
+        {}
         <div className="hidden md:flex items-center justify-end gap-1.5 lg:gap-2 xl:gap-3 w-[34%] min-w-[240px] lg:min-w-[280px] group">
           {song ? (
             <>
@@ -824,8 +823,7 @@ export default function PlayerFooter({
               </button>
             </>
           ) : (
-            /* Empty state — just show queue + volume */
-            <button
+                        <button
               onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
               className="text-neutral-500 hover:text-white transition-colors"
               aria-label="View Queue"
@@ -921,8 +919,7 @@ export default function PlayerFooter({
         onClose={() => setShowShortcutsHelp(false)}
       />
 
-      {/* Hidden audio engine. Kept offscreen (but non-zero size) so YouTube keeps
-          playing audio. Play/pause follows the shared `isPlaying` state. */}
+      {}
       <div
         style={{
           position: "absolute",

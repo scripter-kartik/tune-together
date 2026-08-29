@@ -9,7 +9,7 @@ export async function GET(req) {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     await connectDB();
-    // Owned + collaborative-with-me.
+    
     const playlists = await Playlist.find({
       $or: [{ userId: user.id }, { collaborators: user.id }],
     }).sort({ createdAt: -1 });
@@ -74,7 +74,7 @@ export async function PUT(req) {
     }
 
     if (action === "add") {
-      // Prevent duplicates
+      
       if (!playlist.songs.find((s) => String(s.id) === String(song.id))) {
         playlist.songs.push(song);
         playlist.markModified("songs");
@@ -86,11 +86,11 @@ export async function PUT(req) {
       playlist.songs = playlist.songs.filter((s) => String(s.id) !== String(song.id));
       playlist.markModified("songs");
     } else if (action === "rename" && isOwner) {
-      // Only the owner may rename (like Spotify).
+      
       if (!name || !name.trim()) return Response.json({ error: "Missing name" }, { status: 400 });
       playlist.name = name.trim();
     } else if (action === "addCollaborator" && isOwner) {
-      const collaboratorId = song; // reuse `song` field to carry the Clerk id
+      const collaboratorId = song; 
       if (!collaboratorId) return Response.json({ error: "Missing collaborator" }, { status: 400 });
       const exists = await User.findOne({ clerkId: collaboratorId }).lean();
       if (!exists) return Response.json({ error: "User not found" }, { status: 404 });
@@ -129,7 +129,7 @@ export async function DELETE(req) {
     if (!id) return Response.json({ error: "Missing playlist id" }, { status: 400 });
 
     await connectDB();
-    // Only the owner may delete.
+    
     await Playlist.findOneAndDelete({ _id: id, userId: user.id });
 
     return Response.json({ success: true });

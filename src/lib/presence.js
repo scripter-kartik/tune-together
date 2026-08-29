@@ -1,5 +1,5 @@
-// Derive a coarse online status from a user's last-active timestamp — the same
-// thresholds the active-users endpoint uses, kept in one place.
+
+
 export function onlineStatusFrom(lastActive) {
   const minutes = (Date.now() - new Date(lastActive || 0).getTime()) / 60000;
   if (minutes < 5) return "online";
@@ -7,7 +7,7 @@ export function onlineStatusFrom(lastActive) {
   return "offline";
 }
 
-// Shape a User document into the compact profile the friends UI consumes.
+
 export function toPublicProfile(user) {
   return {
     clerkId: user.clerkId,

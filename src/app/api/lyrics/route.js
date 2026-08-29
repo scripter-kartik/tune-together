@@ -2,18 +2,18 @@ import { connectDB } from "@/lib/db";
 import Lyrics from "@/lib/models/Lyrics";
 import { getYTMusic } from "@/lib/ytmusic";
 
-// Fetch lyrics for a track from up to three free sources, in order of quality:
-//   1. LRCLIB  — synced (LRC) + plain lyrics, no key. Most entries are
-//      community re-syncs of Spotify's own lyrics, so coverage is high.
-//   2. YouTube Music — plain lyrics via getLyrics(videoId). A genuinely
-//      different database, so it fills most LRCLIB gaps.
-//   3. Genius  — plain lyrics, as a last resort. Best-effort only: genius.com
-//      blocks some server IPs, so this tier silently no-ops where it's blocked.
-// Results are cached in MongoDB keyed by the track id; the provider that won
-// is stored so the UI can attribute correctly on repeat requests.
+
+
+
+
+
+
+
+
+
 
 const LRCLIB_HEADERS = {
-  // LRCLIB asks clients to identify themselves.
+  
   "User-Agent": "tune-together (https://github.com/scripter-kartik/tune-together)",
 };
 
@@ -43,15 +43,15 @@ async function lrclibSearch({ title, artist }) {
   if (!res.ok) return null;
   const results = await res.json();
   if (!Array.isArray(results) || results.length === 0) return null;
-  // Prefer the first result that actually has synced lyrics.
+  
   return results.find((r) => r.syncedLyrics) || results[0];
 }
 
-// Best-effort YouTube Music lyrics for a track (plain lines only).
-//
-// Fast path: the client already knows the YouTube source (YouTube-sourced songs
-// carry a `youtubeId`), so fetch its lyrics directly. Slow path: otherwise find
-// the song on YouTube Music and try the top few hits.
+
+
+
+
+
 async function fetchYoutubeLyrics({ title, artist, videoId }) {
   const getLines = async (vid) => {
     if (!vid) return null;
@@ -88,8 +88,8 @@ async function fetchYoutubeLyrics({ title, artist, videoId }) {
   return null;
 }
 
-// Best-effort Genius lyrics (plain only). Loaded lazily so the package is only
-// pulled in when a track actually falls through to this tier.
+
+
 async function fetchGeniusLyrics(title, artist) {
   if (!title) return null;
   try {
@@ -101,7 +101,7 @@ async function fetchGeniusLyrics(title, artist) {
       if (lyrics && lyrics.trim()) return lyrics.trim();
     }
   } catch {
-    // Genius is blocked on some networks (Cloudflare 403). Expected, not logged.
+    
   }
   return null;
 }
@@ -119,7 +119,7 @@ export async function GET(req) {
     return Response.json({ error: "id and title are required" }, { status: 400 });
   }
 
-  // 1. Cache hit (best-effort).
+  
   try {
     await connectDB();
     const cached = await Lyrics.findOne({ deezerId: String(deezerId) });
@@ -135,8 +135,8 @@ export async function GET(req) {
     console.error("lyrics: cache lookup failed", err);
   }
 
-  // 2. Cache miss — LRCLIB first (get + search in parallel, each can take a
-  // few seconds so together they roughly halve the cold latency).
+  
+  
   let record = null;
   try {
     const [getRes, searchRes] = await Promise.allSettled([
@@ -146,7 +146,7 @@ export async function GET(req) {
     const getVal = getRes.status === "fulfilled" ? getRes.value : null;
     const searchVal = searchRes.status === "fulfilled" ? searchRes.value : null;
 
-    // Prefer whichever result actually has time-synced lyrics.
+    
     if (getVal?.syncedLyrics) record = getVal;
     else if (searchVal?.syncedLyrics) record = searchVal;
     else record = getVal || searchVal;
@@ -158,8 +158,8 @@ export async function GET(req) {
   let plainLyrics = record?.plainLyrics || null;
   let provider = record ? "lrclib" : null;
 
-  // 3. LRCLIB came up empty — try YouTube Music and Genius as fallbacks, in
-  // parallel. YouTube first, since it's the more reliable of the two.
+  
+  
   if (!syncedLyrics && !plainLyrics) {
     const [ytRes, geniusRes] = await Promise.allSettled([
       fetchYoutubeLyrics({ title, artist, videoId: youtubeId }),
@@ -177,7 +177,7 @@ export async function GET(req) {
     }
   }
 
-  // 4. Persist if we found anything (best-effort).
+  
   if (syncedLyrics || plainLyrics) {
     try {
       await Lyrics.findOneAndUpdate(
@@ -200,8 +200,8 @@ export async function GET(req) {
   return jsonCached({ syncedLyrics, plainLyrics, provider });
 }
 
-// JSON response with long-lived caching so the browser/CDN serves repeat
-// requests for the same track instantly (lyrics never change).
+
+
 function jsonCached(body) {
   return Response.json(body, {
     headers: {

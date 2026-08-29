@@ -6,7 +6,7 @@ import { resolveCover, coverError } from "../lib/coverPlaceholder";
 import LyricsSyncAdjuster from "./LyricsSyncAdjuster";
 import { useLyricsOffset } from "@/hooks/useLyricsOffset";
 
-// Parse LRC synced lyrics ("[mm:ss.xx] text") into [{ time, text }], sorted.
+
 function parseLRC(lrc) {
   const out = [];
   const re = /\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g;
@@ -40,14 +40,14 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
   const programmaticScrollRef = useRef(false);
   const programmaticScrollTimerRef = useRef(null);
 
-  // Per-song lyric timing offset (persisted). Positive = lyrics later.
+  
   const { offset: lyricsOffset, adjust: adjustLyricsOffset, reset: resetLyricsOffset } =
     useLyricsOffset(song?.id);
 
-  // Portals need the DOM — only render after mount (avoids SSR crash).
+  
   useEffect(() => setMounted(true), []);
 
-  // Reset the "copied" flourish when switching songs.
+  
   useEffect(() => setCopied(false), [song?.id]);
 
   const synced = useMemo(
@@ -55,7 +55,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
     [data]
   );
 
-  // Index of the currently-sung line (applies the user's timing offset).
+  
   const activeIndex = useMemo(() => {
     if (!synced || synced.length === 0) return -1;
     let idx = -1;
@@ -171,10 +171,10 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
         : "LRCLIB";
 
   const overlay = (
-    // Sits above the footer (70px mobile / 90px desktop) so the playback bar
-    // with the current song stays visible — like Spotify's lyrics view.
+    
+    
     <div className="fixed inset-x-0 top-0 bottom-[70px] md:bottom-[90px] z-[9999] flex flex-col overflow-hidden bg-[#0b0b0b]">
-      {/* Immersive blurred album-art backdrop */}
+      {}
       {cover && (
         <>
           <img referrerPolicy="no-referrer"
@@ -187,8 +187,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
         </>
       )}
 
-      {/* Header — pad the top for the mobile status bar / notch (safe area) so
-          the title and buttons aren't clipped against the screen edge. */}
+      {}
       <div
         className="relative flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 md:px-5 py-3 sm:py-4 flex-shrink-0"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
@@ -235,7 +234,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
         </div>
       </div>
 
-      {/* Body */}
+      {}
       <div
         ref={bodyRef}
         className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 sm:px-6 md:px-10"

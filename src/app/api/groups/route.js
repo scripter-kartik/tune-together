@@ -7,7 +7,7 @@ import User from "@/lib/models/User";
 import { areFriends, rateLimit } from "@/lib/chatGuards";
 import { isBlockedEitherWay } from "@/lib/models/Block";
 
-// List my groups, newest activity first, with last-message preview metadata.
+
 export async function GET() {
   try {
     const user = await currentUser();
@@ -20,7 +20,7 @@ export async function GET() {
       .sort({ updatedAt: -1 })
       .lean();
 
-    // Hydrate member profiles for avatars/names in the sidebar.
+    
     const memberIds = [...new Set(groups.flatMap((g) => g.members.map((m) => m.clerkId)))];
     const users = memberIds.length
       ? await User.find({ clerkId: { $in: memberIds } })
@@ -41,10 +41,10 @@ export async function GET() {
   }
 }
 
-// Create a group: { name, icon?, memberIds, wrappedKeys }
-// memberIds must all be my friends (WhatsApp model — you can only add people
-// you know). wrappedKeys: [{ memberId, wrappedKey, iv }] — the E2EE group key
-// wrapped for every member (including me), produced client-side.
+
+
+
+
 export async function POST(req) {
   try {
     const user = await currentUser();
@@ -70,7 +70,7 @@ export async function POST(req) {
 
     await connectDB();
 
-    // Safety: every invited member must be an accepted friend and not blocked.
+    
     const others = [...new Set(memberIds.filter((id) => id !== user.id))];
     for (const id of others) {
       if (!(await areFriends(user.id, id))) {
@@ -95,7 +95,7 @@ export async function POST(req) {
       ],
     });
 
-    // Store the wrapped group key for each member (server can't unwrap these).
+    
     const allMemberIds = new Set([user.id, ...others]);
     const keyDocs = wrappedKeys
       .filter((k) => allMemberIds.has(k.memberId) && k.wrappedKey && k.iv)

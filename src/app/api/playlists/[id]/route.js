@@ -2,13 +2,13 @@ import { connectDB } from "@/lib/db";
 import Playlist from "@/lib/models/Playlist";
 import { hydratePlaylists } from "@/lib/playlistHydrate";
 
-// GET /api/playlists/[id] — fetch a single playlist by id.
-//
-// Public read: a playlist is shareable/linkable (e.g. from a user profile), so
-// anyone can view it — the same way Spotify lets anyone open a playlist URL.
-// All mutation is still gated by auth + ownership in the main route. PlaylistView
-// uses this to always render fresh data instead of whatever object the sidebar
-// happened to pass in, so add/remove/rename show up immediately.
+
+
+
+
+
+
+
 export async function GET(_req, { params }) {
   try {
     const { id } = await params;

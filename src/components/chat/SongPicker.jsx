@@ -11,11 +11,6 @@ function fmtDuration(s) {
   return `${m}:${sec}`;
 }
 
-/**
- * Floating song search popover for the chat composer. Debounced /api/search,
- * plus a one-tap "share what's playing" row when `nowPlaying` is set.
- * onPick(song) closes the picker and hands the song to the composer.
- */
 export default function SongPicker({ nowPlaying, onPick, onClose }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -85,7 +80,7 @@ export default function SongPicker({ nowPlaying, onPick, onClose }) {
   return (
     <div className="absolute bottom-full left-0 right-0 mb-2 z-20 px-0">
       <div className="bg-[#161616]/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl overflow-hidden animate-fade-up">
-        {/* Search bar */}
+        {}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
           <Search className="w-4 h-4 text-neutral-500 flex-shrink-0" />
           <input
@@ -105,7 +100,7 @@ export default function SongPicker({ nowPlaying, onPick, onClose }) {
         </div>
 
         <div className="max-h-72 overflow-y-auto scrollbar p-1.5">
-          {/* One-tap share of whatever is playing right now */}
+          {}
           {nowPlaying && !query.trim() && (
             <Row song={nowPlaying} badge="Playing" />
           )}

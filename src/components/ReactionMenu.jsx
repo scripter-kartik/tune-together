@@ -57,7 +57,7 @@ export default function ReactionMenu({ socketRef, roomId, disabled }) {
               {emoji}
             </button>
           ))}
-          {/* small triangle pointer */}
+          {}
           <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#282828]" />
         </div>
       )}

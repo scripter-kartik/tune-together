@@ -134,7 +134,7 @@ export default function CollaboratorsModal({ playlist, onClose, onUpdate }) {
             </p>
           )}
 
-          {/* Current collaborators */}
+          {}
           <div>
             <p className="text-xs uppercase tracking-wider text-neutral-500 font-semibold mb-2">
               Contributors
@@ -165,7 +165,7 @@ export default function CollaboratorsModal({ playlist, onClose, onUpdate }) {
             </div>
           </div>
 
-          {/* Add friends */}
+          {}
           {isOwner && (
             <div>
               <p className="text-xs uppercase tracking-wider text-neutral-500 font-semibold mb-2">

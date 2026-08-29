@@ -32,7 +32,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            // Deduplicate (user may appear as both owner + collaborator)
+            
             const seen = new Set();
             const unique = (data.playlists || []).filter((p) => {
               const key = p._id || p.id;
@@ -120,7 +120,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
         </div>
       </div>
 
-      {/* Content */}
+      {}
       <div className="flex-1 overflow-y-auto px-2 pb-4">
         <div className="flex flex-col gap-0.5">
           {isCreating && (

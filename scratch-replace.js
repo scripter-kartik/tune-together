@@ -24,7 +24,7 @@ for (const file of files) {
   let content = fs.readFileSync(file, 'utf8');
   let changed = false;
   
-  // Basic replacement: find `<img ` and replace it, but only if it doesn't already have referrerPolicy
+  
   const regex = /<img(?![^>]*referrerPolicy)/g;
   if (regex.test(content)) {
     content = content.replace(regex, '<img referrerPolicy="no-referrer"');

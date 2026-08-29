@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 * {
@@ -24,7 +23,6 @@ html {
   overflow: hidden;
 }
 
-/* Theme CSS variables. ThemeSwitcher overwrites these before first paint. */
 :root {
   color-scheme: dark;
   --tt-accent: #1ed760;
@@ -56,7 +54,6 @@ body,
   transition: background-color 0.28s ease, border-color 0.28s ease, color 0.28s ease;
 }
 
-/* Theme overrides: remap the app's green accent utilities to the selected theme. */
 .bg-green-500   { background-color: var(--tt-accent) !important; }
 .bg-green-400   { background-color: var(--tt-accent) !important; filter: brightness(1.1); }
 .bg-green-600   { background-color: var(--tt-accent) !important; filter: brightness(0.9); }
@@ -105,7 +102,6 @@ body,
 .text-indigo-300 { color: var(--tt-accent) !important; filter: brightness(1.3); }
 .bg-indigo-500\/20 { background-color: color-mix(in srgb, var(--tt-accent) 20%, transparent) !important; }
 
-/* Override common hardcoded dark grays with theme surfaces. */
 .bg-black { background-color: var(--tt-rail) !important; }
 .bg-\[\#121212\] { background-color: var(--tt-bg) !important; }
 .bg-\[\#121212\]\/80 { background-color: color-mix(in srgb, var(--tt-bg) 80%, transparent) !important; }
@@ -121,10 +117,6 @@ body,
 .border-\[\#121212\] { border-color: var(--tt-bg) !important; }
 .border-t-\[\#282828\] { border-top-color: var(--tt-surface-hover) !important; }
 
-/* ─── Soften white borders into theme-consistent hairlines ─────────────────
-   These Tailwind utilities hardcode rgba(255,255,255,N) which always reads as
-   a "white line" on dark surfaces — especially visible when the theme colour
-   isn't green.  We remap every variant to use the theme border token instead. */
 .border-white\/5,
 .border-white\/10,
 .border-white\/15,
@@ -155,7 +147,6 @@ body,
 .to-black { --tw-gradient-to: var(--tt-rail) var(--tw-gradient-to-position) !important; }
 
 
-/* Spotify-like scrollbar — subtle theme-tinted */
 html, body, * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
@@ -179,7 +170,6 @@ html, body, * {
   background-color: rgba(255, 255, 255, 0.25);
 }
 
-/* Hide scrollbar for horizontal scroll areas */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -188,12 +178,10 @@ html, body, * {
   display: none;
 }
 
-/* Spotify-green glow for active elements */
 .glow-green {
   box-shadow: 0 0 20px color-mix(in srgb, var(--tt-accent) 30%, transparent);
 }
 
-/* Smooth range input styling */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -205,7 +193,6 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
 }
 
-/* Slide-in animations */
 @keyframes slideInLeft {
   from { transform: translateX(-100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
@@ -242,7 +229,6 @@ input[type="range"]::-webkit-slider-thumb {
   animation: fadeInUp 0.3s ease-out;
 }
 
-/* Equalizer animation bars */
 @keyframes equalize {
   0%, 100% { height: 4px; }
   50% { height: 14px; }
@@ -258,7 +244,6 @@ input[type="range"]::-webkit-slider-thumb {
   to { transform: rotate(360deg); }
 }
 
-/* Friends empty-state SVG animations */
 @keyframes tt-sway3d {
   0%, 100% { transform: perspective(500px) rotateY(-5deg) rotateX(2deg); }
   50% { transform: perspective(500px) rotateY(5deg) rotateX(-2deg); }
@@ -299,13 +284,11 @@ input[type="range"]::-webkit-slider-thumb {
   50% { opacity: 0.8; transform: scale(1.25); }
 }
 
-/* Label thumps on the beat, in time with the EQ bars */
 @keyframes tt-beat {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.14); }
 }
 
-/* Notes bubble up out of the equalizer and fade away */
 @keyframes tt-rise {
   0% { transform: translateY(0) scale(0.8); opacity: 0; }
   15% { opacity: 0.9; }
@@ -313,19 +296,16 @@ input[type="range"]::-webkit-slider-thumb {
   100% { transform: translateY(-52px) scale(1.1); opacity: 0; }
 }
 
-/* Tonearm gently rocks as it tracks the groove */
 @keyframes tt-arm {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(3deg); }
 }
 
-/* Light sheen sweeping around the vinyl surface */
 @keyframes tt-sheen {
   from { transform: rotate(0deg); }
   to { transform: rotate(-360deg); }
 }
 
-/* Hero aurora blobs — drift + breathe so the theme glows feel alive */
 @keyframes tt-drift {
   0%   { transform: translate3d(0, 0, 0) scale(1); }
   50%  { transform: translate3d(28px, -20px, 0) scale(1.12); }
@@ -337,7 +317,6 @@ input[type="range"]::-webkit-slider-thumb {
   will-change: transform;
 }
 
-/* Hero floating notes — bubble up and fade away */
 .tt-hero-note {
   animation: tt-rise 9s ease-out infinite;
   will-change: transform, opacity;
@@ -360,7 +339,6 @@ input[type="range"]::-webkit-slider-thumb {
   transform-origin: 100px 78px;
 }
 
-/* Counter-rotate so the orbiting notes stay upright while circling */
 .tt-empty-orbit-item {
   animation: tt-counter-orbit 10s linear infinite;
   transform-origin: center;
@@ -431,13 +409,11 @@ input[type="range"]::-webkit-slider-thumb {
   }
 }
 
-/* Ensure no overflow on root */
 #__next, main {
   height: 100%;
   overflow: hidden;
 }
 
-/* Global smoothness improvements */
 * {
   -webkit-tap-highlight-color: transparent;
 }
@@ -461,12 +437,10 @@ input[type="range"]::-webkit-slider-thumb {
   background-color: rgba(255, 255, 255, 0.18);
 }
 
-/* Touch-friendly tap targets — ensure minimum 44px for interactive elements */
 button, a, [role="button"] {
   touch-action: manipulation;
 }
 
-/* Smooth transition utility — applied to interactive containers */
 .transition-smooth {
   transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
               color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
@@ -476,13 +450,11 @@ button, a, [role="button"] {
               border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* GPU-accelerated animations */
 .gpu-accelerated {
   transform: translateZ(0);
   will-change: transform, opacity;
 }
 
-/* Smooth hover scale */
 .hover-scale {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -490,29 +462,22 @@ button, a, [role="button"] {
   transform: scale(1.02) translateZ(0);
 }
 
-/* Button press effect */
 .active-press:active {
   transform: scale(0.98) translateZ(0);
 }
 
-/* Smooth focus rings */
 *:focus-visible {
   outline: 2px solid var(--tt-accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* The search pill already signals focus with a background change,
-   so don't draw a rectangular ring around it. */
 input[data-search-input]:focus,
 input[data-search-input]:focus-visible {
   outline: none;
   outline-offset: 0;
 }
 
-/* ------------------------------------------------------------------ *
- * Equalizer vertical band sliders
- * ------------------------------------------------------------------ */
 .eq-band-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -554,18 +519,13 @@ input[data-search-input]:focus-visible {
   background: transparent;
 }
 
-/* ------------------------------------------------------------------ *
- * Mobile & Touch Optimizations
- * ------------------------------------------------------------------ */
 
-/* Smooth scroll on iOS */
 @supports (-webkit-overflow-scrolling: touch) {
   * {
     -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Better touch targets */
 @media (hover: none) and (pointer: coarse) {
   button, a, [role="button"], [onclick] {
     min-height: 44px;
@@ -573,23 +533,20 @@ input[data-search-input]:focus-visible {
   }
 }
 
-/* Mobile-specific smooth animations */
 @media (max-width: 768px) {
   * {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
   
-  /* Faster animations on mobile */
-  .animate-slide-up,
+    .animate-slide-up,
   .animate-slide-left,
   .animate-slide-right,
   .animate-fade-up {
     animation-duration: 0.25s !important;
   }
   
-  /* Improve scroll performance */
-  .overflow-y-auto,
+    .overflow-y-auto,
   .overflow-x-auto,
   .overflow-auto {
     -webkit-overflow-scrolling: touch;
@@ -597,15 +554,12 @@ input[data-search-input]:focus-visible {
   }
 }
 
-/* Landscape mobile optimizations */
 @media (max-width: 768px) and (orientation: landscape) {
   body {
     height: 100vh;
-    height: 100dvh; /* dynamic viewport height */
-  }
+    height: 100dvh;   }
 }
 
-/* Safe area insets for notched devices */
 @supports (padding: max(0px)) {
   body {
     padding-left: max(0px, env(safe-area-inset-left));

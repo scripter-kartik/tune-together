@@ -11,16 +11,16 @@ export function useConfirm() {
   return ctx;
 }
 
-// Global replacement for the native `confirm()`. Wrap the app in
-// <ConfirmProvider> and call:
-//
-//   const confirmAction = useConfirm();
-//   const ok = await confirmAction({
-//     title: "Delete playlist?",
-//     message: "This can't be undone.",
-//     confirmText: "Delete",
-//     tone: "danger",
-//   });
+
+
+
+
+
+
+
+
+
+
 export function ConfirmProvider({ children }) {
   const [dialog, setDialog] = useState(null);
   const resolverRef = useRef(null);
@@ -33,7 +33,7 @@ export function ConfirmProvider({ children }) {
         message: options.message || "",
         confirmText: options.confirmText || "Confirm",
         cancelText: options.cancelText || "Cancel",
-        tone: options.tone || "default", // "default" | "danger"
+        tone: options.tone || "default", 
       });
     });
   }, []);
@@ -45,7 +45,7 @@ export function ConfirmProvider({ children }) {
     resolve?.(result);
   }, []);
 
-  // Escape cancels the dialog.
+  
   useEffect(() => {
     if (!dialog) return;
     const onKey = (e) => {

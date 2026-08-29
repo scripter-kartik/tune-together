@@ -13,10 +13,6 @@ function coverOf(song) {
   );
 }
 
-/**
- * Build compact "shortcut" collections (Spotify top-of-home style) from songs.
- * Each tile = square art + a short bold title.
- */
 function buildCollections(songs) {
   if (!songs?.length) return [];
 
@@ -45,7 +41,7 @@ function buildCollections(songs) {
     tiles.push({ id: 'feat-' + i, title: d.title, cover: coverOf(sel[0]), songs: sel });
   });
 
-  // Fill the rest of the row with per-artist shortcuts.
+  
   artistGroups.slice(0, 4).forEach((g, i) => {
     tiles.push({
       id: 'art-' + i,
@@ -63,7 +59,7 @@ export default function FeaturedCards({ songs, onPlay, onQueue, onOpenCollection
 
   const playCollection = (col) => {
     if (!col?.songs?.length) return;
-    // Play the mix with its songs as the context so Next/Prev walk it.
+    
     onPlay(col.songs[0], col.songs);
   };
 

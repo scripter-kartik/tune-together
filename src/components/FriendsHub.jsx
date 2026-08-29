@@ -62,8 +62,8 @@ export default function FriendsHub({ roomId }) {
     } catch {}
   }, []);
 
-  // Keep the badge live even while the modal is closed: fetch on mount, poll,
-  // and refresh instantly when a friend pings us over the socket.
+  
+  
   useEffect(() => {
     if (!user?.id) return;
     fetchMe();
@@ -83,7 +83,7 @@ export default function FriendsHub({ roomId }) {
     };
   }, [user?.id, fetchMe, fetchFriends]);
 
-  // While open, poll a little faster so presence/now-playing feels live.
+  
   useEffect(() => {
     if (!open) return;
     fetchFriends();
@@ -231,7 +231,7 @@ export default function FriendsHub({ roomId }) {
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setOpen(false)} />
 
           <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-[#121212] border border-[var(--tt-border)] shadow-2xl overflow-hidden animate-fade-up">
-            {/* Header */}
+            {}
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--tt-border)]">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-green-500" />
@@ -246,7 +246,7 @@ export default function FriendsHub({ roomId }) {
               </button>
             </div>
 
-            {/* Tabs */}
+            {}
             <div className="flex gap-1 px-3 pt-3">
               {[
                 { id: "friends", label: "Friends", count: data.friends.length },
@@ -271,9 +271,9 @@ export default function FriendsHub({ roomId }) {
               ))}
             </div>
 
-            {/* Body */}
+            {}
             <div className="flex-1 overflow-y-auto px-3 py-3 min-h-[280px]">
-              {/* username nudge */}
+              {}
               {me && !me.username && tab !== "add" && (
                 <button
                   onClick={() => setTab("add")}
@@ -407,7 +407,7 @@ export default function FriendsHub({ roomId }) {
 
               {tab === "add" && (
                 <div className="space-y-6 pt-1">
-                  {/* Your handle */}
+                  {}
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-neutral-500 font-bold mb-2">
                       Your username
@@ -447,7 +447,7 @@ export default function FriendsHub({ roomId }) {
                     )}
                   </div>
 
-                  {/* Add a friend */}
+                  {}
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-neutral-500 font-bold mb-2">
                       Add a friend

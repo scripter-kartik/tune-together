@@ -1,6 +1,6 @@
-// Standalone Socket.IO server for TuneTogether
-// Deploy separately on Render/Railway/Fly.io
-// Run: npm install && npm start
+
+
+
 
 const { Server } = require("socket.io");
 const { createServer } = require("http");
@@ -14,7 +14,7 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-// ---- Models ----
+
 const GroupSchema = new mongoose.Schema({
   linkedRoomId: { type: String, unique: true },
   session: {
@@ -27,13 +27,13 @@ const GroupSchema = new mongoose.Schema({
 });
 const Group = mongoose.model("Group", GroupSchema);
 
-// ---- In-memory state ----
+
 const rooms = new Map();
 const userSockets = new Map();
 const debounceTimers = new Map();
 const now = () => Date.now();
 
-// Rate limit: 25 events / 10s per socket
+
 const socketRateOk = (socket) => {
   const t = now();
   if (!socket._rl || t > socket._rl.resetAt) {
@@ -43,7 +43,7 @@ const socketRateOk = (socket) => {
   return ++socket._rl.count <= 25;
 };
 
-// ---- Persistence ----
+
 function schedulePersist(roomId, room) {
   if (debounceTimers.has(roomId)) {
     clearTimeout(debounceTimers.get(roomId));
@@ -79,7 +79,7 @@ function schedulePersist(roomId, room) {
   }, 1000));
 }
 
-// ---- Room hydration ----
+
 const getRoom = async (roomId) => {
   if (!rooms.has(roomId)) {
     const newRoom = {
@@ -98,7 +98,7 @@ const getRoom = async (roomId) => {
         if (s.currentSong) newRoom.currentSong = s.currentSong;
         if (s.queue) newRoom.playlist = s.queue;
         if (s.position !== undefined) newRoom.position = s.position;
-        newRoom.isPlaying = false; // Always resume paused
+        newRoom.isPlaying = false; 
       }
     } catch (err) {
       console.error(`Failed to hydrate room ${roomId}:`, err);
@@ -111,9 +111,9 @@ const getRoom = async (roomId) => {
   return rooms.get(roomId);
 };
 
-// ---- HTTP + Socket.IO ----
+
 const httpServer = createServer((req, res) => {
-  // Health check endpoint for Render/Railway
+  
   if (req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok", rooms: rooms.size, users: userSockets.size }));
@@ -153,7 +153,7 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("user-count", room.users.size);
   });
 
-  // DM relay (E2E encrypted - server just passes through)
+  
   socket.on("send-dm", ({ recipientId, message, ciphertext, iv, replyToId, messageId, senderName, senderImage, type, roomId }) => {
     if (!socketRateOk(socket)) return;
     const recipientSocketId = userSockets.get(recipientId);
@@ -187,7 +187,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Group chat
+  
   socket.on("join-group-channels", (groupIds) => {
     if (!Array.isArray(groupIds)) return;
     for (const id of groupIds.slice(0, 200)) {
@@ -256,7 +256,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // ---- Queue / Playback ----
+  
   socket.on("toggle-play", async ({ roomId, isPlaying, position }) => {
     const room = await getRoom(roomId);
     room.isPlaying = !!isPlaying;
@@ -431,7 +431,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ---- Connect to MongoDB, then start server ----
+
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB");
@@ -445,7 +445,7 @@ mongoose.connect(MONGODB_URI)
     process.exit(1);
   });
 
-// Graceful shutdown
+
 process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down...");
   for (const timer of debounceTimers.values()) clearTimeout(timer);

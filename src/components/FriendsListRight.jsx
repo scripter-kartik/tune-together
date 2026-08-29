@@ -96,50 +96,50 @@ export default function FriendsListRight() {
                 </linearGradient>
               </defs>
 
-              {/* Breathing glow + expanding sound ripples behind the vinyl */}
+              {}
               <circle cx="100" cy="78" r="58" fill="#10b981" opacity="0.08" className="tt-empty-glow" />
               <circle cx="100" cy="78" r="40" stroke="#10b981" strokeWidth="1.5" className="tt-empty-ripple" />
               <circle cx="100" cy="78" r="40" stroke="#10b981" strokeWidth="1.5" className="tt-empty-ripple" style={{ animationDelay: '-1.5s' }} />
 
-              {/* Vinyl record (spins) */}
+              {}
               <g className="tt-empty-vinyl">
                 <circle cx="100" cy="78" r="38" fill="url(#ttVinylShine)" stroke="#052012" strokeWidth="1" />
-                {/* Grooves */}
+                {}
                 <circle cx="100" cy="78" r="32" stroke="#1f5137" strokeWidth="0.75" opacity="0.9" />
                 <circle cx="100" cy="78" r="27" stroke="#1f5137" strokeWidth="0.75" opacity="0.7" />
                 <circle cx="100" cy="78" r="22" stroke="#1f5137" strokeWidth="0.75" opacity="0.9" />
                 <circle cx="100" cy="78" r="17" stroke="#1f5137" strokeWidth="0.75" opacity="0.7" />
-                {/* Light streak so the spin reads */}
+                {}
                 <path d="M100 44a34 34 0 0 1 24 10" stroke="#3e6b52" strokeWidth="2.5" strokeLinecap="round" opacity="0.8" />
                 <path d="M76 102a34 34 0 0 1-10-24" stroke="#2e5440" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
               </g>
 
-              {/* Light sheen sweeping over the surface (counter-rotates for depth) */}
+              {}
               <g className="tt-empty-sheen" opacity="0.35">
                 <path d="M100 42a36 36 0 0 1 30 16" stroke="#6ee7b7" strokeWidth="5" strokeLinecap="round" opacity="0.25" />
                 <path d="M100 42a36 36 0 0 1 30 16" stroke="#a7f3d0" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
               </g>
 
-              {/* Center label thumps on the beat */}
+              {}
               <g className="tt-empty-beat">
                 <circle cx="100" cy="78" r="12" fill="url(#ttLabel)" />
                 <circle cx="100" cy="78" r="2.5" fill="#06281a" />
-                {/* Tiny note on the label */}
+                {}
                 <path d="M97.5 82v-6l5-1.5v6" stroke="#06281a" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
               </g>
 
-              {/* Tonearm resting on the record, rocking as it tracks */}
+              {}
               <g className="tt-empty-arm">
                 <path d="M156 30 L156 46 Q156 52 151 55 L132 66" stroke="#134e33" strokeWidth="3.5" strokeLinecap="round" fill="none" />
                 <path d="M156 30 L156 46 Q156 52 151 55 L132 66" stroke="#34d399" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.6" />
-                {/* Headshell + stylus */}
+                {}
                 <rect x="126" y="62" width="10" height="7" rx="2" transform="rotate(-30 131 65.5)" fill="#059669" />
-                {/* Pivot base */}
+                {}
                 <circle cx="156" cy="30" r="5.5" fill="#134e33" />
                 <circle cx="156" cy="30" r="2.5" fill="#34d399" />
               </g>
 
-              {/* Music notes orbiting the record (counter-rotated to stay upright) */}
+              {}
               <g className="tt-empty-orbit">
                 <g className="tt-empty-orbit-item">
                   <path d="M100 22v-9l8-2.5v9" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -157,7 +157,7 @@ export default function FriendsListRight() {
                 </g>
               </g>
 
-              {/* Equalizer bars dancing under the record */}
+              {}
               <g>
                 <rect x="70" y="126" width="5" height="18" rx="2.5" fill="#10b981" className="tt-empty-eq" />
                 <rect x="80" y="126" width="5" height="18" rx="2.5" fill="#34d399" className="tt-empty-eq" style={{ animationDelay: '-0.2s' }} />
@@ -167,7 +167,7 @@ export default function FriendsListRight() {
                 <rect x="120" y="126" width="5" height="18" rx="2.5" fill="#34d399" className="tt-empty-eq" style={{ animationDelay: '-0.1s' }} />
               </g>
 
-              {/* Notes bubbling up out of the equalizer */}
+              {}
               <g>
                 <g className="tt-empty-rise">
                   <path d="M74 124v-6l4.5-1.4v6" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -185,7 +185,7 @@ export default function FriendsListRight() {
                 </g>
               </g>
 
-              {/* Twinkling sparkles */}
+              {}
               <circle cx="34" cy="36" r="2" fill="#10b981" className="tt-empty-twinkle" />
               <circle cx="168" cy="32" r="2.5" fill="#10b981" className="tt-empty-twinkle" style={{ animationDelay: '-0.7s' }} />
               <circle cx="176" cy="118" r="2" fill="#10b981" className="tt-empty-twinkle" style={{ animationDelay: '-1.4s' }} />

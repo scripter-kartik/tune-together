@@ -112,7 +112,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-none bg-[#121212] relative h-full">
-      {/* Hero Header */}
+      {}
       <div className="relative h-[300px] md:h-[400px] lg:h-[450px] w-full flex-shrink-0">
         <div className="absolute inset-0 z-0">
           {!imgError ? (
@@ -129,7 +129,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
           )}
         </div>
         
-        {/* Gradient overlays for smooth blend */}
+        {}
         <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/50 to-transparent z-10" />
         <div className="absolute inset-0 bg-black/20 z-10" />
 
@@ -157,10 +157,10 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {}
       <div className="px-6 md:px-8 bg-gradient-to-b from-black/60 to-[#121212] pb-16 min-h-screen">
         
-        {/* Sticky-ish Actions Bar */}
+        {}
         <div className="py-6 flex items-center gap-6">
           {topTracks.length > 0 && (
             <button
@@ -178,7 +178,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
           </button>
         </div>
 
-        {/* Top Tracks */}
+        {}
         {topTracks.length > 0 && (
           <section className="mt-4">
             <h2 className="text-2xl font-bold text-white mb-6 tracking-tight">Popular</h2>

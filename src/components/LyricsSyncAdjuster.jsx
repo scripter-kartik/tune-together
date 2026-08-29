@@ -3,12 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Clock, Minus, Plus, RotateCcw } from "lucide-react";
 
-const MAX_OFFSET = 15; // ± seconds clamp
+const MAX_OFFSET = 15; 
 
-/**
- * Lyric-timing offset control. Opens a panel that shifts the synced lyric
- * timing by ±0.5s steps, clamped to ±15s. Positive = lyrics later.
- */
 export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
@@ -24,7 +20,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
   }, []);
 
   const active = offset !== 0;
-  // -100..100 → marker position across the ±15s track (0 = center, on time).
+  
   const markerPct = Math.max(-100, Math.min(100, (offset / MAX_OFFSET) * 100));
   const direction = offset < 0 ? "earlier" : offset > 0 ? "later" : "on time";
 
@@ -51,7 +47,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
 
       {isOpen && (
         <div className="fixed sm:absolute bottom-20 sm:top-full left-1/2 sm:left-auto right-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 mb-2 sm:mb-0 sm:mt-2 w-[calc(100vw-2.5rem)] max-w-[280px] sm:w-64 bg-[#242424]/95 backdrop-blur border border-[var(--tt-border)] rounded-2xl shadow-2xl px-4 pb-4 pt-2.5 animate-fade-in-up z-50">
-          {/* Header — heading directly followed by the controls, no empty container */}
+          {}
           <div className="relative mb-3 flex items-center justify-center">
             <span className="flex items-center gap-1.5 leading-none text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-400">
               <Clock className="w-3.5 h-3.5" />
@@ -70,7 +66,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
             )}
           </div>
 
-          {/* Stepper */}
+          {}
           <div className="flex items-center gap-3">
             <button
               onClick={() => onAdjust(-0.5)}
@@ -105,7 +101,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
             </button>
           </div>
 
-          {/* Range indicator */}
+          {}
           <div className="relative mt-4 h-1.5 rounded-full bg-white/5">
             <div
               className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-500 shadow shadow-green-500/50 transition-all"
@@ -118,7 +114,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
             <span>+15s</span>
           </div>
 
-          {/* Help text */}
+          {}
           <p className="text-[11px] text-neutral-500 mt-3 text-center leading-snug">
             {offset < 0
               ? "Lyrics run late — nudging them earlier."

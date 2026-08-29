@@ -28,12 +28,12 @@ export default function FriendRequestBell() {
     return () => clearInterval(interval);
   }, [isSignedIn]);
 
-  // Close on outside click
+  
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
       if (btnRef.current && !btnRef.current.contains(e.target)) {
-        // Check if click is inside the portal panel
+        
         const panel = document.getElementById("tt-bell-panel");
         if (panel && panel.contains(e.target)) return;
         setOpen(false);

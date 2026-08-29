@@ -2,12 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-/**
- * Per-song lyric timing offset, persisted to localStorage.
- *
- * Positive offset = lyrics appear LATER (adds delay before the active line
- * changes); negative = lyrics appear EARLIER. Clamped to ±15s, stepped in 0.5s.
- */
 
 const CLAMP = 15;
 
@@ -18,7 +12,7 @@ function storageKey(songId) {
 export function useLyricsOffset(songId) {
   const [offset, setOffsetState] = useState(0);
 
-  // Load this song's saved offset whenever the song changes.
+  
   useEffect(() => {
     if (!songId) {
       setOffsetState(0);
@@ -48,7 +42,7 @@ export function useLyricsOffset(songId) {
     [songId, persist]
   );
 
-  // Shift by ±0.5s steps.
+  
   const adjust = useCallback(
     (delta) => {
       setOffsetState((prev) => {

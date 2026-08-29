@@ -5,17 +5,13 @@ import { X, UserPlus, UserMinus, Shield, LogOut, Trash2, Pencil, Check } from "l
 import { getSocket } from "@/lib/socket";
 import { wrapCurrentKeyForNewMember } from "@/lib/e2eeClient";
 
-/**
- * Group settings: rename (admin), add friends (admin, wraps current E2EE key
- * for them), remove/promote members (admin), leave, delete (admin).
- */
 export default function GroupSettingsModal({ me, group, onClose, onChanged, onLeft }) {
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState(group.name);
   const [addableFriends, setAddableFriends] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [confirmAction, setConfirmAction] = useState(null); // "leave" | "delete"
+  const [confirmAction, setConfirmAction] = useState(null); 
 
   const myRole = group.members.find((m) => m.clerkId === me.id)?.role;
   const amAdmin = myRole === "admin";
@@ -32,7 +28,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
         console.error(e);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [group._id, amAdmin]);
 
   const notify = (type) => {
@@ -70,7 +66,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
 
   const addMember = (friend) =>
     act(async () => {
-      // Wrap the current group key for the new member on-device.
+      
       const wrapped = await wrapCurrentKeyForNewMember(me.id, group, friend.clerkId);
       if (!wrapped) {
         setError(`${friend.name} hasn't set up secure chat yet (they need to sign in once).`);
@@ -99,7 +95,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
         body: JSON.stringify({ action: "remove", userId: clerkId }),
       });
       if (!res.ok) return setError((await res.json()).error);
-      notify("member-remove"); // key rotated server-side; admin client re-wraps on next open
+      notify("member-remove"); 
     });
 
   const promote = (clerkId) =>
@@ -131,7 +127,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
         className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header / rename */}
+        {}
         <div className="p-5 border-b border-white/5 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-green-600/20 flex items-center justify-center text-xl flex-shrink-0">
             {group.icon || "🎧"}
@@ -166,7 +162,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
         </div>
 
         <div className="p-5 space-y-5 overflow-y-auto scrollbar flex-1">
-          {/* Members */}
+          {}
           <div>
             <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
               Members — {group.members.length}
@@ -218,7 +214,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
             </div>
           </div>
 
-          {/* Add friends (admin) */}
+          {}
           {amAdmin && addableFriends.length > 0 && (
             <div>
               <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
@@ -252,7 +248,7 @@ export default function GroupSettingsModal({ me, group, onClose, onChanged, onLe
           {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
 
-        {/* Danger zone */}
+        {}
         <div className="p-5 border-t border-white/5 space-y-2">
           {confirmAction ? (
             <div className="flex items-center gap-2">

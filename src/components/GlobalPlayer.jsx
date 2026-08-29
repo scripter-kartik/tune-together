@@ -118,7 +118,7 @@ export default function GlobalPlayer() {
     };
   }, [roomId]);
 
-  // Handle Play Requests and State Requests
+  
   useEffect(() => {
     const handlePlaySong = (e) => {
       const { song, list } = e.detail;
@@ -130,7 +130,7 @@ export default function GlobalPlayer() {
         socketRef.current?.emit("change-song", { roomId, song, position: 0 });
         window.dispatchEvent(new CustomEvent("tt-global-state", { detail: { currentSong: song, isPlaying: true } }));
       } else if (e.detail && !e.detail.song && e.detail.id) {
-         // Fallback if detail is just a song object
+         
          const fallbackSong = e.detail;
          setCurrentSong(fallbackSong);
          setIsPlaying(true);
@@ -260,14 +260,14 @@ export default function GlobalPlayer() {
   if (!currentSong) {
     return (
       <div className="flex-shrink-0 z-50 bg-black border-t border-[var(--tt-divider)] relative overflow-hidden">
-        {/* Accent hairline */}
+        {}
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--tt-accent)]/40 to-transparent" />
 
-        {/* Layered ambient glows */}
+        {}
         <div className="absolute -top-20 left-1/4 w-64 h-32 rounded-full opacity-15 blur-[60px] pointer-events-none" style={{ background: "var(--tt-accent)" }} />
         <div className="absolute -top-16 right-1/4 w-48 h-24 rounded-full opacity-10 blur-[50px] pointer-events-none" style={{ background: "var(--tt-accent-2, #17c3a3)" }} />
 
-        {/* Floating waveform bars — decorative, staggered idle animation */}
+        {}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden="true">
           <div className="flex items-end gap-[3px] h-8 opacity-[0.07]">
             {[40, 65, 30, 80, 50, 70, 35, 75, 55, 45, 85, 60, 40, 70, 50].map((h, i) => (
@@ -285,9 +285,9 @@ export default function GlobalPlayer() {
         </div>
 
         <div className="relative flex items-center justify-center gap-3 sm:gap-4 h-[72px] px-6">
-          {/* Orbiting ring icon */}
+          {}
           <div className="relative flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11">
-            {/* Spinning orbit ring */}
+            {}
             <div
               className="absolute inset-0 rounded-full border border-transparent"
               style={{
@@ -295,7 +295,7 @@ export default function GlobalPlayer() {
                 animation: "spin 4s linear infinite",
               }}
             />
-            {/* Second ring — opposite direction, slower */}
+            {}
             <div
               className="absolute inset-[-3px] rounded-full opacity-30"
               style={{
@@ -303,13 +303,13 @@ export default function GlobalPlayer() {
                 animation: "spin 8s linear infinite reverse",
               }}
             />
-            {/* Icon container */}
+            {}
             <div className="absolute inset-0 m-auto w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/20 flex items-center justify-center backdrop-blur-sm">
               <Music4 className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-green-400" />
             </div>
           </div>
 
-          {/* Text */}
+          {}
           <div className="text-left leading-tight select-none">
             <p className="text-neutral-200 text-sm font-semibold tracking-tight">
               Pick something to vibe to
@@ -319,7 +319,7 @@ export default function GlobalPlayer() {
             </p>
           </div>
 
-          {/* Shuffle pill — desktop */}
+          {}
           <div className="hidden sm:flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-[var(--tt-border)] text-neutral-500 hover:bg-white/[0.07] hover:text-neutral-300 transition-all cursor-default">
             <Shuffle className="w-3 h-3" />
             <span className="text-[10px] font-medium tracking-wide uppercase">Shuffle</span>

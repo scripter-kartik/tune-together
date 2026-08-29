@@ -18,32 +18,14 @@ import {
 } from "lucide-react";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
-/**
- * iOS-style bubble message list shared by DM + group panes.
- * Mine: right-aligned green bubbles. Theirs: left-aligned dark bubbles.
- * Timestamps + ticks live inside the bubble (bottom-right, WhatsApp style);
- * consecutive messages cluster with tightened inner corners.
- *
- * Desktop: hover action bar. Mobile: long-press opens a floating action
- * sheet, swipe-right on a bubble replies to it.
- *
- * Messages: { id, senderId, senderName, senderImage, text, type, roomId,
- *             timestamp (Date), encrypted (bool), failed (bool),
- *             reactions [{emoji,userId}], replyToId, edited (bool),
- *             deleted (bool), delivered (bool) }
- *
- * `isGroup` shows sender names + avatars on incoming bubbles.
- * `canDelete(msg)` decides delete visibility (e.g. group admins).
- * `showTicks` renders sent/delivered checks on own messages (DMs).
- */
 
 const REACT_EMOJIS = ["❤️", "😂", "🔥", "🎵", "😮", "😭", "👍", "🙏"];
 
 const LONG_PRESS_MS = 420;
-const SWIPE_REPLY_PX = 56; // drag distance that commits a reply
+const SWIPE_REPLY_PX = 56; 
 const SWIPE_MAX_PX = 72;
 
-// Stable per-sender name colors for group chats.
+
 const NAME_COLORS = [
   "text-emerald-400",
   "text-sky-400",
@@ -100,8 +82,8 @@ function groupReactions(reactions, myId) {
   return [...byEmoji.values()];
 }
 
-// Two text messages cluster when same sender, close in time, and the newer
-// one isn't a reply (replies always show their quote block on a fresh bubble).
+
+
 function clusters(a, b) {
   return (
     a &&
@@ -115,7 +97,6 @@ function clusters(a, b) {
   );
 }
 
-/** One bubble row: hover bar (desktop) + long-press/swipe (mobile). */
 function MessageRow({
   msg,
   mine,
@@ -136,13 +117,13 @@ function MessageRow({
   const reactions = groupReactions(msg.reactions, handlers.myId);
   const actionable = !msg.deleted && !msg.failed && (onReact || onReply || onEdit || onDelete);
 
-  // Song messages can't be edited (the envelope format prevents partial edits).
+  
   const isSong = !!msg.song;
   const canEdit = allowEdit && !isSong;
 
-  // ── Touch gestures: long-press → sheet, horizontal drag → reply ──
+  
   const [dragX, setDragX] = useState(0);
-  const touchRef = useRef(null); // { x, y, timer, swiping, fired }
+  const touchRef = useRef(null); 
 
   const clearTouch = () => {
     if (touchRef.current?.timer) clearTimeout(touchRef.current.timer);
@@ -159,7 +140,7 @@ function MessageRow({
       swiping: false,
       fired: false,
       timer: setTimeout(() => {
-        // Long press — only if the finger hasn't wandered into a swipe/scroll.
+        
         if (touchRef.current && !touchRef.current.swiping) {
           touchRef.current.fired = true;
           navigator.vibrate?.(12);
@@ -178,7 +159,7 @@ function MessageRow({
 
     if (!s.swiping) {
       if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) {
-        // Vertical scroll — abandon both gestures.
+        
         clearTouch();
         return;
       }
@@ -186,7 +167,7 @@ function MessageRow({
         s.swiping = true;
         clearTimeout(s.timer);
       } else if (Math.abs(dx) > 14) {
-        clearTimeout(s.timer); // left drag: not a long press, not a reply
+        clearTimeout(s.timer); 
       }
     }
     if (s.swiping) setDragX(Math.min(Math.max(dx, 0), SWIPE_MAX_PX));
@@ -201,7 +182,7 @@ function MessageRow({
     clearTouch();
   };
 
-  // ── Bubble shape: 20px corners, 6px on cluster-inner corners ──
+  
   const shape = mine
     ? `rounded-[20px] ${groupedPrev ? "rounded-tr-[6px]" : ""} ${groupedNext ? "rounded-br-[6px]" : ""}`
     : `rounded-[20px] ${groupedPrev ? "rounded-tl-[6px]" : ""} ${groupedNext ? "rounded-bl-[6px]" : ""}`;
@@ -215,7 +196,7 @@ function MessageRow({
         ? "bg-green-500/80 backdrop-blur-xl border border-green-400/30 text-white shadow-md"
         : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.05] text-neutral-100 shadow-md";
 
-  // Invisible trailing spacer reserves room for the in-bubble meta row.
+  
   const metaWidth =
     52 + (msg.edited ? 38 : 0) + (showTicks && mine && !msg.deleted ? 20 : 0);
 
@@ -230,11 +211,11 @@ function MessageRow({
       onTouchEnd={onTouchEnd}
       onTouchCancel={clearTouch}
       onContextMenu={(e) => {
-        // Long-press on touch devices fires contextmenu — the sheet replaces it.
+        
         if (touchRef.current || dragX) e.preventDefault();
       }}
     >
-      {/* Swipe-to-reply affordance */}
+      {}
       {dragX > 0 && (
         <div
           className="absolute left-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full bg-green-500/20 transition-opacity"
@@ -244,7 +225,7 @@ function MessageRow({
         </div>
       )}
 
-      {/* Hover action bar (desktop / pointer devices only) */}
+      {}
       {actionable && (
         <div
           className={`absolute -top-3.5 z-20 hidden [@media(hover:hover)]:group-hover/msg:flex items-center bg-black/40 backdrop-blur-xl border border-white/[0.1] rounded-full shadow-xl px-0.5 ${
@@ -316,7 +297,7 @@ function MessageRow({
         className={`relative flex ${mine ? "justify-end" : "justify-start"} ${showAvatar ? "pl-10" : ""} transition-transform duration-75`}
         style={dragX ? { transform: `translateX(${dragX}px)` } : undefined}
       >
-        {/* Avatar on the last bubble of an incoming cluster (groups) */}
+        {}
         {showAvatar && !groupedNext && (
           <div className="absolute left-0 bottom-0">
             {msg.senderImage ? (
@@ -337,7 +318,7 @@ function MessageRow({
           )}
 
           <div className={`relative ${isMediaOnly && !msg.sticker ? 'p-1' : 'px-3 py-1.5'} ${shape} ${skin}`}>
-            {/* Quoted reply preview */}
+            {}
             {msg.replyToId && !msg.deleted && (
               <div
                 className={`mt-1 mb-1.5 px-2.5 py-1.5 rounded-xl border-l-2 text-xs ${
@@ -370,8 +351,7 @@ function MessageRow({
                 🔒 Can't decrypt — sent to another device's keys
               </p>
             ) : msg.song ? (
-              /* ── Song card bubble ── */
-              <div className="flex flex-col gap-2 py-1 min-w-[220px] max-w-[280px]">
+                            <div className="flex flex-col gap-2 py-1 min-w-[220px] max-w-[280px]">
                 <div className="flex items-center gap-2.5">
                   <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-neutral-900/50">
                     <img referrerPolicy="no-referrer"
@@ -483,8 +463,7 @@ function MessageRow({
                 </span>
               </div>
             ) : msg.sticker ? (
-              /* ── Sticker Bubble ── */
-              <div className="flex flex-col relative">
+                            <div className="flex flex-col relative">
                 <img referrerPolicy="no-referrer" src={msg.sticker} alt="Sticker" className="w-36 h-36 object-contain drop-shadow-xl" />
                 <span
                   className={`absolute bottom-1 right-1.5 bg-black/40 backdrop-blur-sm rounded px-1 flex items-center gap-1 text-[10px] leading-none py-0.5 text-white/90 shadow-sm`}
@@ -508,7 +487,7 @@ function MessageRow({
                     style={{ width: metaWidth }}
                   />
                 </p>
-                {/* In-bubble meta: edited · time · ticks */}
+                {}
                 <span
                   className={`absolute bottom-[5px] right-2.5 flex items-center gap-1 text-[10px] leading-none ${
                     mine ? "text-white/60" : "text-neutral-500"
@@ -528,7 +507,7 @@ function MessageRow({
             )}
           </div>
 
-          {/* Reaction pills, tucked under the bubble edge */}
+          {}
           {reactions.length > 0 && !msg.deleted && (
             <div className={`flex flex-wrap gap-1 -mt-1.5 z-10 ${mine ? "pr-2" : "pl-2"}`}>
               {reactions.map((r) => (
@@ -553,7 +532,6 @@ function MessageRow({
   );
 }
 
-/** iOS-style floating action sheet for touch devices. */
 function ActionSheet({ msg, myReaction, handlers, onClose, onPlaySong, onQueueSong, onSyncSong }) {
   const { onReact, onReply, onEdit, onDelete, allowEdit, allowDelete } = handlers;
 
@@ -582,7 +560,7 @@ function ActionSheet({ msg, myReaction, handlers, onClose, onPlaySong, onQueueSo
       <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
 
       <div className="relative animate-slide-up" onClick={(e) => e.stopPropagation()}>
-        {/* Reaction bar — floats above the sheet, iMessage style */}
+        {}
         {onReact && (
           <div className="mb-2 mx-auto w-fit max-w-full bg-white/[0.05] backdrop-blur-3xl border border-white/[0.1] rounded-full px-2 py-1.5 flex gap-0.5 shadow-2xl overflow-x-auto">
             {REACT_EMOJIS.map((e) => (
@@ -600,7 +578,7 @@ function ActionSheet({ msg, myReaction, handlers, onClose, onPlaySong, onQueueSo
         )}
 
         <div className="bg-white/[0.05] backdrop-blur-3xl border border-white/[0.1] rounded-[22px] overflow-hidden shadow-2xl">
-          {/* Quoted message being acted on */}
+          {}
           <div className="px-5 pt-3.5 pb-3 border-b border-white/[0.07]">
             <p className="text-xs font-semibold text-green-400">{msg.senderName}</p>
             <p className="text-[13px] text-neutral-400 truncate mt-0.5">{msg.text || "…"}</p>
@@ -655,10 +633,10 @@ export default function MessageList({
   onQueueSong,
   onSyncSong,
 }) {
-  const [pickerFor, setPickerFor] = useState(null); // message id with open desktop picker
-  const [sheetMsg, setSheetMsg] = useState(null); // message with open mobile sheet
+  const [pickerFor, setPickerFor] = useState(null); 
+  const [sheetMsg, setSheetMsg] = useState(null); 
 
-  // Resolve reply previews from the already-decrypted list.
+  
   const byId = new Map(messages.map((m) => [String(m.id), m]));
 
   const handlersFor = (msg) => {

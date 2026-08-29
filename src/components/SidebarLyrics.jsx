@@ -4,7 +4,7 @@ import { useLyrics } from "@/hooks/useLyrics";
 import { useLyricsOffset } from "@/hooks/useLyricsOffset";
 import { LocateFixed, MicVocal } from "lucide-react";
 
-// Parse LRC synced lyrics ("[mm:ss.xx] text") into [{ time, text }], sorted.
+
 function parseLRC(lrc) {
   const out = [];
   const re = /\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g;

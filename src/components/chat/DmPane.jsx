@@ -10,30 +10,24 @@ import { startSyncSession, getSyncSession } from "@/lib/syncSession";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
-/**
- * A 1:1 E2EE DM thread. `friend` is a public profile { clerkId, name,
- * username, imageUrl }. `me` is the Clerk user object.
- * `nowPlaying` (optional) is the currently playing song for the "share what's
- * playing" chip in the song picker.
- */
 export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, backBadge = 0, nowPlaying }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
   const [peerHasKeys, setPeerHasKeys] = useState(true);
   const [error, setError] = useState(null);
-  const [replyTo, setReplyTo] = useState(null); // ui message being replied to
-  const [editing, setEditing] = useState(null); // ui message being edited
+  const [replyTo, setReplyTo] = useState(null); 
+  const [editing, setEditing] = useState(null); 
   const listRef = useRef(null);
   const socketRef = useRef(null);
 
-  // Deterministic shared room for this DM — both sides compute the same id,
-  // so syncing never depends on passing a link around.
+  
+  
   const sharedRoomId = dmRoomId(me.id, friend.clerkId);
   const [inSync, setInSync] = useState(false);
 
-  // Track whether we're currently in this DM's room (e.g. after a reload or
-  // after tapping Join on an invite bubble).
+  
+  
   useEffect(() => {
     const check = () => {
       const syncData = getSyncSession();
@@ -81,8 +75,8 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
     else socket.once("connect", seed);
   };
 
-  // Start (or re-join) the synced session: move our player into the shared
-  // session, then drop an invite with a Join button in the chat.
+  
+  
   const startSync = async () => {
     joinSharedSession();
     await sendSessionInvite();
@@ -144,8 +138,8 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
     }
   };
 
-  // Scroll only the messages container (scrollIntoView would also scroll
-  // ancestor containers / the page, making the whole screen jump).
+  
+  
   const scrollToBottom = () =>
     setTimeout(() => {
       const el = listRef.current;
@@ -179,7 +173,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
     [me.id, me.fullName, me.imageUrl, friend.clerkId]
   );
 
-  // Load history + subscribe to live messages.
+  
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -218,14 +212,14 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
       setTyping(data.isTyping);
       if (data.isTyping) setTimeout(() => setTyping(false), 3000);
     };
-    // Single → double tick: our message reached the peer's device.
+    
     const onDelivered = ({ recipientId, messageId }) => {
       if (recipientId !== friend.clerkId || !messageId) return;
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, delivered: true } : m))
       );
     };
-    // Peer reacted / edited / deleted a message; re-render that row.
+    
     const onUpdated = async ({ senderId, message }) => {
       if (senderId !== friend.clerkId || !message?._id) return;
       const ui = await toUiMessage(message);
@@ -248,7 +242,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
   const sendMessage = async (text) => {
     setError(null);
 
-    // Edit mode: PATCH the existing message instead of creating a new one.
+    
     if (editing) {
       const target = editing;
       setEditing(null);
@@ -267,7 +261,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
         return;
       }
 
-      // Optimistic append (we know our own plaintext).
+      
       const tmpId = `tmp-${Date.now()}-${text.length}`;
       const optimistic = withMediaEnvelopes({
         id: tmpId,
@@ -300,7 +294,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
         return;
       }
 
-      // Swap the temp id for the real one so actions/ticks target it.
+      
       const realId = data.message?._id;
       if (realId) {
         setMessages((prev) =>
@@ -329,7 +323,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
     await sendMessage(payload);
   };
 
-  // Shared PATCH runner for react / edit / delete, then sync peer via socket.
+  
   const patchMessage = async (msg, action, extra = {}) => {
     try {
       const body = { action };
@@ -352,7 +346,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
         return;
       }
 
-      // Locally we keep our plaintext for edits (row ciphertext is for the peer).
+      
       const row = data.message;
       const patched = {
         replyToId: row.replyToId || null,
@@ -400,7 +394,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-transparent">
-      {/* Header */}
+      {}
       <div className="h-14 flex-shrink-0 border-b border-white/[0.05] bg-white/[0.02] backdrop-blur-xl flex items-center px-4 gap-3">
         {onBack && (
           <button
@@ -460,7 +454,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
         </div>
       </div>
 
-      {/* Messages */}
+      {}
       <div ref={listRef} className="flex-1 overflow-y-auto py-2 scrollbar">
         {loading ? (
           <div className="flex items-center justify-center h-full">

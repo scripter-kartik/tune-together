@@ -7,16 +7,6 @@ import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
 const QUICK_EMOJIS = ["🔥", "💖", "🎵", "🤯", "😭", "👏", "😂", "❤️", "🙌", "✨"];
 
-/**
- * Composer with optional reply / edit modes:
- *   replyTo: { senderName, text } | null   — banner above the input
- *   editing: { text } | null               — prefills the input
- * onCancelContext() clears whichever mode is active (also fired on Escape).
- *
- * Song sharing: the music button opens a SongPicker; a picked song becomes an
- * attachment chip and Send calls onSendSong(song, note) instead of onSend.
- * `nowPlaying` powers the picker's one-tap "share what's playing" row.
- */
 export default function MessageInput({
   placeholder,
   onSend,
@@ -118,7 +108,7 @@ export default function MessageInput({
         </div>
       )}
 
-      {/* Attached song chip — Send will share this track */}
+      {}
       {attachedSong && !editing && (
         <div className="flex items-center gap-2.5 bg-white/[0.03] backdrop-blur-xl border border-white/[0.1] border-b-0 rounded-t-xl px-3 py-2">
           <img referrerPolicy="no-referrer"

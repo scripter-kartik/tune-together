@@ -12,7 +12,7 @@ export async function GET(req) {
     const ytmusic = await getYTMusic();
     const album = await ytmusic.getAlbum(id);
     
-    // Format songs for the AlbumView
+    
     const songs = (album.songs || []).map(item => ({
       id: item.videoId,
       title: item.name,

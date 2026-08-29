@@ -1,9 +1,9 @@
-// Shared YouTube resolver helpers.
-//
-// Deezer's public API only exposes 30s previews, so for full songs (and for
-// finding a YouTube source whose lyrics we can fetch) we look the track up on
-// YouTube. Used by /api/resolve (playback source) and /api/lyrics (lyrics
-// fallback). The scrape needs no API key / quota.
+
+
+
+
+
+
 
 const YT_HEADERS = {
   "User-Agent":
@@ -11,7 +11,7 @@ const YT_HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
 };
 
-// Scrape the first video id off a YouTube results page.
+
 export async function searchYouTube(query) {
   const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(
     query

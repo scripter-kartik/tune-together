@@ -24,24 +24,13 @@ function presence(lastActive) {
 
 const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutral-600" };
 
-/**
- * The full DM chat UI (sidebar + message pane). Renders in two modes:
- *  - embedded (inside the home page's main area, above the player footer) so
- *    music keeps playing while chatting — this is the primary mode;npcll
- *  - standalone (the /chat route) kept for deep links and old bookmarks.
- *
- * `initialDm` is `{ id, ts }` — ts makes each request unique so clicking the
- * same friend twice still re-opens that DM after the user navigated away.
- * `nowPlaying` is the currently playing song for the "share what's playing"
- * chip in the song picker.
- */
 export default function ChatHub({ initialDm = null, embedded = false, onExit, onJoinSession, nowPlaying }) {
   const { user: me, isLoaded } = useUser();
   const router = useRouter();
 
   const [friends, setFriends] = useState([]);
   const [blocked, setBlocked] = useState(new Set());
-  const [active, setActive] = useState(null); // { type: "dm", friend }
+  const [active, setActive] = useState(null); 
   const [filter, setFilter] = useState("");
   const [unread, setUnread] = useState({}); // key ("dm:<id>") -> count
   const [e2eeReady, setE2eeReady] = useState(false);
@@ -75,10 +64,10 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
       }
     });
     loadBlocked();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [isLoaded, me?.id]);
 
-  // Deep-link into a DM (from the home page's friends panel or ?dm= URL).
+  
   useEffect(() => {
     const id = initialDm?.id;
     if (!id) return;
@@ -88,9 +77,9 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
       setUnread((u) => ({ ...u, [`dm:${id}`]: 0 }));
       setDrawerOpen(false);
     } else {
-      pendingDmRef.current = id; // friends not loaded yet — consumed in bootstrap
+      pendingDmRef.current = id; 
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [initialDm]);
 
   const loadFriends = useCallback(async () => {
@@ -116,14 +105,14 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     }
   }, []);
 
-  // ── Live updates: unread badges + friend refresh ─────────────────────────
+  
   useEffect(() => {
     if (!me) return;
     const socket = getSocket();
 
     const onDm = (data) => {
       const cur = activeRef.current;
-      if (cur?.type === "dm" && cur.friend.clerkId === data.senderId) return; // pane handles it
+      if (cur?.type === "dm" && cur.friend.clerkId === data.senderId) return; 
       setUnread((u) => ({ ...u, [`dm:${data.senderId}`]: (u[`dm:${data.senderId}`] || 0) + 1 }));
     };
     const onFriendUpdate = () => loadFriends();
@@ -142,8 +131,8 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     setDrawerOpen(false);
   };
 
-  // Tell the global NotificationHub which thread is on screen so it doesn't
-  // banner messages the user is already reading.
+  
+  
   useEffect(() => {
     const detail = active
       ? { type: active.type, id: active.friend.clerkId }
@@ -152,15 +141,15 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     return () => window.dispatchEvent(new CustomEvent("tt-active-chat", { detail: null }));
   }, [active]);
 
-  // Embedded: hand the room to the host page so the player keeps running.
-  // Standalone: navigate home carrying the room id.
+  
+  
   const joinSession = (roomId) => {
     if (onJoinSession) {
       onJoinSession(roomId);
     } else {
-      // Standalone /chat route: persist the room so the home page picks it
-      // up via resolveRoomId(), then navigate. We use router.push so Next.js
-      // handles it as a client-side transition when possible.
+      
+      
+      
       if (typeof window !== "undefined") {
         localStorage.setItem("tt-room", roomId);
       }
@@ -209,9 +198,9 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     );
   }
 
-  // ── Mobile drawer gestures ────────────────────────────────────────────────
-  // Swipe in from the left screen edge (< 24px) opens the sidebar over the
-  // open chat. Edge-only so it never collides with swipe-to-reply on messages.
+  
+  
+  
   const onEdgeTouchStart = (e) => {
     const t = e.touches[0];
     edgeSwipeRef.current = t.clientX <= 24 ? { x: t.clientX, y: t.clientY } : null;
@@ -221,7 +210,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     if (!s) return;
     const t = e.touches[0];
     if (Math.abs(t.clientY - s.y) > 40) {
-      edgeSwipeRef.current = null; // vertical scroll
+      edgeSwipeRef.current = null; 
       return;
     }
     if (t.clientX - s.x > 36) {
@@ -229,7 +218,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
       setDrawerOpen(true);
     }
   };
-  // Swipe the open drawer left to dismiss it.
+  
   const onDrawerTouchStart = (e) => {
     const t = e.touches[0];
     drawerSwipeRef.current = { x: t.clientX, y: t.clientY };
@@ -257,9 +246,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
   return (
     <div className={rootClass}>
       <div className="relative z-10 flex w-full h-full">
-      {/* ── Left sidebar: conversation list ──
-          Desktop: static column. Mobile with a chat open: hidden, but slides
-          over the chat as a Discord-style drawer (drawerOpen). */}
+      {}
       {drawerOpen && active && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[64] sm:hidden"
@@ -277,7 +264,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
             : "flex w-full sm:w-72 flex-shrink-0"
         }`}
       >
-        {/* Top bar */}
+        {}
         <div className="h-14 flex-shrink-0 border-b border-white/5 flex items-center px-4 gap-2">
           <button
             onClick={goBack}
@@ -295,7 +282,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
           </div>
         </div>
 
-        {/* Search */}
+        {}
         <div className="p-3">
           <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md border border-white/5 rounded-xl px-3 py-2 shadow-inner">
             <Search className="w-4 h-4 text-neutral-500 flex-shrink-0" />
@@ -309,7 +296,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar px-2 pb-4">
-          {/* DMs */}
+          {}
           <div className="px-2 pt-1 pb-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
               Direct messages
@@ -369,7 +356,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
         </div>
       </div>
 
-      {/* ── Main pane ── */}
+      {}
       <div
         className={`flex-1 min-w-0 ${active ? "flex" : "hidden sm:flex"}`}
         onTouchStart={onEdgeTouchStart}

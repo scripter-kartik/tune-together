@@ -2,7 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import Friendship from "@/lib/models/Friendship";
 
-// Remove a friend (or cancel a pending request) in either direction.
+
 export async function POST(req) {
   try {
     const clerkUser = await currentUser();

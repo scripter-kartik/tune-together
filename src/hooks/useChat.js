@@ -17,7 +17,7 @@ export function useChat() {
     socket.emit('register-user', user.id);
 
     const handleReceiveDM = (data) => {
-      // Check if it's an invite link
+      
       const isInvite = data.message?.includes('?room=');
       if (isInvite) {
         window.dispatchEvent(new CustomEvent('tt-invite', { detail: data }));

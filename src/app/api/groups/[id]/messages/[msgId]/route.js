@@ -5,11 +5,11 @@ import Group from "@/lib/models/Group";
 import GroupMessage from "@/lib/models/GroupMessage";
 import { memberOf, isAdmin, rateLimit } from "@/lib/chatGuards";
 
-// Actions on a single group message. PATCH body:
-//   { action: "react",  emoji }            — toggle/replace my reaction
-//   { action: "edit",   ciphertext, iv }   — sender only
-//   { action: "delete" }                   — sender or a group admin
-// Client relays the returned row over the socket ("group-message-updated").
+
+
+
+
+
 export async function PATCH(req, { params }) {
   try {
     const user = await currentUser();

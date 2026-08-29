@@ -5,9 +5,9 @@ import ChatMessage from "@/lib/models/ChatMessage";
 import { areFriends, rateLimit } from "@/lib/chatGuards";
 import { isBlockedEitherWay } from "@/lib/models/Block";
 
-// Send an E2E-encrypted DM: { recipientId, ciphertext, iv, replyToId?, type?, roomId? }.
-// (Legacy plaintext `message` still accepted while old clients drain.)
-// Safety: friends only, blocks enforced, rate limited.
+
+
+
 export async function POST(req) {
   try {
     const user = await currentUser();
@@ -47,7 +47,7 @@ export async function POST(req) {
 
     await connectDB();
 
-    // Safety: only friends can DM each other, and blocks cut both ways.
+    
     if (!(await areFriends(user.id, recipientId))) {
       return Response.json({ error: "You can only message friends" }, { status: 403 });
     }
@@ -57,7 +57,7 @@ export async function POST(req) {
 
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'User';
 
-    // Replies must point at a message in this same 1:1 thread.
+    
     let replyTo = null;
     if (replyToId && mongoose.isValidObjectId(replyToId)) {
       const target = await ChatMessage.findById(replyToId).lean();

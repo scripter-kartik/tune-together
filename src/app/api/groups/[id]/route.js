@@ -6,7 +6,7 @@ import GroupMessage from "@/lib/models/GroupMessage";
 import User from "@/lib/models/User";
 import { memberOf, isAdmin } from "@/lib/chatGuards";
 
-// Get one group (members hydrated). Must be a member.
+
 export async function GET(_req, { params }) {
   try {
     const user = await currentUser();
@@ -41,7 +41,7 @@ export async function GET(_req, { params }) {
   }
 }
 
-// Group actions: { action: "rename" | "leave" | "delete" | "set-room", ... }
+
 export async function POST(req, { params }) {
   try {
     const user = await currentUser();
@@ -91,12 +91,12 @@ export async function POST(req, { params }) {
           await GroupKey.deleteMany({ groupId: group._id });
           return Response.json({ success: true, deleted: true });
         }
-        // Ensure at least one admin remains.
+        
         if (!group.members.some((m) => m.role === "admin")) {
           group.members[0].role = "admin";
         }
-        // Departing member must not be able to read future messages:
-        // bump keyVersion; a remaining admin re-wraps a fresh key on next load.
+        
+        
         group.keyVersion += 1;
         await group.save();
         await GroupKey.deleteMany({ groupId: group._id, memberId: user.id });
@@ -122,7 +122,7 @@ export async function POST(req, { params }) {
       }
 
       case "set-room": {
-        // Link/unlink a listening session room to this group.
+        
         group.linkedRoomId = body.roomId || null;
         await group.save();
         if (body.roomId) {

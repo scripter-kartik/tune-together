@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/db";
 import Block from "@/lib/models/Block";
 import User from "@/lib/models/User";
 
-// List users I've blocked.
+
 export async function GET() {
   try {
     const user = await currentUser();
@@ -27,7 +27,7 @@ export async function GET() {
   }
 }
 
-// Block or unblock a user: { userId, action: "block" | "unblock" }
+
 export async function POST(req) {
   try {
     const user = await currentUser();

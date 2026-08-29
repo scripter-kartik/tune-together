@@ -13,10 +13,10 @@ export async function GET(req) {
   try {
     const ytmusic = await getYTMusic();
 
-    // Use the dedicated endpoints instead of the generic search(): the generic
-    // one mixes types and only returns a handful of songs, whereas searchSongs
-    // returns a full page (~20). Run them in parallel; a failure in one
-    // category shouldn't sink the whole response.
+    
+    
+    
+    
     const [songResults, videoResults, artistResults, albumResults] = await Promise.all([
       ytmusic.searchSongs(q).catch(() => []),
       ytmusic.searchVideos(q).catch(() => []),

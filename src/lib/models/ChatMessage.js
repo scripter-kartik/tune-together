@@ -20,16 +20,16 @@ const chatMessageSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    // Legacy plaintext body. New messages are E2E-encrypted and leave this
-    // null, using ciphertext/iv instead.
+    
+    
     message: {
       type: String,
       default: null,
       trim: true,
       maxlength: 2000,
     },
-    // E2EE payload — AES-GCM ciphertext (base64), encrypted client-side with
-    // a key derived from both users' ECDH keys. Server cannot read it.
+    
+    
     ciphertext: {
       type: String,
       default: null,
@@ -43,9 +43,9 @@ const chatMessageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // WhatsApp-style features. Reactions are one-per-user (re-reacting
-    // replaces the emoji). replyToId points at another ChatMessage in the
-    // same thread — the client resolves the preview from decrypted history.
+    
+    
+    
     replyToId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ChatMessage",
@@ -62,7 +62,7 @@ const chatMessageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // "Delete for everyone": ciphertext is wiped, a tombstone row remains.
+    
     deletedForEveryone: {
       type: Boolean,
       default: false,
@@ -80,8 +80,8 @@ const chatMessageSchema = new mongoose.Schema(
       enum: ["text", "session-invite"],
       default: "text",
     },
-    // Internal sync session id used only for the DM "Join" button. The server
-    // never treats this as user-authored text.
+    
+    
     roomId: {
       type: String,
       default: null,

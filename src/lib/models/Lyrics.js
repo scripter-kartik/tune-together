@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
-// Caches lyrics (synced LRC + plain text) for a Deezer track so repeat opens
-// are instant and every client in a room shows the same thing.
+
+
 const lyricsSchema = new mongoose.Schema(
   {
     deezerId: {
@@ -18,7 +18,7 @@ const lyricsSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    // Which source supplied the lyrics: "lrclib" | "youtube" | "genius".
+    
     provider: {
       type: String,
       enum: ["lrclib", "youtube", "genius"],

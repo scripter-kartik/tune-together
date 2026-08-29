@@ -41,7 +41,7 @@ export default function CollectionView({
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
-      {/* Header */}
+      {}
       <div className="relative bg-gradient-to-b from-[#3a3a52] to-[#121212] pt-16 pb-8 px-6 md:px-8">
         <button
           onClick={onClose}
@@ -73,7 +73,7 @@ export default function CollectionView({
         </div>
       </div>
 
-      {/* Actions + Tracks */}
+      {}
       <div className="px-6 md:px-8 py-4 flex flex-col gap-6 pb-12">
         {tracks.length > 0 && (
           <div className="flex items-center gap-4">
@@ -89,7 +89,7 @@ export default function CollectionView({
 
         {tracks.length > 0 ? (
           <div className="flex flex-col">
-            {/* Header row */}
+            {}
             <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-[var(--tt-divider)] mb-2">
               <span className="text-neutral-400 text-xs font-medium w-5 text-right">#</span>
               <span className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Title</span>

@@ -1,11 +1,10 @@
-// A shared song or media rides inside the normal E2EE text payload as a JSON
-// "envelope" behind an invisible prefix. They get the exact same encryption, 
-// replies, reactions and deletes as plain text — no message schema or server changes.
+
+
+
 const SONG_PREFIX = "⁣TTSONG⁣";
 const GIF_PREFIX = "⁣TTGIF⁣";
 const STICKER_PREFIX = "⁣TTSTICKER⁣";
 
-/** Strip a song object down to what a chat card needs (keeps ciphertext small). */
 export function slimSong(song) {
   return {
     id: song.id,
@@ -71,7 +70,6 @@ export function parseStickerMessage(text) {
   }
 }
 
-/** Lift an envelope out of a decrypted UI message: sets msg.song/gif/sticker, text = note. */
 export function withMediaEnvelopes(msg) {
   const songParsed = parseSongMessage(msg.text);
   if (songParsed) {

@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Client-side E2EE session helpers: identity bootstrap, peer public-key
- * cache, and group-key management (unwrap / create / rotate).
- * Used by the /chat page and the DM components.
- */
 
 import {
   getOrCreateIdentity,
@@ -19,10 +14,10 @@ import {
   getCachedGroupKey,
 } from "@/lib/crypto";
 
-// ---------------------------------------------------------------------------
-// Identity bootstrap — call once after sign-in. Generates the device keypair
-// (first run) and publishes the public key so others can encrypt to us.
-// ---------------------------------------------------------------------------
+
+
+
+
 
 let bootPromise = null;
 
@@ -37,18 +32,18 @@ export function ensureIdentityPublished() {
       });
       return publicKeyJwk;
     })().catch((e) => {
-      bootPromise = null; // allow retry
+      bootPromise = null; 
       throw e;
     });
   }
   return bootPromise;
 }
 
-// ---------------------------------------------------------------------------
-// Peer public keys (cached per session)
-// ---------------------------------------------------------------------------
 
-const peerKeys = new Map(); // clerkId → jwk | null
+
+
+
+const peerKeys = new Map(); 
 
 export async function getPeerKeys(ids) {
   const missing = ids.filter((id) => !peerKeys.has(id));
@@ -66,19 +61,16 @@ export async function getPeerKey(id) {
   return (await getPeerKeys([id]))[id];
 }
 
-// ---------------------------------------------------------------------------
-// DM helpers
-// ---------------------------------------------------------------------------
 
-/** Encrypt a DM to `theirId`. Returns { ciphertext, iv } or null if they
- *  haven't set up E2EE yet (no published key). */
+
+
+
 export async function encryptDmTo(myId, theirId, plaintext) {
   const theirKey = await getPeerKey(theirId);
   if (!theirKey) return null;
   return encryptDm(myId, theirId, theirKey, plaintext);
 }
 
-/** Decrypt a DM row (from history or socket). Falls back to legacy plaintext. */
 export async function decryptDmRow(myId, otherId, row) {
   if (row.ciphertext && row.iv) {
     const theirKey = await getPeerKey(otherId);
@@ -88,15 +80,10 @@ export async function decryptDmRow(myId, otherId, row) {
   return row.message ?? null;
 }
 
-// ---------------------------------------------------------------------------
-// Group keys
-// ---------------------------------------------------------------------------
 
-/**
- * Get the usable AES key for a group (unwrapping my server-stored wrapped
- * copy). If the key was rotated and I'm an admin, generate + publish a fresh
- * one for all members. Returns { key, keyVersion } or { key: null }.
- */
+
+
+
 export async function getGroupKey(myId, group) {
   const cached = getCachedGroupKey(group._id, group.keyVersion);
   if (cached) return { key: cached, keyVersion: group.keyVersion };
@@ -120,7 +107,7 @@ export async function getGroupKey(myId, group) {
   }
 
   if (data.needsRewrap && data.isAdmin) {
-    // I'm an admin and rotation is pending — mint and distribute a new key.
+    
     const { key, keyVersion } = await createAndPublishGroupKey(
       myId,
       group._id,
@@ -133,11 +120,6 @@ export async function getGroupKey(myId, group) {
   return { key: null, keyVersion: group.keyVersion, reason: "awaiting-admin" };
 }
 
-/**
- * Generate a fresh group key, wrap it for every member, publish to the
- * server. Used on group creation and after rotation.
- * Returns { key, keyVersion, wrappedKeys }.
- */
 export async function createAndPublishGroupKey(myId, groupId, keyVersion, memberIds) {
   const key = await generateGroupKey();
   const keys = await getPeerKeys(memberIds);
@@ -145,7 +127,7 @@ export async function createAndPublishGroupKey(myId, groupId, keyVersion, member
   const wrappedKeys = [];
   for (const memberId of memberIds) {
     const jwk = keys[memberId];
-    if (!jwk) continue; // member hasn't set up E2EE yet — they'll get access after they do
+    if (!jwk) continue; 
     const { wrappedKey, iv } = await wrapGroupKeyFor(myId, memberId, jwk, key);
     wrappedKeys.push({ memberId, wrappedKey, iv });
   }
@@ -162,10 +144,6 @@ export async function createAndPublishGroupKey(myId, groupId, keyVersion, member
   return { key, keyVersion, wrappedKeys };
 }
 
-/**
- * Wrap a group's current key for a single new member (admin adding someone).
- * Returns { wrappedKey, iv } or null if the new member has no published key.
- */
 export async function wrapCurrentKeyForNewMember(myId, group, newMemberId) {
   const { key } = await getGroupKey(myId, group);
   if (!key) return null;

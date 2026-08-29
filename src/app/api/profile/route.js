@@ -5,8 +5,8 @@ import Playlist from "@/lib/models/Playlist";
 import Friendship from "@/lib/models/Friendship";
 import { toPublicProfile } from "@/lib/presence";
 
-// Public user profile: identity, listening stats, and playlists. No auth
-// required — profiles are public (like the rest of the app's social layer).
+
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -27,7 +27,7 @@ export async function GET(req) {
 
     const profile = toPublicProfile(user);
 
-    // Listening stats.
+    
     const totalPlays = await PlayHistory.countDocuments({ clerkId: user.clerkId });
     const artistRows = await PlayHistory.aggregate([
       { $match: { clerkId: user.clerkId } },

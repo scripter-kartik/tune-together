@@ -1,4 +1,4 @@
-//server.js
+
 require("@next/env").loadEnvConfig(process.cwd());
 
 const { createServer } = require("http");
@@ -17,8 +17,8 @@ const rooms = new Map();
 const userSockets = new Map();
 const now = () => Date.now();
 
-// Per-socket message rate limit: 25 events / 10s. The API layer enforces the
-// real limits; this just stops a rogue client from flooding the relay.
+
+
 const socketRateOk = (socket) => {
   const t = now();
   if (!socket._rl || t > socket._rl.resetAt) {
@@ -106,9 +106,9 @@ app.prepare().then(() => {
             if (s.currentSong) newRoom.currentSong = s.currentSong;
             if (s.queue) newRoom.playlist = s.queue;
             if (s.position !== undefined) newRoom.position = s.position;
-            // Always resume paused with a fresh `at`: clients compute the live
-            // position as position + (now - at), so a stale snapshot timestamp
-            // would seek hours past the end of the song.
+            
+            
+            
             newRoom.isPlaying = false;
           }
         } catch (err) {
@@ -149,9 +149,9 @@ app.prepare().then(() => {
       io.to(roomId).emit("user-count", room.users.size);
     });
 
-    // DMs are E2E-encrypted: `ciphertext`/`iv` are opaque blobs the server
-    // just relays. Legacy plaintext `message` still passes through for old
-    // clients. Persistence happens via /api/chat/send in parallel.
+    
+    
+    
     socket.on("send-dm", ({
       recipientId,
       message,
@@ -182,15 +182,15 @@ app.prepare().then(() => {
           timestamp: new Date(),
         });
 
-        // Single tick → double tick: tell the sender it reached a device.
+        
         socket.emit("dm-delivered", { recipientId, messageId });
       }
-      // Recipient offline is NOT an error — the message is already persisted
-      // and will be delivered from history when they come online.
+      
+      
     });
 
-    // Relay a reaction/edit/delete on a DM to the other participant. The row
-    // was already updated via /api/chat/message/[id]; this is display-only.
+    
+    
     socket.on("dm-message-updated", ({ recipientId, message }) => {
       if (!socketRateOk(socket)) return;
       const recipientSocketId = userSockets.get(recipientId);
@@ -202,9 +202,9 @@ app.prepare().then(() => {
       }
     });
 
-    // ── Group chat ─────────────────────────────────────────────────────────
-    // Clients join a socket channel per group after fetching /api/groups, so
-    // messages/updates reach every online member instantly.
+    
+    
+    
     socket.on("join-group-channels", (groupIds) => {
       if (!Array.isArray(groupIds)) return;
       for (const id of groupIds.slice(0, 200)) {
@@ -218,24 +218,24 @@ app.prepare().then(() => {
       if (typeof groupId === "string") socket.leave(`group:${groupId}`);
     });
 
-    // Relay an already-persisted group message (ciphertext passthrough — the
-    // server can't read it). Sender emits after /api/groups/[id]/messages OKs.
+    
+    
     socket.on("group-message", ({ groupId, message }) => {
       if (!socketRateOk(socket)) return;
       if (typeof groupId !== "string" || !message) return;
-      if (!socket.rooms.has(`group:${groupId}`)) return; // members only
+      if (!socket.rooms.has(`group:${groupId}`)) return; 
       socket.to(`group:${groupId}`).emit("group-message", { groupId, message });
     });
 
-    // Relay an already-persisted reaction/edit/delete on a group message.
+    
     socket.on("group-message-updated", ({ groupId, message }) => {
       if (!socketRateOk(socket)) return;
       if (typeof groupId !== "string" || !message) return;
-      if (!socket.rooms.has(`group:${groupId}`)) return; // members only
+      if (!socket.rooms.has(`group:${groupId}`)) return; 
       socket.to(`group:${groupId}`).emit("group-message-updated", { groupId, message });
     });
 
-    // Membership / rename / key-rotation changed — tell members to refetch.
+    
     socket.on("group-updated", ({ groupId, type }) => {
       if (typeof groupId !== "string") return;
       io.to(`group:${groupId}`).emit("group-updated", {
@@ -275,9 +275,9 @@ app.prepare().then(() => {
       }
     });
 
-    // Live friend updates: after a request/accept/remove is persisted via the
-    // API, the acting client pings the other user so their friends list
-    // refreshes instantly (they fall back to polling if currently offline).
+    
+    
+    
     socket.on("friend-notify", ({ toClerkId, type }) => {
       const targetSocketId = userSockets.get(toClerkId);
       if (targetSocketId) {
@@ -422,7 +422,7 @@ app.prepare().then(() => {
     });
 
     socket.on("send-reaction", ({ roomId, reaction, user }) => {
-      // Broadcast reaction to everyone in the room (including sender if desired, but we can exclude sender with socket.to)
+      
       io.to(roomId).emit("room-reaction", {
         id: Math.random().toString(36).substr(2, 9),
         reaction,
@@ -458,9 +458,9 @@ app.prepare().then(() => {
           });
         }
       });
-      // Sort by user count descending
+      
       publicRooms.sort((a, b) => b.userCount - a.userCount);
-      socket.emit("public-rooms", publicRooms.slice(0, 10)); // return top 10
+      socket.emit("public-rooms", publicRooms.slice(0, 10)); 
     });
   });
 

@@ -4,7 +4,7 @@ import { useUser } from '@clerk/nextjs';
 export function useActivityTracker(currentSong = null) {
   const { isSignedIn } = useUser();
   const lastUpdateRef = useRef(0);
-  const UPDATE_INTERVAL = 60000; // Update every 60 seconds
+  const UPDATE_INTERVAL = 60000; 
 
   const updateActivity = useCallback(async (songData = null) => {
     if (!isSignedIn) return;

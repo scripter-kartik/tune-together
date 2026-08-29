@@ -4,12 +4,12 @@ import { connectDB } from "@/lib/db";
 import ChatMessage from "@/lib/models/ChatMessage";
 import { rateLimit } from "@/lib/chatGuards";
 
-// Actions on a single DM. PATCH body:
-//   { action: "react",  emoji }            — toggle/replace my reaction
-//   { action: "edit",   ciphertext, iv }   — sender only, replaces payload
-//   { action: "delete" }                   — sender only, delete for everyone
-// The route returns the updated row; the client relays it to the peer over
-// the socket ("dm-message-updated") so both sides stay in sync.
+
+
+
+
+
+
 export async function PATCH(req, { params }) {
   try {
     const user = await currentUser();
@@ -44,7 +44,7 @@ export async function PATCH(req, { params }) {
       }
       const mine = msg.reactions.find((r) => r.userId === user.id);
       if (mine && mine.emoji === emoji) {
-        // Same emoji again → remove (toggle off).
+        
         msg.reactions = msg.reactions.filter((r) => r.userId !== user.id);
       } else {
         msg.reactions = [

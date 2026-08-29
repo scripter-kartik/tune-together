@@ -2,18 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 
-/**
- * Crossfade between tracks.
- *
- * True overlapping playback isn't possible with a single audio source, so this
- * implements a professional fade: the outgoing track fades down over the last
- * N seconds and the incoming track fades up over its first N seconds. The
- * duration is persisted in localStorage.
- *
- * The factor is eased toward a target each animation frame but only pushed to
- * React state when it actually changes, so the player doesn't re-render
- * 60×/second while a track plays steadily.
- */
 
 const STORAGE_KEY = "tt-crossfade";
 
@@ -35,7 +23,7 @@ export function useCrossfade({ playerRef, duration, isPlaying, song }) {
   const factorRef = useRef(1);
   const lastAppliedRef = useRef(1);
 
-  // Hydrate persisted setting after mount.
+  
   useEffect(() => {
     setFadeSeconds(readStored());
   }, []);
@@ -49,16 +37,16 @@ export function useCrossfade({ playerRef, duration, isPlaying, song }) {
     } catch {}
   }, []);
 
-  // A new track always starts faded out, so it fades in from silence instead
-  // of carrying over the previous track's factor (e.g. after skipping
-  // mid-song).
+  
+  
+  
   useEffect(() => {
     factorRef.current = 0;
     lastAppliedRef.current = 0;
     setFadeFactor(0);
   }, [song?.id]);
 
-  // Smooth rAF-driven fade factor based on playhead position.
+  
   useEffect(() => {
     if (!isPlaying || !song || fadeSeconds <= 0) {
       factorRef.current = 1;
@@ -76,19 +64,19 @@ export function useCrossfade({ playerRef, duration, isPlaying, song }) {
       if (dur > 0) {
         const remaining = dur - pos;
         if (remaining <= fadeSeconds && remaining >= 0) {
-          // Fade out over the tail of the track.
+          
           target = fadeSeconds > 0 ? Math.max(0, remaining / fadeSeconds) : 1;
         } else if (pos < fadeSeconds) {
-          // Fade in over the head of the track.
+          
           target = Math.min(1, pos / fadeSeconds);
         }
       } else {
-        // Duration unknown yet (buffering) — hold at the fade-in position so
-        // a fresh track stays quiet until it actually starts.
+        
+        
         target = Math.min(1, pos / fadeSeconds);
       }
 
-      // Ease toward the target; only re-render when it meaningfully changes.
+      
       factorRef.current += (target - factorRef.current) * 0.3;
       if (Math.abs(factorRef.current - lastAppliedRef.current) > 0.004) {
         lastAppliedRef.current = factorRef.current;

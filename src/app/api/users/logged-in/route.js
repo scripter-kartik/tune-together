@@ -19,7 +19,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const filter = searchParams.get('filter') || 'all';
 
-    // Show only friends where the friend request was accepted from both sides
+    
     const friendships = await Friendship.find({
       status: "accepted",
       $or: [{ requesterId: user.id }, { recipientId: user.id }],

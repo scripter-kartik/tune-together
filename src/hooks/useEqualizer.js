@@ -2,18 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 
-/**
- * Web Audio equalizer + effects.
- *
- * Chain: media element → 10-band EQ → bass shelf → spatial → master gain →
- * compressor → makeup gain → destination.
- *
- * A MediaElementSource can only be created from an element react-player
- * renders natively (mp3/file previews). YouTube iframes are sandboxed
- * cross-origin, so the graph wires up to whatever `getInternalPlayer()`
- * exposes — when that's a real <audio>/<video> element the EQ applies;
- * otherwise playback is untouched and the panel shows a hint.
- */
 
 const BANDS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
@@ -44,14 +32,14 @@ function readStored() {
   }
 }
 
-// Diagnostic tracking for equalizer wiring
-const EQ_DEBUG = false; // Set to true only when debugging EQ issues
 
-// Module-level tracking (temporary for diagnostics)
+const EQ_DEBUG = false; 
+
+
 const elementTracking = {
   wiredElements: new WeakSet(),
   wiredCount: 0,
-  failedElements: new WeakMap(), // element -> error info
+  failedElements: new WeakMap(), 
   lastWiredElement: null,
   lastWiredTime: 0,
   lastFailedElement: null,
@@ -87,19 +75,19 @@ export function useEqualizer({ playerRef }) {
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  // Hydrate persisted settings once.
+  
   useEffect(() => {
     setSettings(readStored());
   }, []);
 
-  // Lazy-create the audio graph. Called from a user gesture so the
-  // AudioContext starts running (autoplay policy). Wrapped in try/catch
-  // because AudioContext creation and node wiring can throw in restricted
-  // browser states or when the context is closed by strict-mode cleanup.
+  
+  
+  
+  
   const ensureGraph = useCallback(() => {
     logDebug('=== START ensureGraph() ===');
 
-    // Step 1: Check existing context
+    
     if (ctxRef.current) {
       logDebug('Step 1 - Existing AudioContext found:', {
         state: ctxRef.current.state,
@@ -113,8 +101,8 @@ export function useEqualizer({ playerRef }) {
         return ctxRef.current;
       }
 
-      // A closed context (e.g. strict-mode cleanup) can't be reused — reset
-      // the refs so the next wiring builds a fresh graph.
+      
+      
       logDebug('Step 1 - Context is closed, resetting refs');
       ctxRef.current = null;
       filtersRef.current = [];
@@ -127,7 +115,7 @@ export function useEqualizer({ playerRef }) {
     }
 
     try {
-      // Step 2: Check Web Audio API availability
+      
       logDebug('Step 2 - Checking Web Audio API availability');
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       logDebug('Step 2 - Web Audio API:', {
@@ -142,7 +130,7 @@ export function useEqualizer({ playerRef }) {
         return null;
       }
 
-      // Step 3: Create new AudioContext
+      
       logDebug('Step 3 - Creating new AudioContext');
       const ctx = new AudioCtx();
       logDebug('Step 3 - AudioContext created:', {
@@ -152,7 +140,7 @@ export function useEqualizer({ playerRef }) {
         baseLatency: ctx.baseLatency,
       });
 
-      // Step 4: Create compressor node
+      
       logDebug('Step 4 - Creating dynamics compressor');
       const compressor = ctx.createDynamicsCompressor();
       compressor.threshold.value = -14;
@@ -161,17 +149,17 @@ export function useEqualizer({ playerRef }) {
       compressor.attack.value = 0.003;
       compressor.release.value = 0.25;
 
-      // Step 5: Create makeup gain
+      
       logDebug('Step 5 - Creating makeup gain');
       const makeup = ctx.createGain();
       makeup.gain.value = 1;
 
-      // Step 6: Create master gain
+      
       logDebug('Step 6 - Creating master gain');
       const master = ctx.createGain();
       master.gain.value = 1;
 
-      // Step 7: Create 10-band EQ filters
+      
       logDebug('Step 7 - Creating 10-band EQ filters');
       const filters = BANDS.map((freq, i) => {
         const f = ctx.createBiquadFilter();
@@ -184,14 +172,14 @@ export function useEqualizer({ playerRef }) {
         return f;
       });
 
-      // Step 8: Create bass boost shelf
+      
       logDebug('Step 8 - Creating bass boost shelf');
       const bass = ctx.createBiquadFilter();
       bass.type = "lowshelf";
       bass.frequency.value = 120;
       bass.gain.value = settingsRef.current.effects.bassBoost || 0;
 
-      // Step 9: Create spatial panner (if available)
+      
       logDebug('Step 9 - Checking spatial panner availability');
       let spatial = null;
       if (typeof ctx.createStereoPanner === "function") {
@@ -202,7 +190,7 @@ export function useEqualizer({ playerRef }) {
         logDebug('Step 9 - StereoPanner not available in this browser');
       }
 
-      // Step 10: Connect nodes in serial chain
+      
       logDebug('Step 10 - Connecting nodes: filters → bass → spatial → master → compressor → makeup');
       for (let i = 0; i < filters.length - 1; i++) filters[i].connect(filters[i + 1]);
       filters[filters.length - 1].connect(bass);
@@ -212,7 +200,7 @@ export function useEqualizer({ playerRef }) {
       compressor.connect(makeup);
       makeup.connect(ctx.destination);
 
-      // Step 11: Store references
+      
       logDebug('Step 11 - Storing references');
       ctxRef.current = ctx;
       filtersRef.current = filters;
@@ -244,13 +232,13 @@ export function useEqualizer({ playerRef }) {
     }
   }, []);
 
-  // Route the player's media element through the graph when it's a real
-  // HTMLMediaElement (YouTube iframes are cross-origin and can't be sourced).
+  
+  
   const wirePlayer = useCallback(() => {
     logDebug('=== START wirePlayer() ===');
 
     try {
-      // Step 1: Get internal player from react-player
+      
       const internal = playerRef.current?.getInternalPlayer?.();
       logDebug('Step 1 - getInternalPlayer() returned:', {
         internal,
@@ -261,7 +249,7 @@ export function useEqualizer({ playerRef }) {
         playerRefExists: !!playerRef.current,
       });
 
-      // Step 2: Unwrap nested getInternalPlayer if needed
+      
       let mediaElement = internal;
       if (mediaElement && typeof mediaElement.getInternalPlayer === "function") {
         mediaElement = mediaElement.getInternalPlayer();
@@ -273,9 +261,9 @@ export function useEqualizer({ playerRef }) {
         });
       }
 
-      // Step 3: Check if we have a valid media element
+      
       if (!(mediaElement instanceof HTMLMediaElement)) {
-        // This is expected for preview tracks and YouTube iframes - not an error
+        
         logDebug('Step 3 - NOT a HTMLMediaElement (expected for previews/YouTube):', {
           mediaElement,
           constructor: mediaElement?.constructor?.name,
@@ -295,7 +283,7 @@ export function useEqualizer({ playerRef }) {
         return;
       }
 
-      // Step 4: Check if already wired (WeakSet check)
+      
       const alreadyWired = elementTracking.wiredElements.has(mediaElement);
       logDebug('Step 4 - WeakSet check:', {
         mediaElement,
@@ -312,7 +300,7 @@ export function useEqualizer({ playerRef }) {
         return;
       }
 
-      // Step 5: Ensure audio graph exists
+      
       logDebug('Step 5 - Calling ensureGraph()');
       const ctx = ensureGraph();
       if (!ctx) {
@@ -322,14 +310,14 @@ export function useEqualizer({ playerRef }) {
         return;
       }
 
-      // Step 6: Check AudioContext state
+      
       logDebug('Step 6 - AudioContext state:', {
         state: ctx.state,
         sampleRate: ctx.sampleRate,
         currentTime: ctx.currentTime,
       });
 
-      // Step 7: Resume context if needed
+      
       if (ctx.state === 'suspended') {
         logDebug('Step 7 - Resuming suspended AudioContext');
         ctx.resume().catch(err => {
@@ -337,28 +325,28 @@ export function useEqualizer({ playerRef }) {
         });
       }
 
-      // Step 8: Disconnect previous source
+      
       if (sourceRef.current) {
         logDebug('Step 8 - Disconnecting previous source');
         sourceRef.current.disconnect();
       }
 
-      // Step 9: Create media element source
+      
       logDebug('Step 9 - Creating MediaElementSource');
       const source = ctx.createMediaElementSource(mediaElement);
       source.connect(filtersRef.current[0]);
       sourceRef.current = source;
 
-      // Step 10: Update tracking
+      
       elementTracking.wiredElements.add(mediaElement);
       elementTracking.wiredCount++;
       elementTracking.lastWiredElement = mediaElement;
       elementTracking.lastWiredTime = Date.now();
 
-      // Clear any previous failure tracking for this element
+      
       elementTracking.failedElements.delete(mediaElement);
 
-      // Step 11: Success!
+      
       setWired(true);
       logDebug('Step 11 - SUCCESS - Wired audio element:', {
         tagName: mediaElement.tagName,
@@ -397,11 +385,11 @@ export function useEqualizer({ playerRef }) {
     }
   }, [ensureGraph, playerRef]);
 
-  // Apply all gains whenever settings change.
+  
   useEffect(() => {
     if (!ctxRef.current) return;
     try {
-      // If the context was closed (e.g. React strict-mode cleanup), bail.
+      
       if (ctxRef.current.state === "closed") return;
       const t = ctxRef.current.currentTime;
       filtersRef.current.forEach((f, i) => {
@@ -415,7 +403,7 @@ export function useEqualizer({ playerRef }) {
     } catch {}
   }, [settings]);
 
-  // Persist settings.
+  
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch {}
   }, [settings]);
@@ -455,8 +443,8 @@ export function useEqualizer({ playerRef }) {
     setSettings({ gains: EQ_PRESETS.Flat, effects: DEFAULT_EFFECTS });
   }, []);
 
-  // Close the context on unmount. Null out all refs so that React 18 strict
-  // mode (which double-mounts) doesn't reuse a closed context on re-mount.
+  
+  
   useEffect(() => {
     return () => {
       logDebug('=== Cleanup effect triggered ===');
@@ -478,7 +466,7 @@ export function useEqualizer({ playerRef }) {
         logError('Error closing AudioContext:', err);
       }
 
-      // Reset all refs
+      
       logDebug('Resetting all refs');
       ctxRef.current = null;
       sourceRef.current = null;
@@ -488,16 +476,16 @@ export function useEqualizer({ playerRef }) {
       spatialRef.current = null;
       makeupRef.current = null;
 
-      // Reset wiring state
+      
       setWired(false);
       logDebug('Cleanup complete');
     };
   }, []);
 
-  // Add retry mechanism
+  
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
-  const retryDelay = 1000; // 1 second
+  const retryDelay = 1000; 
 
   const retryWiring = useCallback(() => {
     if (retryCount >= maxRetries) {
@@ -511,15 +499,15 @@ export function useEqualizer({ playerRef }) {
     setTimeout(() => {
       logDebug('Executing retry attempt:', retryCount + 1);
       wirePlayer();
-    }, retryDelay * (retryCount + 1)); // Exponential backoff
+    }, retryDelay * (retryCount + 1)); 
   }, [retryCount, wirePlayer]);
 
-  // Reset retry count when component mounts or player changes
+  
   useEffect(() => {
     setRetryCount(0);
   }, [playerRef]);
 
-  // Calculate isActive here to avoid circular dependency
+  
   const isActive =
     settings.gains.some((g) => g !== 0) ||
     settings.effects.bassBoost > 0 ||
@@ -527,15 +515,15 @@ export function useEqualizer({ playerRef }) {
     settings.effects.nightMode ||
     settings.effects.loudness;
 
-  // Diagnostic reporting function
+  
   const getDiagnostics = useCallback(() => {
     const diagnostics = {
-      // Basic state
+      
       wired,
       retryCount,
       maxRetries,
 
-      // AudioContext state
+      
       audioContext: ctxRef.current ? {
         state: ctxRef.current.state,
         sampleRate: ctxRef.current.sampleRate,
@@ -543,7 +531,7 @@ export function useEqualizer({ playerRef }) {
         baseLatency: ctxRef.current.baseLatency,
       } : null,
 
-      // Component refs
+      
       refs: {
         hasAudioContext: !!ctxRef.current,
         hasSource: !!sourceRef.current,
@@ -554,7 +542,7 @@ export function useEqualizer({ playerRef }) {
         hasMakeup: !!makeupRef.current,
       },
 
-      // Element tracking
+      
       elementTracking: {
         wiredCount: elementTracking.wiredCount,
         lastWiredTime: elementTracking.lastWiredTime,
@@ -563,20 +551,20 @@ export function useEqualizer({ playerRef }) {
         failedElementsCount: elementTracking.failedElements.size,
       },
 
-      // Web Audio API availability
+      
       webAudioAPI: {
         hasAudioContext: !!window.AudioContext,
         hasWebkitAudioContext: !!window.webkitAudioContext,
         hasCreateStereoPanner: typeof window.AudioContext?.prototype?.createStereoPanner === 'function',
       },
 
-      // Browser environment
+      
       environment: {
         userAgent: navigator.userAgent,
         isSecureContext: window.isSecureContext,
       },
 
-      // Settings
+      
       settings: {
         gains: settings.gains,
         effects: settings.effects,
@@ -588,7 +576,7 @@ export function useEqualizer({ playerRef }) {
     return diagnostics;
   }, [wired, retryCount, settings, isActive]);
 
-  // Function to manually trigger diagnostics
+  
   const reportDiagnostics = useCallback(() => {
     const diag = getDiagnostics();
     console.group('🎛️ Equalizer Diagnostics Report');
@@ -617,7 +605,7 @@ export function useEqualizer({ playerRef }) {
     toggleEffect,
     resetAll,
     isActive,
-    // New diagnostic features
+    
     retryWiring,
     getDiagnostics,
     reportDiagnostics,

@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       unique: true,
-      sparse: true, // let existing users have no handle until they claim one
+      sparse: true, 
       lowercase: true,
       trim: true,
       minlength: 3,

@@ -3,8 +3,8 @@ import { connectDB } from "@/lib/db";
 import User from "@/lib/models/User";
 import Friendship from "@/lib/models/Friendship";
 
-// Send a friend request by @username. Idempotent-ish: rejects duplicates and
-// auto-accepts if the target had already requested you.
+
+
 export async function POST(req) {
   try {
     const clerkUser = await currentUser();
@@ -29,7 +29,7 @@ export async function POST(req) {
       return Response.json({ error: "You can't add yourself." }, { status: 400 });
     }
 
-    // Any existing relationship in either direction?
+    
     const existing = await Friendship.findOne({
       $or: [
         { requesterId: me, recipientId: target.clerkId },
@@ -41,7 +41,7 @@ export async function POST(req) {
       if (existing.status === "accepted") {
         return Response.json({ error: "You're already friends." }, { status: 409 });
       }
-      // They already asked me → accept it now.
+      
       if (existing.requesterId === target.clerkId) {
         existing.status = "accepted";
         await existing.save();

@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-// A group's AES key, wrapped (encrypted) for one member by another member
-// (`wrapperId`, usually an admin). The server cannot unwrap these — it just
-// stores and hands back opaque blobs. One row per (group, member, version).
+
+
+
 const groupKeySchema = new mongoose.Schema(
   {
     groupId: {
@@ -19,7 +19,7 @@ const groupKeySchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    // Who wrapped this key (needed for ECDH unwrap on the member's side).
+    
     wrapperId: {
       type: String,
       required: true,

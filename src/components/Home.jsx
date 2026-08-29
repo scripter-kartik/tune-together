@@ -49,9 +49,6 @@ function Equalizer() {
   );
 }
 
-/* ------------------------------------------------------------------ *
- * Section header — shared title + optional "Play all" / "See all" affordances.
- * ------------------------------------------------------------------ */
 function SectionHeader({ title, subtitle, onPlayAll, onSeeAll, expanded }) {
   return (
     <div className="flex items-end justify-between gap-4 px-4 mb-3">
@@ -81,10 +78,6 @@ function SectionHeader({ title, subtitle, onPlayAll, onSeeAll, expanded }) {
   );
 }
 
-/* ------------------------------------------------------------------ *
- * Hero — greeting band with a "spotlight" featured track and a
- * shuffle-play call to action built purely from the current feed.
- * ------------------------------------------------------------------ */
 function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist }) {
   return (
     <section
@@ -108,7 +101,7 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
             "linear-gradient(90deg, transparent, var(--tt-accent), var(--tt-accent-2), transparent)",
         }}
       />
-      {/* Soft accent glow orbs — depth without the old diagonal stripes */}
+      {}
       <div
         className="pointer-events-none absolute top-[-60px] left-[-40px] w-72 h-72 rounded-full"
         style={{
@@ -146,7 +139,7 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
           )}
         </div>
 
-        {/* Spotlight track card */}
+        {}
         {spotlight && (
           <div
             onClick={() => onPlay(spotlight)}
@@ -183,20 +176,20 @@ function Hero({ greeting, firstName, spotlight, onPlay, onShuffle, onOpenArtist 
 function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], recommendations = [], recentHistory = [], mixes = [], onPlay, onQueue, currentSongId, isPlaying, onOpenArtist, onOpenAlbum, onOpenCollection, isLoading }) {
   const { user } = useUser();
   const greeting = getGreeting();
-  // In-place "Show all" toggles for rows that can overflow (recently played,
-  // top artists) — Spotify-style "See all".
+  
+  
   const [expandedSections, setExpandedSections] = useState({});
   const toggleSection = (key) =>
     setExpandedSections((s) => ({ ...s, [key]: !s[key] }));
 
-  // Carve the feed into non-overlapping bands so each section feels distinct.
+  
   const spotlight = songs[0] || null;
   const freshPicks = songs.slice(1, 13);
   const moreSongs = songs.slice(13);
 
   const playAll = (list) => {
     if (!list?.length) return;
-    // The list itself becomes the playback context (Next/Prev walk it).
+    
     onPlay(list[0], list);
   };
 
@@ -227,7 +220,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
     );
   }
 
-  // Nothing to show — friendly empty state.
+  
   if (!songs.length) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center animate-fade-up">
@@ -253,7 +246,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         onOpenArtist={onOpenArtist}
       />
 
-      {/* Recently played — Spotify "Jump back in" quick-picks */}
+      {}
       {recentHistory.length > 0 && (
         <section>
           <SectionHeader
@@ -272,7 +265,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         </section>
       )}
 
-      {/* Made for you — Daily Mixes built from top artists */}
+      {}
       {mixes.length > 0 && (
         <section className="bg-[#0d0d0d] rounded-xl sm:rounded-2xl border border-[var(--tt-border)] p-4 sm:p-5 md:p-6 -mx-4 md:-mx-6 lg:-mx-8">
           <SectionHeader title="Made for you" subtitle="Made from your top artists" />
@@ -286,13 +279,13 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         </section>
       )}
 
-      {/* Quick picks — themed shortcut tiles built from the feed */}
+      {}
       <section>
         <SectionHeader title="Quick picks" subtitle="Jump back into the vibe" />
         <FeaturedCards songs={songs} onPlay={onPlay} onQueue={onQueue} onOpenCollection={onOpenCollection} />
       </section>
 
-      {/* Personalized picks from your listening history */}
+      {}
       {recommendations.length > 0 && (
         <section>
           <SectionHeader
@@ -311,7 +304,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         </section>
       )}
 
-      {/* Your top artists — most listened by the logged-in user */}
+      {}
       {topArtists.length > 0 && (
         <section>
           <SectionHeader
@@ -350,7 +343,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         </section>
       )}
 
-      {/* Fresh picks — the meat of the feed */}
+      {}
       {freshPicks.length > 0 && (
         <section>
           <SectionHeader
@@ -369,7 +362,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         </section>
       )}
 
-      {/* Songs by your top artists */}
+      {}
       {historySongs.length > 0 && (
         <section>
           <SectionHeader
@@ -388,7 +381,7 @@ function HomeFeed({ songs, artists, albums, topArtists = [], historySongs = [], 
         </section>
       )}
 
-      {/* Everything else */}
+      {}
       {moreSongs.length > 0 && (
         <section>
           <SectionHeader title="More to explore" onPlayAll={() => playAll(moreSongs)} />
@@ -417,12 +410,12 @@ export default function Home({
   const [showRight, setShowRight] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [activeSidebarView, setActiveSidebarView] = useState('library');
-  // DM to open inside the embedded chat view. { id, ts } — ts so re-clicking
-  // the same friend re-triggers the effect in ChatHub.
+  
+  
   const [chatDm, setChatDm] = useState(null);
   const [searchFilter, setSearchFilter] = useState('all');
 
-  // Open a sidebar playlist in-app and close the mobile drawer.
+  
   const openPlaylist = (pl) => {
     onOpenPlaylist?.(pl);
     setShowLeft(false);
@@ -430,8 +423,8 @@ export default function Home({
 
   useEffect(() => {
     const openDrawer = () => { setShowRight(true); };
-    // Any component (e.g. the friends panel) can open a chat in-place without
-    // navigating away — the player keeps running.
+    
+    
     const openChat = (e) => {
       setChatDm(e.detail?.dm ? { id: e.detail.dm, ts: Date.now() } : null);
       setActiveSidebarView('chat');
@@ -447,8 +440,8 @@ export default function Home({
   }, []);
 
   const renderMain = () => {
-    // Chat takes over the main area regardless of any open sub-view — the
-    // player footer (owned by the page shell) keeps running underneath.
+    
+    
     if (activeSidebarView === 'chat') {
       return (
         <ChatHub
@@ -457,7 +450,7 @@ export default function Home({
           nowPlaying={currentSong}
           onExit={() => setActiveSidebarView('library')}
           onJoinSession={(newRoomId) => {
-            // Join the friend's synced listening session without leaving the page.
+            
             window.dispatchEvent(new CustomEvent("tt-join-room", { detail: newRoomId }));
             setActiveSidebarView('library');
           }}
@@ -529,10 +522,8 @@ export default function Home({
         )}
         <div className="flex-1 overflow-y-auto scrollbar">
           {isSearchQuery ? (
-            /* --- SEARCH RESULTS VIEW --- */
-            isLoading ? (
-              /* skeleton while loading */
-              <div className="p-6 flex flex-col gap-8">
+                        isLoading ? (
+                            <div className="p-6 flex flex-col gap-8">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="h-52 bg-white/5 rounded-2xl animate-pulse" />
                   <div className="flex flex-col gap-3 justify-center">
@@ -551,7 +542,7 @@ export default function Home({
             ) : (
               <div className="flex flex-col gap-10 pt-2 pb-10">
 
-                {/* ── Filter pills ── */}
+                {}
                 <div className="px-6 flex gap-2 flex-wrap">
                   {['all', 'songs', 'artists', 'albums'].map(filter => (
                     <button
@@ -568,7 +559,7 @@ export default function Home({
                   ))}
                 </div>
 
-                {/* ── Top Result + Top Tracks (Spotify dual-panel) ── */}
+                {}
                 {(searchFilter === 'all' || searchFilter === 'songs') && (songs.length > 0 || artists.length > 0) && (() => {
                   const topResult = artists[0] || null;
                   const topSong = songs[0] || null;
@@ -583,7 +574,7 @@ export default function Home({
                     <section className="px-6">
                       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6">
 
-                        {/* Left: Top Result card */}
+                        {}
                         {topItem && (
                           <div className="flex flex-col gap-3">
                             <h2 className="text-2xl font-bold text-white">Top result</h2>
@@ -594,7 +585,7 @@ export default function Home({
                               }}
                               className="group relative bg-[#181818] hover:bg-[#282828] rounded-xl p-6 cursor-pointer transition-all duration-300 h-full min-h-[200px] flex flex-col justify-between overflow-hidden"
                             >
-                              {/* bg glow */}
+                              {}
                               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                                 <div className="absolute -top-8 -left-8 w-40 h-40 rounded-full blur-3xl opacity-30"
                                   style={{ backgroundColor: 'var(--tt-accent)' }} />
@@ -617,7 +608,7 @@ export default function Home({
                                 </div>
                               </div>
 
-                              {/* Play button */}
+                              {}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -633,7 +624,7 @@ export default function Home({
                           </div>
                         )}
 
-                        {/* Right: Song list */}
+                        {}
                         {tracksToShow.length > 0 && (
                           <div className="flex flex-col gap-3">
                             <h2 className="text-2xl font-bold text-white">Songs</h2>
@@ -658,7 +649,7 @@ export default function Home({
                                       isActive ? 'bg-white/10' : 'hover:bg-white/[0.07]'
                                     }`}
                                   >
-                                    {/* Index / equalizer */}
+                                    {}
                                     <div className="w-5 flex-shrink-0 flex items-center justify-center">
                                       {playing ? (
                                         <>
@@ -675,12 +666,12 @@ export default function Home({
                                       )}
                                     </div>
 
-                                    {/* Cover */}
+                                    {}
                                     <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-neutral-800">
                                       {cover && <img referrerPolicy="no-referrer" src={cover} alt={song.title} className="w-full h-full object-cover" />}
                                     </div>
 
-                                    {/* Title + Artist */}
+                                    {}
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-sm font-semibold truncate ${isActive ? 'text-green-400' : 'text-white'}`}>
                                         {song.title}
@@ -691,7 +682,7 @@ export default function Home({
                                       </p>
                                     </div>
 
-                                    {/* Duration */}
+                                    {}
                                     {song.duration && (
                                       <span className="text-neutral-500 text-xs flex-shrink-0 tabular-nums">
                                         {Math.floor(song.duration / 60)}:{String(song.duration % 60).padStart(2, '0')}
@@ -708,7 +699,7 @@ export default function Home({
                   );
                 })()}
 
-                {/* ── Artists ── */}
+                {}
                 {artists.length > 0 && (searchFilter === 'all' || searchFilter === 'artists') && (
                   <section className="px-6">
                     <h2 className="text-2xl font-bold text-white mb-5">Artists</h2>
@@ -743,7 +734,7 @@ export default function Home({
                   </section>
                 )}
 
-                {/* ── Albums ── */}
+                {}
                 {albums.length > 0 && (searchFilter === 'all' || searchFilter === 'albums') && (
                   <section className="px-6">
                     <h2 className="text-2xl font-bold text-white mb-5">Albums</h2>
@@ -778,7 +769,7 @@ export default function Home({
                   </section>
                 )}
 
-                {/* ── All Songs (when Songs filter selected) ── */}
+                {}
                 {searchFilter === 'songs' && songs.length > 0 && (
                   <section className="px-6">
                     <h2 className="text-2xl font-bold text-white mb-4">All Songs</h2>
@@ -845,8 +836,7 @@ export default function Home({
               </div>
             )
           ) : (
-            /* --- HOME FEED VIEW --- */
-            <HomeFeed
+                        <HomeFeed
               songs={songs}
               artists={artists}
               albums={albums}
@@ -866,8 +856,7 @@ export default function Home({
             />
           )}
 
-          {/* Load more - inline at the end of the scroll content, so it only
-              appears once the user scrolls to the bottom of the feed */}
+          {}
           {showLoadMore && !isSearchQuery && (
             <div className="p-4 pb-6 flex justify-center">
               <button
@@ -896,7 +885,7 @@ export default function Home({
         }}
       />
 
-      {/* Mobile / tablet top bar (shown below 1024px) */}
+      {}
       <div className="flex lg:hidden gap-2 p-2 sm:p-3 bg-[#121212] border-b border-[var(--tt-divider)] flex-shrink-0">
         <button
           onClick={() => setShowLeft(!showLeft)}
@@ -912,12 +901,12 @@ export default function Home({
         </button>
       </div>
 
-      {/* Left rail - desktop only (1024px+) */}
+      {}
       <div className="hidden lg:flex flex-shrink-0 h-full rounded-l-xl overflow-hidden">
         <SidebarRail activeView={activeSidebarView} onTabChange={setActiveSidebarView} />
       </div>
 
-      {/* Left sidebar - desktop only (1024px+) */}
+      {}
       <div className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 bg-[#121212] rounded-r-xl overflow-hidden flex-col h-full">
         {activeSidebarView === 'history' ? (
           <HistoryList history={recentHistory} onPlay={onPlay} />
@@ -930,7 +919,7 @@ export default function Home({
         )}
       </div>
 
-      {/* Mobile / tablet left drawer: Discord-style rail + library panel */}
+      {}
       {showLeft && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setShowLeft(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -938,7 +927,7 @@ export default function Home({
             className="absolute left-0 top-0 bottom-0 w-[85%] max-w-sm shadow-2xl flex z-50 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Icon rail (same one as desktop) */}
+            {}
             <SidebarRail
               activeView={activeSidebarView}
               onTabChange={setActiveSidebarView}
@@ -967,7 +956,7 @@ export default function Home({
         </div>
       )}
 
-      {/* Main content */}
+      {}
       <div
         className="flex-1 rounded-xl flex flex-col min-w-0 overflow-hidden h-full"
         style={{
@@ -978,7 +967,7 @@ export default function Home({
         {renderMain()}
       </div>
 
-      {/* Right panel - desktop (xl+ only, 1280px+; below that use the mobile drawer) */}
+      {}
       <div className="hidden xl:flex xl:w-80 2xl:w-[340px] flex-shrink-0 bg-[#121212] rounded-xl overflow-hidden flex-col h-full">
         <RightPanel
           queue={queue}
@@ -990,7 +979,7 @@ export default function Home({
         />
       </div>
 
-      {/* Mobile / tablet right drawer */}
+      {}
       {showRight && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setShowRight(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />

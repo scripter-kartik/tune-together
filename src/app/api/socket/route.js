@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-// Socket.IO is handled by a separate standalone server (socket-server/).
-// This route is just a liveness probe for the Next.js frontend.
+
+
 export const dynamic = "force-dynamic";
 
 export async function GET() {

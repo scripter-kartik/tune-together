@@ -19,28 +19,22 @@ function presenceOf(profile) {
 
 const DOT = { online: "bg-green-500", idle: "bg-yellow-500", offline: "bg-neutral-600" };
 
-/**
- * A group chat pane: E2EE message thread + member sidebar + listening session
- * launcher. `group` comes hydrated from /api/groups (members[].profile).
- * `nowPlaying` (optional) is the currently playing song for the "share what's
- * playing" chip in the song picker.
- */
 export default function GroupPane({ me, group, onOpenSettings, onJoinSession, onGroupChanged, onBack, backBadge = 0, nowPlaying }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupKey, setGroupKey] = useState(null);
-  const [keyStatus, setKeyStatus] = useState("loading"); // loading | ready | awaiting-admin | wrong-device
+  const [keyStatus, setKeyStatus] = useState("loading"); 
   const [typingUsers, setTypingUsers] = useState({});
   const [showMembers, setShowMembers] = useState(true);
-  const [membersDrawer, setMembersDrawer] = useState(false); // mobile slide-in
-  const [replyTo, setReplyTo] = useState(null); // ui message being replied to
-  const [editing, setEditing] = useState(null); // ui message being edited
+  const [membersDrawer, setMembersDrawer] = useState(false); 
+  const [replyTo, setReplyTo] = useState(null); 
+  const [editing, setEditing] = useState(null); 
   const listRef = useRef(null);
   const socketRef = useRef(null);
   const keyRef = useRef(null);
 
-  // Scroll only the messages container (scrollIntoView would also scroll
-  // ancestor containers / the page, making the whole screen jump).
+  
+  
   const scrollToBottom = () =>
     setTimeout(() => {
       const el = listRef.current;
@@ -78,7 +72,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
     [me.id, me.fullName, me.imageUrl]
   );
 
-  // Unwrap group key + load history.
+  
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -140,7 +134,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
     const onGroupUpdated = ({ groupId }) => {
       if (groupId === group._id) onGroupChanged?.();
     };
-    // A member reacted / edited / deleted a message; re-render that row.
+    
     const onMessageUpdated = async ({ groupId, message }) => {
       if (groupId !== group._id || !message?._id) return;
       const ui = await toUiMessage(message, keyRef.current);
@@ -158,13 +152,13 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
       socket.off("group-updated", onGroupUpdated);
       socket.off("group-message-updated", onMessageUpdated);
     };
-    // group.keyVersion in deps: re-run unwrap after a rotation.
+    
   }, [group._id, group.keyVersion, me.id, toUiMessage]);
 
   const sendMessage = async (text) => {
     if (!keyRef.current) return;
 
-    // Edit mode: PATCH the existing message instead of creating a new one.
+    
     if (editing) {
       const target = editing;
       setEditing(null);
@@ -206,7 +200,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
       });
       const data = await res.json();
       if (res.ok && data.message) {
-        // Swap the temp id for the real one so actions target it.
+        
         setMessages((prev) =>
           prev.map((m) =>
             m.id === tmpId
@@ -231,7 +225,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
     await sendMessage(payload);
   };
 
-  // Shared PATCH runner for react / edit / delete, then sync members via socket.
+  
   const patchMessage = async (msg, action, extra = {}) => {
     try {
       const body = { action };
@@ -278,7 +272,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
     window.dispatchEvent(new CustomEvent("tt-queue-song", { detail: song }));
   };
 
-  // Start (or join) a listening session for this group.
+  
   const startSession = async () => {
     const roomId = group.linkedRoomId || uuidv4();
     if (!group.linkedRoomId) {
@@ -300,7 +294,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
   return (
     <div className="flex-1 flex min-w-0">
       <div className="flex-1 flex flex-col min-w-0 bg-transparent">
-        {/* Header */}
+        {}
         <div className="h-14 flex-shrink-0 border-b border-white/[0.05] bg-white/[0.02] backdrop-blur-xl flex items-center px-4 gap-3">
           {onBack && (
             <button
@@ -343,7 +337,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
             </button>
             <button
               onClick={() => {
-                // Desktop: toggle the inline panel. Mobile: open the drawer.
+                
                 if (window.matchMedia("(min-width: 1024px)").matches) {
                   setShowMembers((s) => !s);
                 } else {
@@ -365,7 +359,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
           </div>
         </div>
 
-        {/* Messages */}
+        {}
         <div ref={listRef} className="flex-1 overflow-y-auto py-2 scrollbar">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -444,7 +438,7 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
         />
       </div>
 
-      {/* Member list: inline panel on desktop, slide-in drawer on mobile */}
+      {}
       {showMembers && (
         <div className="w-56 flex-shrink-0 bg-white/[0.02] backdrop-blur-2xl border-l border-white/[0.05] overflow-y-auto scrollbar hidden lg:block shadow-inner">
           <MemberList group={group} me={me} />
@@ -475,7 +469,6 @@ export default function GroupPane({ me, group, onOpenSettings, onJoinSession, on
   );
 }
 
-/** Grouped-by-role member list shared by the desktop panel and mobile drawer. */
 function MemberList({ group, me }) {
   return (
     <div className="p-4">

@@ -43,7 +43,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
     return () => window.removeEventListener("tt-global-state", onGlobalState);
   }, []);
 
-  // Spotify-style recent searches, persisted locally.
+  
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem("tt-recent-searches") || "[]");
@@ -74,7 +74,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
     try { localStorage.removeItem("tt-recent-searches"); } catch {}
   };
 
-  // Sync internal query with URL if it's acting independently
+  
   useEffect(() => {
     if (externalQuery === undefined) {
       const q = searchParams?.get("q");
@@ -106,9 +106,9 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         if (res.ok) {
           const data = await res.json();
           const top = [];
-          // First artist as top result
+          
           if (data.artists?.length > 0) top.push({ type: 'Artist', ...data.artists[0] });
-          // Then up to 8 songs
+          
           if (data.songs?.length > 0) top.push(...data.songs.slice(0, 8).map(s => ({ type: 'Song', ...s })));
           setSuggestions(top.slice(0, 9));
         }
@@ -134,16 +134,16 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
     }
   };
 
-  // Play or pause a song from suggestions - keeps dropdown open
+  
   const handleSuggestionPlay = (e, song) => {
     e.preventDefault();
     e.stopPropagation();
     const isCurrentlyPlaying = currentSong?.id === song.id && isPlaying;
     if (isCurrentlyPlaying) {
-      // Pause
+      
       window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
     } else {
-      // Play
+      
       if (externalOnPlay) externalOnPlay(song);
     }
   };
@@ -154,8 +154,8 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
   const isThisSongCurrent = (song) =>
     currentSong?.id === song.id;
 
-  // Standalone round Browse button, shown beside the search bar on every breakpoint.
-  // Scales with the search bar height: small on mobile, larger on tablet/laptop.
+  
+  
   const browseButton = (
     <Link href="/browse" className="flex-shrink-0" aria-label="Browse" title="Browse">
       <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
@@ -190,7 +190,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         )}
       </div>
 
-      {/* Recent searches — Spotify-style, shown on focus with an empty query */}
+      {}
       {focused && !query.trim() && recentSearches.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-[#282828] rounded-xl shadow-2xl border border-[var(--tt-border)] overflow-hidden z-50">
           <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
@@ -237,7 +237,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
       {focused && query.trim() && (suggestions.length > 0 || isFetchingSuggestions) && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] border border-[var(--tt-border)] overflow-hidden z-50 flex flex-col max-h-[520px]">
 
-          {/* Scrollable body */}
+          {}
           <div className="overflow-y-auto flex-1 scrollbar-hide">
             {isFetchingSuggestions && suggestions.length === 0 ? (
               <div className="p-3 flex flex-col gap-1">
@@ -253,7 +253,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
               </div>
             ) : (
               <>
-                {/* Song suggestions - Spotify-style rows */}
+                {}
                 <div className="py-1">
                   {suggestions.map((s, i) => {
                     const isArtist = s.type === 'Artist';
@@ -283,7 +283,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                         {/* Thumbnail */}
                         <div className={`relative w-11 h-11 flex-shrink-0 bg-neutral-800 overflow-hidden shadow-md ${isArtist ? 'rounded-full' : 'rounded-md'}`}>
                           {img && <img referrerPolicy="no-referrer" src={img} alt={s.name || s.title} onError={coverError(s.name || s.title)} className="w-full h-full object-cover" />}
-                          {/* Play/Pause overlay for songs */}
+                          {}
                           {!isArtist && (
                             <button
                               onClick={(e) => handleSuggestionPlay(e, s)}
@@ -299,7 +299,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                           )}
                         </div>
 
-                        {/* Text */}
+                        {}
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-semibold truncate transition-colors ${
                             current ? "text-green-400" : "text-white group-hover:text-white"
@@ -311,7 +311,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                           </p>
                         </div>
 
-                        {/* Song: dedicated play button on the right */}
+                        {}
                         {!isArtist && (
                           <button
                             onClick={(e) => handleSuggestionPlay(e, s)}
@@ -329,7 +329,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                             )}
                           </button>
                         )}
-                        {/* Artist: arrow */}
+                        {}
                         {isArtist && (
                           <ChevronRight className="w-4 h-4 text-neutral-500 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
@@ -341,7 +341,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
             )}
           </div>
 
-          {/* Pinned footer — "View all results" */}
+          {}
           {!isFetchingSuggestions && suggestions.length > 0 && (
             <div
               onMouseDown={(e) => {
@@ -364,12 +364,12 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 
   return (
     <div className="bg-black px-3 sm:px-4 md:px-6 py-2 md:py-3">
-      {/* Top row */}
+      {}
       <div className="relative flex items-center justify-between gap-2 sm:gap-3 md:gap-4">
 
-        {/* Left - Logo */}
+        {}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
-          {/* Logo - always visible, adapts size */}
+          {}
           <Link href="/" className="flex items-center min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
             <span className="font-black text-sm sm:text-base md:text-lg tracking-tight text-white truncate drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
               tune<span className="text-green-500">together</span>
@@ -377,7 +377,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
           </Link>
         </div>
 
-        {/* Center - Nav + Search (desktop only, lg breakpoint = 1024px+) */}
+        {}
         <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2 w-full max-w-[560px] xl:max-w-2xl 2xl:max-w-3xl px-2">
           <Link href="/" className="flex-shrink-0">
             <div className="w-12 h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
@@ -388,7 +388,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
           {browseButton}
         </div>
 
-        {/* Right - Auth */}
+        {}
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0">
           {mounted && (
             <>
@@ -416,7 +416,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         </div>
       </div>
 
-      {/* Mobile/Tablet search row (shown below 1024px) */}
+      {}
       <div className="flex lg:hidden items-center gap-2 sm:gap-3 mt-2 sm:mt-2.5">
         {searchBar}
         {browseButton}

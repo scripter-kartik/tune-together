@@ -140,9 +140,9 @@ function AddSongsModal({ playlistId, existingIds, onClose, onAdded }) {
   );
 }
 
-// In-app playlist view. Renders inside the home page (like AlbumView) instead
-// of navigating to a separate route, so the player never unmounts and whatever
-// is currently playing keeps playing while you browse.
+
+
+
 export default function PlaylistView({
   playlist,
   onClose,
@@ -180,13 +180,13 @@ export default function PlaylistView({
   const coverUrl = resolveCover(pl?.image, pl?.name || pl?.id);
 
   useEffect(() => {
-    // Reset to the incoming prop when the playlist changes.
+    
     setPlaylistData(playlist);
     setShowAddSongs(false);
     setIsRenaming(false);
 
-    // User playlists always carry a Mongo _id — fetch fresh so add/remove/rename
-    // from anywhere in the app shows up immediately (the sidebar prop can be stale).
+    
+    
     if (playlist?._id) {
       let cancelled = false;
       setIsLoading(true);
@@ -207,14 +207,14 @@ export default function PlaylistView({
       return () => { cancelled = true; };
     }
 
-    // Preset playlists: either they carry songs inline…
+    
     if (Array.isArray(playlist?.songs)) {
       setSongs(playlist.songs);
       setIsLoading(false);
       return;
     }
 
-    // …or they're built from an artist search.
+    
     if (!playlist?.artist) {
       setIsLoading(false);
       return;
@@ -240,7 +240,7 @@ export default function PlaylistView({
     };
     fetchSongs();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [playlist?.id, playlist?._id, playlist?.artist]);
 
   const handleQueue = (song) => {
@@ -253,7 +253,7 @@ export default function PlaylistView({
     if (songs.length) onPlay(songs[0], songs);
   };
 
-  // Owner or collaborator may remove songs (stays in sync for everyone).
+  
   const handleRemove = async (track) => {
     if (!canEdit || !pl?._id) return;
     try {
@@ -328,7 +328,7 @@ export default function PlaylistView({
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
-      {/* Header */}
+      {}
       <div className={`relative bg-gradient-to-b ${gradient} to-[#121212] pt-16 pb-8 px-6 md:px-8`}>
         <button
           onClick={onClose}
@@ -337,7 +337,7 @@ export default function PlaylistView({
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        {/* Delete (owner only) */}
+        {}
         {isOwner && pl?._id && (
           <button
             onClick={handleDelete}
@@ -405,7 +405,7 @@ export default function PlaylistView({
               )}
             </div>
             <div className="flex items-center gap-2 mt-3 flex-wrap">
-              {/* Collaborator avatars */}
+              {}
               {collaboratorInfo.length > 0 && (
                 <div className="flex -space-x-2">
                   {collaboratorInfo.slice(0, 5).map((collab) =>
@@ -447,7 +447,7 @@ export default function PlaylistView({
         </div>
       </div>
 
-      {/* Actions + Tracks */}
+      {}
       <div className="px-6 md:px-8 py-4 flex flex-col gap-6 pb-12">
         {songs.length > 0 && (
           <div className="flex items-center gap-4 flex-wrap">
@@ -483,7 +483,7 @@ export default function PlaylistView({
           </div>
         ) : songs.length > 0 ? (
           <div className="flex flex-col">
-            {/* Header row */}
+            {}
             <div className="grid grid-cols-[auto_1fr_auto] gap-4 px-3 py-2 border-b border-[var(--tt-border)] mb-2">
               <span className="text-neutral-400 text-xs font-medium w-5 text-right">#</span>
               <span className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Title</span>

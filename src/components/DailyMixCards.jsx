@@ -3,7 +3,6 @@
 import { Play, Music2 } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
-/** Tiny animated equalizer bars — shown on the card that's currently playing. */
 function MiniEqualizer() {
   return (
     <div className="flex gap-0.5 items-end h-3">
@@ -14,12 +13,6 @@ function MiniEqualizer() {
   );
 }
 
-/**
- * Spotify-style "Made for you" Daily Mix cards — a horizontal scrollable row.
- * Each card is a per-artist mix built server-side from the user's top artists.
- * Clicking a card opens it as a collection (CollectionView); the hover play
- * button plays the mix immediately with the mix as its context.
- */
 export default function DailyMixCards({ mixes = [], onPlay, onOpenCollection, currentSongId, isPlaying }) {
   if (!mixes?.length) return null;
 

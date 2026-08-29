@@ -7,11 +7,11 @@ import User from "@/lib/models/User";
 import { areFriends, memberOf, isAdmin } from "@/lib/chatGuards";
 import { isBlockedEitherWay } from "@/lib/models/Block";
 
-// Member management: { action: "add" | "remove" | "promote", userId, wrappedKey?, iv? }
-// - add: admin only; target must be a friend of the admin; `wrappedKey`/`iv` is
-//   the current group key wrapped for the new member (client-side).
-// - remove: admin only; rotates the group key (bumps keyVersion).
-// - promote: admin only; makes target an admin.
+
+
+
+
+
 export async function POST(req, { params }) {
   try {
     const user = await currentUser();
@@ -46,7 +46,7 @@ export async function POST(req, { params }) {
         if (group.members.length >= 100) {
           return Response.json({ error: "Group is full (100 members)" }, { status: 400 });
         }
-        // Safety: can only add your own friends, and never across a block.
+        
         if (!(await areFriends(user.id, userId))) {
           return Response.json({ error: "You can only add your friends" }, { status: 403 });
         }
@@ -90,7 +90,7 @@ export async function POST(req, { params }) {
           return Response.json({ error: "Use leave instead" }, { status: 400 });
         }
         group.members = group.members.filter((m) => m.clerkId !== userId);
-        // Rotate: removed member must not read anything sent after this.
+        
         group.keyVersion += 1;
         await group.save();
         await GroupKey.deleteMany({ groupId: group._id, memberId: userId });

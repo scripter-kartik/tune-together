@@ -6,10 +6,6 @@ import { createAndPublishGroupKey } from "@/lib/e2eeClient";
 
 const GROUP_ICONS = ["🎧", "🎵", "🔥", "🌙", "⚡", "💿", "🎸", "🎹", "🥁", "🎤"];
 
-/**
- * Create a group: name + icon + pick friends. Generates the E2EE group key
- * client-side, wraps it for every member, and sends only wrapped blobs.
- */
 export default function CreateGroupModal({ me, onClose, onCreated }) {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("🎧");
@@ -48,7 +44,7 @@ export default function CreateGroupModal({ me, onClose, onCreated }) {
     setError(null);
     try {
       const memberIds = [me.id, ...selected];
-      // Mint the group key on-device and wrap for every member.
+      
       const { wrappedKeys } = await createAndPublishGroupKey(me.id, null, 1, memberIds);
 
       if (!wrappedKeys.some((k) => k.memberId === me.id)) {
@@ -94,7 +90,7 @@ export default function CreateGroupModal({ me, onClose, onCreated }) {
         </div>
 
         <div className="p-5 space-y-4 overflow-y-auto scrollbar flex-1">
-          {/* Icon + name */}
+          {}
           <div>
             <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Group name</label>
             <input
@@ -124,7 +120,7 @@ export default function CreateGroupModal({ me, onClose, onCreated }) {
             </div>
           </div>
 
-          {/* Friend picker */}
+          {}
           <div>
             <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">
               Add friends ({selected.size} selected)

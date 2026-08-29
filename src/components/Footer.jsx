@@ -79,13 +79,13 @@ export default function Footer() {
 
   return (
     <footer className="mt-10 border-t border-[var(--tt-divider)] bg-gradient-to-b from-transparent to-black/60 relative">
-      {/* Top accent hairline */}
+      {}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-[var(--tt-accent)]/40 to-transparent" />
 
       <div className="px-6 sm:px-8 py-10 sm:py-12 max-w-7xl mx-auto">
-        {/* ─── Now Playing Card ─── */}
+        {}
         <div className="relative mb-10 rounded-xl overflow-hidden">
-          {/* Subtle radial glow behind card */}
+          {}
           <div
             className="absolute -top-8 left-1/2 -translate-x-1/2 w-80 h-20 rounded-full opacity-20 blur-3xl pointer-events-none"
             style={{
@@ -95,11 +95,11 @@ export default function Footer() {
           />
 
           <div className="relative bg-white/[0.03] border border-[var(--tt-divider)] rounded-xl p-5 sm:p-6">
-            {/* Accent hairline on card top */}
+            {}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--tt-accent)]/30 to-transparent rounded-t-xl" />
 
             <div className="flex items-center gap-4 sm:gap-5">
-              {/* Album art / placeholder */}
+              {}
               {cover ? (
                 <div className="relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shadow-lg shadow-black/40">
                   <img
@@ -108,7 +108,7 @@ export default function Footer() {
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                   />
-                  {/* Playing indicator overlay */}
+                  {}
                   {isPlaying && (
                     <div className="absolute inset-0 bg-black/30 flex items-end justify-center gap-[2px] pb-2">
                       {[1, 2, 3, 4, 5].map((i) => (
@@ -131,7 +131,7 @@ export default function Footer() {
                 </div>
               )}
 
-              {/* Song info */}
+              {}
               <div className="flex-1 min-w-0">
                 {currentSong ? (
                   <>
@@ -169,7 +169,7 @@ export default function Footer() {
                 )}
               </div>
 
-              {/* Play indicator / decorative */}
+              {}
               <div className="flex-shrink-0 hidden sm:flex items-center gap-2 text-neutral-600">
                 {currentSong && isPlaying ? (
                   <div className="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
@@ -201,9 +201,9 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* ─── Brand + Link Columns ─── */}
+        {}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6">
-          {/* Brand block */}
+          {}
           <div className="sm:col-span-2 lg:col-span-2">
             <Link
               href="/"
@@ -219,7 +219,7 @@ export default function Footer() {
               vibe going with friends — anywhere.
             </p>
 
-            {/* Social icons */}
+            {}
             <div className="flex items-center gap-2 mt-5">
               {socials.map(({ label, href, Icon }) => (
                 <a
@@ -235,7 +235,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Link columns */}
+          {}
           {columns.map((col) => (
             <div key={col.title}>
               <h4 className="text-white font-bold text-sm tracking-wide uppercase mb-3">
@@ -257,10 +257,10 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Divider */}
+        {}
         <div className="h-px bg-[var(--tt-divider)] my-8" />
 
-        {/* Bottom bar */}
+        {}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-neutral-500 text-sm">
             <span>© {year} Tune Together</span>
@@ -285,7 +285,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Contact strip */}
+        {}
         <div className="mt-6 flex items-center justify-center gap-2 text-neutral-600 text-xs">
           <Mail className="w-3.5 h-3.5" />
           <span>hello@tunetogether.app</span>

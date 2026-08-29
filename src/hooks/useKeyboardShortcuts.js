@@ -2,21 +2,6 @@
 
 import { useEffect, useCallback } from "react";
 
-/**
- * Keyboard shortcuts for Tune Together
- *
- * Shortcuts:
- * - Space: Play/Pause (when not focused on input)
- * - Left Arrow: Seek back 5s
- * - Right Arrow: Seek forward 5s
- * - Shift + Left/Right: Prev/Next track
- * - / or Ctrl+K: Focus search
- * - M: Mute/Unmute
- * - Q: Open queue panel
- * - L: Toggle lyrics
- * - ?: Show shortcuts help
- * - Escape: Close modals/overlays
- */
 
 const SHORTCUTS = {
   PLAY_PAUSE: "space",
@@ -49,7 +34,7 @@ export function useKeyboardShortcuts({
     (e) => {
       if (!enabled) return;
 
-      // Ignore if typing in input/textarea (except for specific shortcuts)
+      
       const isTyping =
         document.activeElement.tagName === "INPUT" ||
         document.activeElement.tagName === "TEXTAREA" ||
@@ -59,30 +44,30 @@ export function useKeyboardShortcuts({
       const isShift = e.shiftKey;
       const isCtrl = e.ctrlKey || e.metaKey;
 
-      // Escape always works
+      
       if (key === "escape") {
         onCloseModal?.();
         return;
       }
 
-      // Focus search works even when typing
+      
       if ((key === "/" && !isShift) || (key === "k" && isCtrl)) {
         e.preventDefault();
         onFocusSearch?.();
         return;
       }
 
-      // Don't process other shortcuts while typing
+      
       if (isTyping) return;
 
-      // Play/Pause
+      
       if (key === " " || key === "spacebar") {
         e.preventDefault();
         onPlayPause?.();
         return;
       }
 
-      // Seek / Prev/Next
+      
       if (key === "arrowleft") {
         e.preventDefault();
         if (isShift) {
@@ -103,28 +88,28 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // Mute
+      
       if (key === "m") {
         e.preventDefault();
         onMuteToggle?.();
         return;
       }
 
-      // Queue
+      
       if (key === "q") {
         e.preventDefault();
         onToggleQueue?.();
         return;
       }
 
-      // Lyrics
+      
       if (key === "l") {
         e.preventDefault();
         onToggleLyrics?.();
         return;
       }
 
-      // Help
+      
       if (key === "?" || (key === "/" && isShift)) {
         e.preventDefault();
         onShowHelp?.();
@@ -153,7 +138,7 @@ export function useKeyboardShortcuts({
   }, [enabled, handleKeyDown]);
 }
 
-// Help modal component showing all shortcuts
+
 export function KeyboardShortcutsHelp({ isOpen, onClose }) {
   if (!isOpen) return null;
 

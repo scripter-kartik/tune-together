@@ -2,7 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import Friendship from "@/lib/models/Friendship";
 
-// Accept or decline an incoming friend request (one where I'm the recipient).
+
 export async function POST(req) {
   try {
     const clerkUser = await currentUser();

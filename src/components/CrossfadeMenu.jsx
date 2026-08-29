@@ -4,9 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { Crosshair } from "lucide-react";
 import { CROSSFADE_PRESETS } from "@/hooks/useCrossfade";
 
-/**
- * Crossfade duration picker — opens a popover above the player controls.
- */
 export default function CrossfadeMenu({ fadeSeconds, onSet, disabled, onOpen }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);

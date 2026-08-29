@@ -33,7 +33,7 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
     }
   }, [isSignedIn]);
 
-  // Close on outside click
+  
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) onClose();
@@ -56,7 +56,7 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
     setTimeout(() => { setAddedToId(null); onClose(); }, 800);
   };
 
-  // Create a new playlist and add this song in one step, Spotify style.
+  
   const createAndAdd = async () => {
     setIsCreatingNew(true);
     try {
@@ -74,7 +74,7 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
     setIsCreatingNew(false);
   };
 
-  // Clamp menu so it doesn't go off screen
+  
   const style = {
     position: "fixed",
     top: position.y,
@@ -174,7 +174,7 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
 export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPlaying, onOpenArtist }) {
   const [addedId, setAddedId] = useState(null);
   const [selectedSong, setSelectedSong] = useState(null);
-  const [contextMenu, setContextMenu] = useState(null); // { song, x, y }
+  const [contextMenu, setContextMenu] = useState(null); 
 
   const handleQueue = (song) => {
     onQueue(song);
@@ -185,7 +185,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
   const handleContextMenu = (e, song) => {
     e.preventDefault();
     e.stopPropagation();
-    // Clamp to viewport
+    
     const x = Math.min(e.clientX, window.innerWidth - 220);
     const y = Math.min(e.clientY, window.innerHeight - 280);
     setContextMenu({ song, x, y });
@@ -216,7 +216,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 : "bg-[#181818] hover:bg-[#282828]"}
             `}
           >
-            {/* Cover art */}
+            {}
             <div className="relative w-full aspect-square overflow-hidden rounded-md sm:rounded-lg mb-3 sm:mb-4 shadow-lg">
               <img referrerPolicy="no-referrer"
                 src={cover}
@@ -224,7 +224,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 onError={coverError(song.title || song.id)}
                 className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-105"
               />
-              {/* Play/Pause button overlay — reflects the current song's state */}
+              {}
               <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 translate-y-0 opacity-100 md:translate-y-2 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-300">
                 <button
                   className="w-9 h-9 sm:w-10 sm:h-10 bg-green-500 hover:bg-green-400 active:scale-95 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 transition-all duration-200 touch-manipulation"
@@ -249,7 +249,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
               </div>
             </div>
 
-            {/* Now playing indicator */}
+            {}
             {isActive && (
               <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10 flex items-center gap-1 sm:gap-1.5 bg-black/70 rounded-full pl-1.5 sm:pl-2 pr-2 sm:pr-2.5 py-1 backdrop-blur-sm">
                 {isPlaying ? <Equalizer /> : <span className="w-1.5 h-1.5 rounded-full bg-green-400" />}
@@ -259,7 +259,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
               </div>
             )}
 
-            {/* Three-dot menu button (always visible on mobile, hover on desktop) */}
+            {}
             <button
               onClick={(e) => handleContextMenu(e, song)}
               className="absolute top-2 sm:top-3 right-2 sm:right-3 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg transition-all duration-200 touch-manipulation"
@@ -269,7 +269,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
               <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
-            {/* Queue button — positioned below three-dots on mobile, side-by-side on desktop */}
+            {}
             {onQueue && (
               <button
                 onClick={(e) => {
@@ -292,7 +292,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
               </button>
             )}
 
-            {/* Song info */}
+            {}
             <div className="mt-0.5 sm:mt-1 w-full px-0.5 sm:px-1">
               <p className={`text-xs sm:text-sm font-semibold truncate leading-tight ${isActive ? "text-green-400" : "text-white"}`}>
                 {song.title}

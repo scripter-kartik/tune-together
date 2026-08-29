@@ -5,9 +5,9 @@ import GroupKey from "@/lib/models/GroupKey";
 import UserKey from "@/lib/models/UserKey";
 import { memberOf, isAdmin } from "@/lib/chatGuards";
 
-// GET: fetch MY wrapped group key for the current keyVersion, plus the
-// wrapper's public key (needed for the ECDH unwrap). If missing (key was
-// rotated), the response says so and an admin client re-wraps via POST.
+
+
+
 export async function GET(_req, { params }) {
   try {
     const user = await currentUser();
@@ -29,7 +29,7 @@ export async function GET(_req, { params }) {
     }).lean();
 
     if (!row) {
-      // Key rotation pending — an admin needs to publish a fresh wrapped key.
+      
       return Response.json({
         success: true,
         key: null,
@@ -57,9 +57,9 @@ export async function GET(_req, { params }) {
   }
 }
 
-// POST: publish wrapped keys after creating/rotating a group key.
-// Body: { keyVersion, wrappedKeys: [{ memberId, wrappedKey, iv }] }
-// Admin only. Only current members can receive keys.
+
+
+
 export async function POST(req, { params }) {
   try {
     const user = await currentUser();

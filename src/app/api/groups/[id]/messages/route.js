@@ -5,7 +5,7 @@ import Group from "@/lib/models/Group";
 import GroupMessage from "@/lib/models/GroupMessage";
 import { memberOf, rateLimit } from "@/lib/chatGuards";
 
-// Message history for a group. Members only. ?before=<iso> for pagination.
+
 export async function GET(req, { params }) {
   try {
     const user = await currentUser();
@@ -36,8 +36,8 @@ export async function GET(req, { params }) {
   }
 }
 
-// Send an encrypted message: { ciphertext, iv, keyVersion }
-// The server never sees plaintext — it stores and relays opaque blobs.
+
+
 export async function POST(req, { params }) {
   try {
     const user = await currentUser();
@@ -62,7 +62,7 @@ export async function POST(req, { params }) {
 
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "User";
 
-    // Replies must point at a message in this group.
+    
     let replyTo = null;
     if (replyToId && mongoose.isValidObjectId(replyToId)) {
       const target = await GroupMessage.findOne({ _id: replyToId, groupId: group._id }).lean();
@@ -81,7 +81,7 @@ export async function POST(req, { params }) {
       replyToId: replyTo,
     });
 
-    // Bump group activity so the sidebar sorts by recency.
+    
     group.updatedAt = new Date();
     await group.save();
 

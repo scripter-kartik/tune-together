@@ -86,7 +86,7 @@ export default function UserProfilePage() {
       <Header />
       <div className="flex-1 overflow-y-auto scrollbar bg-[#121212]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-          {/* Back */}
+          {}
           <button
             onClick={() => router.push("/")}
             className="flex items-center gap-2 text-neutral-400 hover:text-white text-sm font-medium transition-colors mb-5"
@@ -113,7 +113,7 @@ export default function UserProfilePage() {
 
           {data && (
             <>
-              {/* Profile header */}
+              {}
               <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 mb-8">
                 <div className="relative flex-shrink-0">
                   {data.profile.imageUrl ? (
@@ -176,7 +176,7 @@ export default function UserProfilePage() {
                 </div>
               </div>
 
-              {/* Top artists */}
+              {}
               {data.stats.topArtists.length > 0 && (
                 <section className="mb-8">
                   <h2 className="text-xl font-bold text-white mb-4">Top artists</h2>
@@ -211,7 +211,7 @@ export default function UserProfilePage() {
                 </section>
               )}
 
-              {/* Playlists */}
+              {}
               <section className="mb-8">
                 <h2 className="text-xl font-bold text-white mb-4">Playlists</h2>
                 {data.playlists.length === 0 ? (
@@ -252,7 +252,7 @@ export default function UserProfilePage() {
                 )}
               </section>
 
-              {/* Recently played */}
+              {}
               {data.stats.recentSongs.length > 0 && (
                 <section className="mb-8">
                   <h2 className="text-xl font-bold text-white mb-4">Recently played</h2>

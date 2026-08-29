@@ -8,7 +8,7 @@ const RESERVED = new Set([
   "null", "undefined", "me", "you",
 ]);
 
-// Claim or change the signed-in user's unique @username (used to add friends).
+
 export async function POST(req) {
   try {
     const clerkUser = await currentUser();
@@ -56,7 +56,7 @@ export async function POST(req) {
 
     return Response.json({ success: true, username: user.username });
   } catch (error) {
-    // Duplicate key (race on the unique index).
+    
     if (error?.code === 11000) {
       return Response.json({ error: "That username is taken." }, { status: 409 });
     }

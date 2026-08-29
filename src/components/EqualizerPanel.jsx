@@ -38,8 +38,8 @@ export default function EqualizerPanel({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // True whenever anything is customized vs the default settings (a moved band
-  // or an enabled effect, including loudness) — drives the indicator dot.
+  
+  
   const isActive =
     !!settings &&
     (settings.gains.some((g) => g !== 0) ||
@@ -90,7 +90,7 @@ export default function EqualizerPanel({
             </div>
           )}
 
-          {/* Presets */}
+          {}
           <div className="flex flex-wrap gap-1.5 mb-3">
             {Object.keys(EQ_PRESETS).map((name) => (
               <button
@@ -107,7 +107,7 @@ export default function EqualizerPanel({
             ))}
           </div>
 
-          {/* 10-band sliders */}
+          {}
           <div className="flex items-end justify-between gap-1 px-1 mb-3">
             {bands.map((freq, i) => (
               <div key={freq} className="flex flex-col items-center gap-1 flex-1 min-w-0">
@@ -129,7 +129,7 @@ export default function EqualizerPanel({
             ))}
           </div>
 
-          {/* Effect toggles */}
+          {}
           <div className="flex items-center justify-center gap-2 mb-1">
             {EFFECTS.map((fx) => {
               const on = settings.effects[fx.key] > 0 || settings.effects[fx.key] === true;

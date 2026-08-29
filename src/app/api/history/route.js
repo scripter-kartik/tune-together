@@ -2,7 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db";
 import PlayHistory from "@/lib/models/PlayHistory";
 
-// Record a play for the logged-in user.
+
 export async function POST(req) {
   try {
     const clerkUser = await currentUser();
@@ -38,7 +38,7 @@ export async function POST(req) {
   }
 }
 
-// Return the logged-in user's most-listened artists + songs by those artists.
+
 export async function GET() {
   try {
     const clerkUser = await currentUser();
@@ -49,7 +49,7 @@ export async function GET() {
     await connectDB();
     const clerkId = clerkUser.id;
 
-    // Most-played artists (by number of plays).
+    
     const artistRows = await PlayHistory.aggregate([
       { $match: { clerkId } },
       { $sort: { playedAt: -1 } },
@@ -71,14 +71,14 @@ export async function GET() {
       .map((r) => ({
         id: r.artistId,
         name: r._id,
-        // Never hand the app logo to the UI as an "artist image" — the
-        // frontend swaps null for a generated placeholder.
+        
+        
         image: r.image && r.image !== "/icon2.png" ? r.image : null,
         count: r.count,
       }));
 
-    // Recent distinct songs by those top artists, reconstructed into the
-    // same shape the player expects (youtubeId === id).
+    
+    
     const topNames = topArtists.map((a) => a.name);
     let songs = [];
     if (topNames.length) {
@@ -91,9 +91,9 @@ export async function GET() {
       ]);
 
       songs = songRows.map(({ doc }) => {
-        // Stored albumArt URLs can go stale/expire; songId is a YouTube video
-        // id, and mqdefault.jpg exists for virtually every video forever, so
-        // derive the cover fresh instead of trusting the frozen copy.
+        
+        
+        
         const cover = `https://i.ytimg.com/vi/${doc.songId}/mqdefault.jpg`;
         return {
           id: doc.songId,

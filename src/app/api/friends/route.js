@@ -4,8 +4,8 @@ import User from "@/lib/models/User";
 import Friendship from "@/lib/models/Friendship";
 import { toPublicProfile } from "@/lib/presence";
 
-// Return the signed-in user's friends (accepted) plus incoming and outgoing
-// pending requests, each hydrated with presence + now-playing.
+
+
 export async function GET() {
   try {
     const clerkUser = await currentUser();
@@ -21,8 +21,8 @@ export async function GET() {
     }).lean();
 
     const friendIds = [];
-    const incomingIds = []; // they asked me
-    const outgoingIds = []; // I asked them
+    const incomingIds = []; 
+    const outgoingIds = []; 
 
     for (const r of rows) {
       const other = r.requesterId === me ? r.recipientId : r.requesterId;
@@ -42,7 +42,7 @@ export async function GET() {
     const pick = (ids) => ids.map((id) => byId.get(id)).filter(Boolean);
 
     const friends = pick(friendIds).sort((a, b) => {
-      // Online first, then currently-listening, then name.
+      
       const rank = (u) => (u.onlineStatus === "online" ? 0 : u.onlineStatus === "idle" ? 1 : 2);
       if (rank(a) !== rank(b)) return rank(a) - rank(b);
       return (a.name || "").localeCompare(b.name || "");

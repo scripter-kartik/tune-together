@@ -12,8 +12,8 @@ export async function GET(req) {
     const ytmusic = await getYTMusic();
     const artist = await ytmusic.getArtist(id);
 
-    // ytmusic-api occasionally returns the same entry twice (or several rows
-    // sharing one mis-parsed id) — drop repeats so the grids don't duplicate.
+    
+    
     const dedupeById = (items) => {
       const seen = new Set();
       return items.filter((item) => {
@@ -24,7 +24,7 @@ export async function GET(req) {
       });
     };
 
-    // Format top songs for the ArtistView
+    
     const topSongs = dedupeById((artist.topSongs || []).map(item => ({
       id: item.videoId,
       title: item.name,
@@ -41,7 +41,7 @@ export async function GET(req) {
       youtubeId: item.videoId
     })));
 
-    // Format top albums
+    
     const topAlbums = dedupeById((artist.topAlbums || []).map(item => ({
       id: item.albumId,
       title: item.name,
@@ -49,7 +49,7 @@ export async function GET(req) {
       artist: { name: artist.name }
     })));
 
-    // Format top singles
+    
     const topSingles = dedupeById((artist.topSingles || []).map(item => ({
       id: item.albumId,
       title: item.name,
@@ -57,7 +57,7 @@ export async function GET(req) {
       artist: { name: artist.name }
     })));
 
-    // Format similar artists
+    
     const similarArtists = dedupeById((artist.similarArtists || []).map(item => ({
       id: item.artistId,
       name: item.name,

@@ -4,11 +4,6 @@ import { useMemo } from "react";
 import { Play, Pause, Music2 } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 
-/**
- * Spotify-style "Recently played" quick-picks grid.
- * Renders the tiles only — the section header lives in the caller (HomeFeed)
- * so this stays a small, standalone component.
- */
 export default function RecentlyPlayed({ history = [], onPlay, expanded = false, currentSongId, isPlaying }) {
   const deduped = useMemo(() => {
     const seen = new Set();
