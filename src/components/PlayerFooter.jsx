@@ -134,11 +134,14 @@ export default function PlayerFooter({
 
     const applyStream = (youtubeId) => {
       youtubeIdRef.current = youtubeId;
+      streamRetriesRef.current[youtubeId] = 0;
       
+      const isDev = process.env.NODE_ENV === "development";
+      const streamPath = isDev ? "/api/stream-local" : "/api/stream";
       
       const next = {
         kind: "stream",
-        url: `/api/stream?videoId=${youtubeId}&ext=.m4a`,
+        url: `${streamPath}?videoId=${youtubeId}&ext=.m4a`,
       };
       sourceRef.current = next;
       if (!cancelled) setSource(next);
@@ -217,9 +220,11 @@ export default function PlayerFooter({
       const attempt = (streamRetriesRef.current[id] || 0) + 1;
       if (attempt <= MAX_STREAM_RETRIES) {
         streamRetriesRef.current[id] = attempt;
+        const isDev = process.env.NODE_ENV === "development";
+        const streamPath = isDev ? "/api/stream-local" : "/api/stream";
         const next = {
           kind: "stream",
-          url: `/api/stream?videoId=${id}&ext=.m4a&retry=${attempt}`,
+          url: `${streamPath}?videoId=${id}&ext=.m4a&retry=${attempt}`,
         };
         sourceRef.current = next;
         setSource(next);
