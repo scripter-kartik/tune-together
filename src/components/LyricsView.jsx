@@ -217,7 +217,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
           {hasLyrics && (
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation"
+              className="flex items-center justify-center gap-1.5 h-8 sm:h-9 px-3 sm:px-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation"
               aria-label="Copy lyrics"
             >
               {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
@@ -226,10 +226,10 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
           )}
           <button
             onClick={onClose}
-            className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors touch-manipulation"
+            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors touch-manipulation"
             aria-label="Close lyrics"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>

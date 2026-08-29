@@ -62,16 +62,9 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
       </div>
 
       {}
-      <div className="flex flex-col gap-3 items-center w-full flex-shrink-0 pb-2">
+      <div className="flex flex-col gap-3 items-center w-full flex-shrink-0 pb-20 lg:pb-2">
         <FriendRequestBell />
         <ThemeSwitcher />
-        <UserButton 
-          appearance={{
-            elements: {
-              userButtonAvatarBox: "w-10 h-10 hover:scale-105 transition-all shadow-lg"
-            }
-          }}
-        />
       </div>
     </div>
   );

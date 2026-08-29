@@ -66,7 +66,7 @@ export default function FriendRequestBell() {
     } catch {}
   };
 
-  if (!isSignedIn) return null;
+
 
   const count = requests.length;
 
@@ -81,7 +81,12 @@ export default function FriendRequestBell() {
         <span className="text-xs text-neutral-400">{count} pending</span>
       </div>
 
-      {count === 0 ? (
+      {!isSignedIn ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-2 text-neutral-500">
+          <UserCheck className="w-8 h-8" />
+          <p className="text-sm">Please sign in to view requests</p>
+        </div>
+      ) : count === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 gap-2 text-neutral-500">
           <UserCheck className="w-8 h-8" />
           <p className="text-sm">No pending requests</p>

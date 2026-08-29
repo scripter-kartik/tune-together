@@ -28,7 +28,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
     <div className="relative flex items-center" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation ${
+        className={`flex items-center justify-center gap-1.5 h-8 sm:h-9 px-3 sm:px-4 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation ${
           isOpen || active
             ? "text-green-500 bg-white/10"
             : "text-white/70 hover:text-white hover:bg-white/10"
