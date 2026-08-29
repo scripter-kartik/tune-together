@@ -36,6 +36,7 @@
     "src/app/page.jsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "node_modules_backup"
   ]
 }
