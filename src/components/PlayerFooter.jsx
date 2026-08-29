@@ -442,8 +442,6 @@ export default function PlayerFooter({
     applyPreset: applyEqPreset,
     toggleEffect: toggleEqEffect,
     resetAll: resetEq,
-    retryWiring: retryEqWiring,
-    reportDiagnostics: reportEqDiagnostics,
   } = useEqualizer({ playerRef });
 
   
