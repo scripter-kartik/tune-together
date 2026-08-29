@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { SlidersHorizontal, Info, RotateCcw } from "lucide-react";
+import { SlidersHorizontal, RotateCcw } from "lucide-react";
 import { EQ_PRESETS } from "@/hooks/useEqualizer";
 
 const fmtFreq = (hz) => (hz >= 1000 ? `${hz / 1000}k` : `${hz}`);
@@ -71,6 +71,9 @@ export default function EqualizerPanel({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-xs text-neutral-400 font-semibold uppercase tracking-wider">
               <SlidersHorizontal size={12} /> Equalizer
+              {wired && (
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" title="EQ active" />
+              )}
             </div>
             <button
               onClick={onReset}
@@ -80,15 +83,6 @@ export default function EqualizerPanel({
             </button>
           </div>
 
-          {!wired && sourceKind !== "stream" && sourceKind !== "preview" && (
-            <div className="flex items-center gap-2 mb-2 px-2.5 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300/90 text-[11px]">
-              <Info className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>
-                This source (<span className="font-semibold">{sourceKind || "unknown"}</span>)
-                can't be routed through the equalizer. EQ applies to proxy streams and previews.
-              </span>
-            </div>
-          )}
 
           {}
           <div className="flex flex-wrap gap-1.5 mb-3">
