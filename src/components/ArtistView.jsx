@@ -135,10 +135,11 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
 
         <button
           onClick={onClose}
-          className="absolute top-6 left-6 p-2.5 bg-black/40 hover:bg-black/80 rounded-full text-white transition-all backdrop-blur-md z-30"
+          className="absolute top-4 left-4 sm:top-6 sm:left-6 w-9 h-9 sm:w-11 sm:h-11 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-all backdrop-blur-md active:scale-95 z-30 shadow-lg"
           title="Go back"
+          aria-label="Go back"
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 z-20 flex flex-col justify-end h-full">
@@ -228,15 +229,16 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-end gap-6 flex-shrink-0 w-32">
+                    <div className="flex items-center justify-end gap-3 flex-shrink-0">
                       <button
                         onClick={(e) => { e.stopPropagation(); onQueue(track); }}
-                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-neutral-400 hover:text-white active:text-white transition-all p-1"
+                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-neutral-400 hover:text-white active:text-white w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 flex items-center justify-center transition-all shadow-sm"
                         title="Add to Queue"
+                        aria-label="Add to Queue"
                       >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-4 h-4" />
                       </button>
-                      <span className="text-neutral-400 text-sm font-medium tabular-nums">{formatTime(track.duration)}</span>
+                      <span className="text-neutral-400 text-sm font-medium tabular-nums min-w-[36px] text-right">{formatTime(track.duration)}</span>
                     </div>
                   </div>
                 );

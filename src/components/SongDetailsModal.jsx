@@ -61,7 +61,9 @@ export default function SongDetailsModal({ song, onClose, onPlay, onQueue, onOpe
           />
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 z-20 p-2 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors backdrop-blur-md"
+            className="absolute top-4 right-4 z-20 w-9 h-9 sm:w-10 sm:h-10 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors backdrop-blur-md active:scale-95"
+            title="Close"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Check, Play, Pause, Music2, ListMusic, MoreVertical, X } from "lucide-react";
+import { Plus, Check, Play, Pause, Music2, ListMusic, MoreVertical } from "lucide-react";
 import SongDetailsModal from "./SongDetailsModal";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 import { useUser } from "@clerk/nextjs";
@@ -174,7 +174,7 @@ function ContextMenu({ song, position, onClose, onPlay, onQueue, onOpenArtist })
 export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPlaying, onOpenArtist }) {
   const [addedId, setAddedId] = useState(null);
   const [selectedSong, setSelectedSong] = useState(null);
-  const [contextMenu, setContextMenu] = useState(null); 
+  const [contextMenu, setContextMenu] = useState(null);
 
   const handleQueue = (song) => {
     onQueue(song);
@@ -224,73 +224,13 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 onError={coverError(song.title || song.id)}
                 className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-105"
               />
-              {}
-              <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 translate-y-0 opacity-100 md:translate-y-2 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-300">
-                <button
-                  className="w-9 h-9 sm:w-10 sm:h-10 bg-green-500 hover:bg-green-400 active:scale-95 hover:scale-105 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 transition-all duration-200 touch-manipulation"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isActive && isPlaying) {
-                      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "pause" } }));
-                    } else if (isActive) {
-                      window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: "play" } }));
-                    } else {
-                      onPlay(song, songs);
-                    }
-                  }}
-                  aria-label={`${isActive && isPlaying ? "Pause" : "Play"} ${song.title}`}
-                >
-                  {isActive && isPlaying ? (
-                    <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black" />
-                  ) : (
-                    <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-black text-black ml-0.5" />
-                  )}
-                </button>
-              </div>
+              {/* Playing indicator badge */}
+              {isActive && (
+                <div className="absolute top-2 left-2 z-10 bg-black/70 backdrop-blur-sm rounded-md px-1.5 py-1 flex items-center gap-1 shadow-md">
+                  {isPlaying ? <Equalizer /> : <Music2 className="w-3 h-3 text-green-400" />}
+                </div>
+              )}
             </div>
-
-            {}
-            {isActive && (
-              <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10 flex items-center gap-1 sm:gap-1.5 bg-black/70 rounded-full pl-1.5 sm:pl-2 pr-2 sm:pr-2.5 py-1 backdrop-blur-sm">
-                {isPlaying ? <Equalizer /> : <span className="w-1.5 h-1.5 rounded-full bg-green-400" />}
-                <span className="text-[9px] sm:text-[10px] font-semibold text-green-400">
-                  {isPlaying ? "Playing" : "Paused"}
-                </span>
-              </div>
-            )}
-
-            {}
-            <button
-              onClick={(e) => handleContextMenu(e, song)}
-              className="absolute top-2 sm:top-3 right-2 sm:right-3 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-black/70 text-white hover:bg-black/90 shadow-lg transition-all duration-200 touch-manipulation"
-              title="More options"
-              aria-label="More options"
-            >
-              <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-
-            {}
-            {onQueue && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQueue(song);
-                }}
-                className={`absolute top-10 sm:top-3 right-2 sm:right-10 z-10 transition-all duration-200 rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-lg touch-manipulation ${
-                  addedId === song.id
-                    ? "opacity-100 bg-green-500 text-white scale-110"
-                    : "opacity-100 md:opacity-0 md:group-hover:opacity-100 bg-black/70 text-white hover:bg-green-500 active:bg-green-500 hover:scale-110"
-                }`}
-                title={addedId === song.id ? "Added to queue" : "Add to queue"}
-                aria-label="Add to queue"
-              >
-                {addedId === song.id ? (
-                  <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                ) : (
-                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                )}
-              </button>
-            )}
 
             {}
             <div className="mt-0.5 sm:mt-1 w-full px-0.5 sm:px-1">

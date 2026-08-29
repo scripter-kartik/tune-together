@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  ArrowLeft, Play, Pause, Plus, Check, Music2, ListMusic, Minus,
+  ArrowLeft, ArrowRight, ArrowDown, ChevronDown, ChevronRight, Play, Pause, Plus, Check, Music2, ListMusic, Minus,
   Users, Search, Trash2, Pencil, X,
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
@@ -161,6 +161,7 @@ export default function PlaylistView({
   const [addedId, setAddedId] = useState(null);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [showAddSongs, setShowAddSongs] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [draftName, setDraftName] = useState("");
   const { user } = useUser();
@@ -328,21 +329,23 @@ export default function PlaylistView({
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
-      {}
+      {/* Header with gradient & back arrow */}
       <div className={`relative bg-gradient-to-b ${gradient} to-[#121212] pt-16 pb-8 px-6 md:px-8`}>
         <button
           onClick={onClose}
-          className="absolute top-5 left-5 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-colors"
+          className="absolute top-4 left-4 sm:top-5 sm:left-5 w-9 h-9 sm:w-10 sm:h-10 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all shadow-md active:scale-95 z-20"
+          title="Go back"
+          aria-label="Go back"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        {}
         {isOwner && pl?._id && (
           <button
             onClick={handleDelete}
-            className="absolute top-5 right-5 p-2 bg-black/40 hover:bg-red-500/20 hover:text-red-400 rounded-full text-neutral-300 transition-colors"
+            className="absolute top-4 right-4 sm:top-5 sm:right-5 w-9 h-9 sm:w-10 sm:h-10 bg-black/50 hover:bg-red-500/20 hover:text-red-400 backdrop-blur-md rounded-full flex items-center justify-center text-neutral-300 transition-all shadow-md active:scale-95 z-20"
             title="Delete playlist"
+            aria-label="Delete playlist"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -541,24 +544,45 @@ export default function PlaylistView({
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    {canEdit && pl?._id && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleRemove(track); }}
-                        className="transition p-1 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                        title="Remove from playlist"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
+                  <div className="flex items-center justify-end gap-1.5 sm:gap-2">
+                    {/* Expanded action buttons */}
+                    {expandedId === track.id && (
+                      <div className="flex items-center gap-1.5 sm:gap-2 animate-fade-in">
+                        {canEdit && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleRemove(track); }}
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-red-500/20 text-neutral-400 hover:text-red-400 active:scale-90 flex items-center justify-center transition-all shadow-sm"
+                            title="Remove from playlist"
+                            aria-label="Remove from playlist"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleQueue(track); }}
+                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${addedId === track.id ? "bg-green-500 text-white" : "bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white"} active:scale-90 flex items-center justify-center transition-all shadow-sm`}
+                          title={addedId === track.id ? "Added to queue" : "Add to queue"}
+                          aria-label="Add to queue"
+                        >
+                          {addedId === track.id ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
                     )}
+                    {/* Expand/Collapse arrow toggle button */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleQueue(track); }}
-                      className={`transition p-1 ${addedId === track.id ? "text-green-400 opacity-100" : "text-neutral-400 hover:text-white active:text-white opacity-100 md:opacity-0 md:group-hover:opacity-100"}`}
-                      title="Add to queue"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedId((prev) => (prev === track.id ? null : track.id));
+                      }}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 flex items-center justify-center text-neutral-300 hover:text-white transition-all shadow-sm"
+                      title={expandedId === track.id ? "Collapse" : "More options"}
+                      aria-label={expandedId === track.id ? "Collapse actions" : "Expand actions"}
                     >
-                      {addedId === track.id ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      {expandedId === track.id ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     </button>
-                    <span className="text-neutral-400 text-sm tabular-nums">{formatTime(track.duration)}</span>
+                    <span className="text-neutral-400 text-xs sm:text-sm tabular-nums min-w-[36px] sm:min-w-[42px] text-right">
+                      {formatTime(track.duration)}
+                    </span>
                   </div>
                 </div>
               );

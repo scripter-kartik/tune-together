@@ -80,11 +80,13 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
 
-      {}
+      {/* Header with gradient & back arrow */}
       <div className="relative bg-gradient-to-b from-[#282828] to-[#121212] pt-16 pb-8 px-6 md:px-8">
         <button
           onClick={onClose}
-          className="absolute top-5 left-5 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-colors"
+          className="absolute top-4 left-4 sm:top-5 sm:left-5 w-9 h-9 sm:w-10 sm:h-10 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all shadow-md active:scale-95 z-20"
+          title="Go back"
+          aria-label="Go back"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>

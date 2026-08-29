@@ -116,8 +116,8 @@ export default function CollaboratorsModal({ playlist, onClose, onUpdate }) {
             <Users className="w-5 h-5 text-green-400" />
             Collaborators
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
-            <X className="w-5 h-5 text-neutral-400" />
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-neutral-400 hover:text-white transition-colors active:scale-95" title="Close" aria-label="Close">
+            <X className="w-4 h-4" />
           </button>
         </div>
 

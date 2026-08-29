@@ -28,7 +28,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
     <div className="relative flex items-center" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-center gap-1.5 h-8 sm:h-9 px-3 sm:px-4 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation ${
+        className={`flex items-center justify-center gap-1.5 w-8 h-8 sm:w-auto sm:h-9 sm:px-3.5 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation ${
           isOpen || active
             ? "text-green-500 bg-white/10"
             : "text-white/70 hover:text-white hover:bg-white/10"
@@ -46,7 +46,7 @@ export default function LyricsSyncAdjuster({ offset, onAdjust, onReset }) {
       </button>
 
       {isOpen && (
-        <div className="fixed sm:absolute bottom-20 sm:top-full left-1/2 sm:left-auto right-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 mb-2 sm:mb-0 sm:mt-2 w-[calc(100vw-2.5rem)] max-w-[280px] sm:w-64 bg-[#242424]/95 backdrop-blur border border-[var(--tt-border)] rounded-2xl shadow-2xl px-4 pb-4 pt-2.5 animate-fade-in-up z-50">
+        <div className="fixed sm:absolute top-16 sm:top-full right-3 sm:right-0 sm:mt-2 w-[calc(100vw-2.5rem)] max-w-[280px] sm:w-64 bg-[#242424]/95 backdrop-blur border border-[var(--tt-border)] rounded-2xl shadow-2xl px-4 pb-4 pt-2.5 animate-fade-in-up z-50">
           {}
           <div className="relative mb-3 flex items-center justify-center">
             <span className="flex items-center gap-1.5 leading-none text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-400">

@@ -217,8 +217,9 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
           {hasLyrics && (
             <button
               onClick={handleCopy}
-              className="flex items-center justify-center gap-1.5 h-8 sm:h-9 px-3 sm:px-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation"
+              className="flex items-center justify-center gap-1.5 w-8 h-8 sm:w-auto sm:h-9 sm:px-3.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xs sm:text-sm font-medium touch-manipulation"
               aria-label="Copy lyrics"
+              title="Copy lyrics"
             >
               {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
               <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
