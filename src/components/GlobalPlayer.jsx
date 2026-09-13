@@ -16,6 +16,7 @@ export default function GlobalPlayer() {
 
   const currentSongRef = useRef(null);
   const playContextRef = useRef([]);
+  const playContextIndexRef = useRef(-1);
 
   useEffect(() => {
     currentSongRef.current = currentSong;
@@ -123,7 +124,23 @@ export default function GlobalPlayer() {
     const handlePlaySong = (e) => {
       const { song, list } = e.detail;
       if (song) {
-        if (list && Array.isArray(list)) playContextRef.current = list;
+        if (list && Array.isArray(list) && list.length) {
+          playContextRef.current = list;
+          // Preserve the selected result's exact position. ID-only matching
+          // breaks when a search contains duplicate videos or versions.
+          const byReference = list.indexOf(song);
+          const byIdentity = list.findIndex(
+            (candidate) =>
+              candidate.youtubeId === song.youtubeId &&
+              candidate.id === song.id &&
+              candidate.title === song.title &&
+              candidate.artist?.name === song.artist?.name
+          );
+          playContextIndexRef.current = byReference >= 0 ? byReference : byIdentity;
+        } else {
+          playContextRef.current = [];
+          playContextIndexRef.current = -1;
+        }
         
         setCurrentSong(song);
         setIsPlaying(true);
@@ -210,6 +227,21 @@ export default function GlobalPlayer() {
   }, [roomId, isPlaying, queue]);
 
   const handleNext = () => {
+    const list = playContextRef.current;
+    const contextIndex = playContextIndexRef.current;
+    if (list.length > 0 && contextIndex >= 0) {
+      const nextIndex = (contextIndex + 1) % list.length;
+      const nextSong = list[nextIndex];
+      playContextIndexRef.current = nextIndex;
+      setCurrentSong(nextSong);
+      setIsPlaying(true);
+      window.dispatchEvent(new CustomEvent("tt-global-state", {
+        detail: { currentSong: nextSong, isPlaying: true },
+      }));
+      socketRef.current?.emit("next-song", { roomId, song: nextSong, preferContext: true });
+      return;
+    }
+
     if (queue.length > 0) {
       const nextSong = queue[0];
       const remaining = queue.slice(1);
@@ -222,12 +254,12 @@ export default function GlobalPlayer() {
       socketRef.current?.emit("next-song", { roomId });
       return;
     }
-    const list = playContextRef.current;
     if (!list || list.length === 0) return;
     const cur = currentSongRef.current;
     const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;
     const nextIndex = curIdx === -1 ? 0 : (curIdx + 1) % list.length;
     const nextSong = list[nextIndex];
+    playContextIndexRef.current = nextIndex;
 
     setCurrentSong(nextSong);
     setIsPlaying(true);
@@ -240,17 +272,19 @@ export default function GlobalPlayer() {
   const handlePrev = () => {
     const list = playContextRef.current;
     if (!list || list.length === 0) return;
+    const savedIndex = playContextIndexRef.current;
     const cur = currentSongRef.current;
-    const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;
+    const curIdx = savedIndex >= 0 ? savedIndex : (cur ? list.findIndex((s) => s.id === cur.id) : -1);
     const prevIndex = curIdx === -1 ? 0 : (curIdx - 1 + list.length) % list.length;
     const prevSong = list[prevIndex];
+    playContextIndexRef.current = prevIndex;
 
     setCurrentSong(prevSong);
     setIsPlaying(true);
     window.dispatchEvent(new CustomEvent("tt-global-state", {
       detail: { currentSong: prevSong, isPlaying: true },
     }));
-    socketRef.current?.emit("prev-song", { roomId, song: prevSong });
+    socketRef.current?.emit("prev-song", { roomId, song: prevSong, preferContext: true });
   };
 
   const handleTogglePlayPause = () => {

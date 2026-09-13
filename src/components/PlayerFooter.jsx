@@ -138,7 +138,8 @@ export default function PlayerFooter({
     }
 
     let cancelled = false;
-    if (eqStreamSongRef.current !== song.id) {
+    const isTrackChange = eqStreamSongRef.current !== song.id;
+    if (isTrackChange) {
       eqStreamSongRef.current = song.id;
       eqStreamRequestedRef.current = isEqActive;
     } else if (isEqActive) {
@@ -147,12 +148,22 @@ export default function PlayerFooter({
 
     const setNextSource = (next) => {
       const changed = sourceRef.current?.url !== next.url;
+      // Moving from the YouTube iframe to the native EQ stream is the only
+      // source transition caused by an EQ edit. Preserve its live position so
+      // the replacement player resumes at the same moment, not at 0:00.
+      const previousPosition = playerRef.current?.getCurrentTime?.() || 0;
+      const keepsPlaybackPosition = !isTrackChange && changed && previousPosition > 0;
       sourceRef.current = next;
       if (!changed) return;
-      setIsLoading(true);
+      if (keepsPlaybackPosition) {
+        pendingSeekRef.current = previousPosition;
+        setCurrentTime(previousPosition);
+      } else {
+        setIsLoading(true);
+        setCurrentTime(0);
+        setDuration(0);
+      }
       playerReadyRef.current = false;
-      setCurrentTime(0);
-      setDuration(0);
       if (!cancelled) setSource(next);
     };
 

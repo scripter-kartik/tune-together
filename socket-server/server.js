@@ -351,11 +351,11 @@ io.on("connection", (socket) => {
     schedulePersist(roomId, room);
   });
 
-  socket.on("next-song", async ({ roomId, song }) => {
+  socket.on("next-song", async ({ roomId, song, preferContext = false }) => {
     const room = await getRoom(roomId);
 
     let nextSong = song || null;
-    if (room.playlist.length > 0) {
+    if (!preferContext && room.playlist.length > 0) {
       nextSong = room.playlist.shift();
       io.to(roomId).emit("sync-queue", { playlist: room.playlist });
     }

@@ -436,7 +436,7 @@ export default function DmPane({ me, friend, onJoinSession, onBlock, onBack, bac
             title={inSync ? "You're in sync — resend invite" : "Sync your music with " + friend.name}
           >
             {inSync ? <Radio className="w-3.5 h-3.5" /> : <MusicIcon className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{inSync ? "In sync" : "Listen together"}</span>
+            <span>{inSync ? "In sync" : "Sync music"}</span>
           </button>
           <div className="flex items-center gap-1.5 text-neutral-600" title="Messages are end-to-end encrypted">
             <Lock className="w-3.5 h-3.5" />

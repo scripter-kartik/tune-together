@@ -26,6 +26,9 @@ export async function GET(req) {
 
     const allSongsAndVideos = [...(songResults || []), ...(videoResults || [])];
 
+    // SearchSongs and SearchVideos often return the same video. Keep one copy
+    // so Next/Previous moves through distinct search results.
+    const seenVideoIds = new Set();
     const songs = allSongsAndVideos.map(item => ({
       id: item.videoId,
       title: item.name,
@@ -43,7 +46,11 @@ export async function GET(req) {
       },
       duration: item.duration || 0,
       youtubeId: item.videoId,
-    }));
+    })).filter((song) => {
+      if (!song.id || seenVideoIds.has(song.id)) return false;
+      seenVideoIds.add(song.id);
+      return true;
+    });
 
     const artists = (artistResults || []).map(item => ({
       id: item.artistId,
