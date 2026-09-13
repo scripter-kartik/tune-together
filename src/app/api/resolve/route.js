@@ -2,6 +2,14 @@ import { connectDB } from "@/lib/db";
 import SongResolution from "@/lib/models/SongResolution";
 import { searchYouTube } from "@/lib/ytResolver";
 
+const CACHE_LOOKUP_TIMEOUT_MS = 800;
+
+function within(ms, work) {
+  return Promise.race([
+    work(),
+    new Promise((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
 
 
 
@@ -20,35 +28,46 @@ export async function GET(req) {
   }
 
   
-  try {
+  // Cache access is an optimization only. Never let a cold or unavailable
+  // database postpone playback; begin the independent YouTube lookup at once.
+  const cachedResolution = within(CACHE_LOOKUP_TIMEOUT_MS, async () => {
     await connectDB();
-    const cached = await SongResolution.findOne({ deezerId: String(deezerId) });
-    if (cached?.youtubeId) {
-      return Response.json({ youtubeId: cached.youtubeId, cached: true });
-    }
-  } catch (err) {
+    return SongResolution.findOne({ deezerId: String(deezerId) }).lean();
+  }).catch((err) => {
     console.error("resolve: cache lookup failed", err);
+    return null;
+  });
+
+  const youtubeResolution = searchYouTube(`${title} ${artist}`.trim()).catch((err) => {
+    console.error("resolve: youtube search failed", err);
+    return null;
+  });
+
+  // Use whichever successful lookup arrives first. This preserves the cache
+  // win on warm requests without adding its timeout to an uncached request.
+  const first = await Promise.race([
+    cachedResolution.then((value) => ({ source: "cache", value })),
+    youtubeResolution.then((value) => ({ source: "youtube", value })),
+  ]);
+
+  if (first.source === "cache" && first.value?.youtubeId) {
+    return Response.json({ youtubeId: first.value.youtubeId, cached: true });
   }
 
-  
-  let youtubeId = null;
-  try {
-    youtubeId = await searchYouTube(`${title} ${artist}`.trim());
-  } catch (err) {
-    console.error("resolve: youtube search failed", err);
-  }
+  const youtubeId = first.source === "youtube"
+    ? first.value
+    : await youtubeResolution;
 
   
   if (youtubeId) {
-    try {
-      await SongResolution.findOneAndUpdate(
-        { deezerId: String(deezerId) },
-        { deezerId: String(deezerId), youtubeId, title, artist },
-        { upsert: true, new: true }
-      );
-    } catch (err) {
-      console.error("resolve: cache write failed", err);
-    }
+    // Do not make the user's first playback wait for a cache write. It is safe
+    // if this best-effort write is interrupted by a serverless shutdown: the
+    // next request can simply resolve again.
+    void SongResolution.findOneAndUpdate(
+      { deezerId: String(deezerId) },
+      { deezerId: String(deezerId), youtubeId, title, artist },
+      { upsert: true, new: true }
+    ).catch((err) => console.error("resolve: cache write failed", err));
   }
 
   return Response.json({ youtubeId });

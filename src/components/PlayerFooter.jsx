@@ -23,8 +23,6 @@ import { useEqualizer } from "@/hooks/useEqualizer";
 
 
 
-const MAX_STREAM_RETRIES = 2;
-
 export default function PlayerFooter({
   song,
   isPlaying,
@@ -44,9 +42,7 @@ export default function PlayerFooter({
   
   const [source, setSource] = useState(null); 
   const sourceRef = useRef(null);
-  const youtubeIdRef = useRef(null);
   
-  const streamRetriesRef = useRef({});
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -118,11 +114,9 @@ export default function PlayerFooter({
   
   useEffect(() => {
     
-    streamRetriesRef.current = {};
     if (!song) {
       setSource(null);
       sourceRef.current = null;
-      youtubeIdRef.current = null;
       return;
     }
 
@@ -132,16 +126,15 @@ export default function PlayerFooter({
     setCurrentTime(0);
     setDuration(0);
 
-    const applyStream = (youtubeId) => {
-      youtubeIdRef.current = youtubeId;
-      streamRetriesRef.current[youtubeId] = 0;
-      
-      const isDev = process.env.NODE_ENV === "development";
-      const streamPath = isDev ? "/api/stream-local" : "/api/stream";
-      
+    // Do not put initial playback behind the server-side yt-dlp proxy. On a
+    // production cold start that proxy has to boot Python, extract a signed
+    // Googlevideo URL, then open a second connection before the browser gets a
+    // single audio byte. The YouTube player connects from the user's browser
+    // instead, which keeps startup independent of serverless cold starts.
+    const applyYouTube = (youtubeId) => {
       const next = {
-        kind: "stream",
-        url: `${streamPath}?videoId=${youtubeId}&ext=.m4a`,
+        kind: "youtube",
+        url: `https://www.youtube.com/watch?v=${youtubeId}`,
       };
       sourceRef.current = next;
       if (!cancelled) setSource(next);
@@ -154,7 +147,7 @@ export default function PlayerFooter({
 
     
     if (song.youtubeId) {
-      applyStream(song.youtubeId);
+      applyYouTube(song.youtubeId);
       return () => {
         cancelled = true;
       };
@@ -180,7 +173,7 @@ export default function PlayerFooter({
         if (youtubeId) {
           // Capture current playback position before switching
           const currentPos = playerRef.current?.getCurrentTime?.() || 0;
-          applyStream(youtubeId);
+          applyYouTube(youtubeId);
           // Restore position after the new source loads
           if (currentPos > 0) {
             pendingSeekRef.current = currentPos;
@@ -198,11 +191,9 @@ export default function PlayerFooter({
     };
   }, [song?.id]);
 
-  // Step down the source chain when playback fails. A failed same-origin proxy
-  // stream is retried (fresh URL so the <audio> reloads) before falling back to
-  // the cross-origin YouTube iframe — the retries keep YouTube audio on the Web
-  // Audio chain the equalizer processes. Only once the proxy is truly exhausted
-  // does playback drop to the iframe, whose audio can't be routed through EQ.
+  // The YouTube player is the primary source so a deployment never needs to
+  // extract and proxy audio before playback. A Deezer preview remains a useful
+  // fallback when YouTube rejects an individual video.
   const handleSourceError = useCallback((err, data) => {
     const cur = sourceRef.current;
     if (!cur) return;
@@ -214,30 +205,6 @@ export default function PlayerFooter({
       err?.message || err,
       data?.message || data?.type || ""
     );
-
-    if (cur.kind === "stream" && youtubeIdRef.current) {
-      const id = youtubeIdRef.current;
-      const attempt = (streamRetriesRef.current[id] || 0) + 1;
-      if (attempt <= MAX_STREAM_RETRIES) {
-        streamRetriesRef.current[id] = attempt;
-        const isDev = process.env.NODE_ENV === "development";
-        const streamPath = isDev ? "/api/stream-local" : "/api/stream";
-        const next = {
-          kind: "stream",
-          url: `${streamPath}?videoId=${id}&ext=.m4a&retry=${attempt}`,
-        };
-        sourceRef.current = next;
-        setSource(next);
-        return;
-      }
-      const next = {
-        kind: "youtube",
-        url: `https://www.youtube.com/watch?v=${id}`,
-      };
-      sourceRef.current = next;
-      setSource(next);
-      return;
-    }
 
     if (cur.kind === "youtube" && song?.preview) {
       const next = { kind: "preview", url: song.preview };
@@ -954,7 +921,6 @@ export default function PlayerFooter({
             onDuration={handleDuration}
             onEnded={onNext}
             onError={handleSourceError}
-            type={source?.kind === "stream" ? "file" : undefined}
             config={{
               youtube: {
                 playerVars: { playsinline: 1, disablekb: 1, modestbranding: 1 },
