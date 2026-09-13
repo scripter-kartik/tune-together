@@ -174,8 +174,7 @@ export default function PlayerFooter({
     // instead, which keeps startup independent of serverless cold starts.
     const applySource = (youtubeId) => {
       const useStream = eqStreamRequestedRef.current;
-      const isDev = process.env.NODE_ENV === "development";
-      const streamPath = isDev ? "/api/stream-local" : "/api/stream";
+      const streamPath = "/api/stream-local";
       const next = {
         // Web Audio can only process a native media element. The direct
         // YouTube player is an iframe, so use our same-origin stream only

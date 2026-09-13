@@ -12,12 +12,21 @@ const cache = new Map();
 const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 const EXPIRE_MARGIN_MS = 5 * 60 * 1000;   // evict 5 min before URL expiry
 
-// Resolve yt-dlp binary — check common locations
+// Resolve yt-dlp binary — check common locations, then fall back to
+// running it as a Python module (available on Vercel since the Python
+// runtime installs yt-dlp via api/requirements.txt).
 const YTDLP_CANDIDATES = [
   "yt-dlp",
   path.join(process.env.HOME || "/root", ".local/bin/yt-dlp"),
   "/usr/local/bin/yt-dlp",
   "/usr/bin/yt-dlp",
+];
+
+// Module-style invocations: ["python", "-m", "yt_dlp"] etc.
+// Used as a final fallback when no standalone binary is found.
+const YTDLP_MODULE_CANDIDATES = [
+  ["python", "-m", "yt_dlp"],
+  ["python3", "-m", "yt_dlp"],
 ];
 
 let _ytdlpBin = null;
@@ -28,6 +37,14 @@ async function findYtdlp() {
       await execFileAsync(bin, ["--version"], { timeout: 5000 });
       _ytdlpBin = bin;
       return bin;
+    } catch {}
+  }
+  // Fall back to python module invocation (available on Vercel)
+  for (const moduleCmd of YTDLP_MODULE_CANDIDATES) {
+    try {
+      await execFileAsync(moduleCmd[0], [...moduleCmd.slice(1), "--version"], { timeout: 8000 });
+      _ytdlpBin = moduleCmd; // store as array to distinguish from binary path
+      return moduleCmd;
     } catch {}
   }
   return null;
@@ -65,8 +82,12 @@ async function extractAudioUrl(videoId) {
   const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
   let lastErr = null;
 
+  // bin is either a string (binary path) or an array (module invocation prefix)
+  const isModule = Array.isArray(bin);
+  const execBin = isModule ? bin[0] : bin;
+
   for (const extra of CLIENTS) {
-    const args = [
+    const ytdlpArgs = [
       "--no-playlist",
       "--no-warnings",
       "--no-update",
@@ -75,9 +96,11 @@ async function extractAudioUrl(videoId) {
       ...extra,
       watchUrl,
     ];
+    // For module invocation: python ["-m", "yt_dlp", ...args]
+    const args = isModule ? [...bin.slice(1), ...ytdlpArgs] : ytdlpArgs;
 
     try {
-      const { stdout } = await execFileAsync(bin, args, { timeout: 25000 });
+      const { stdout } = await execFileAsync(execBin, args, { timeout: 25000 });
       const url = stdout.trim().split("\n").pop().trim();
       if (url && url.startsWith("http")) {
         return { url, mime: "audio/mp4" };
