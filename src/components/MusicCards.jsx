@@ -195,7 +195,20 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 px-3 sm:px-4">
       {songs.map((song) => {
         const isActive = currentSongId != null && song.id === currentSongId;
+        const isCurrentSongPlaying = isActive && isPlaying;
         const cover = resolveCover(song.album?.cover_medium || song.album?.cover_big || song.album?.cover_small, song.title || song.id);
+        const playSong = (event) => {
+          event.stopPropagation();
+          if (isActive) {
+            window.dispatchEvent(
+              new CustomEvent("tt-player-command", {
+                detail: { action: isCurrentSongPlaying ? "pause" : "play" },
+              })
+            );
+            return;
+          }
+          onPlay(song, songs);
+        };
         return (
           <div
             key={song._uniqueKey || song.id + "-" + song.title}
@@ -230,6 +243,18 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                   {isPlaying ? <Equalizer /> : <Music2 className="w-3 h-3 text-green-400" />}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={playSong}
+                aria-label={`${isCurrentSongPlaying ? "Pause" : "Play"} ${song.title}`}
+                className="absolute z-10 bottom-2 right-2 sm:bottom-3 sm:right-3 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-500 text-black shadow-lg shadow-black/50 flex items-center justify-center transition-all duration-200 hover:bg-green-400 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white touch-manipulation"
+              >
+                {isCurrentSongPlaying ? (
+                  <Pause className="w-4 h-4 sm:w-[18px] sm:h-[18px] fill-current" />
+                ) : (
+                  <Play className="w-4 h-4 sm:w-[18px] sm:h-[18px] fill-current ml-0.5" />
+                )}
+              </button>
             </div>
 
             {}

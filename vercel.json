@@ -1,18 +1,3 @@
 {
-  "version": 2,
-  "functions": {
-    "api/stream.py": {
-      "maxDuration": 30
-    }
-  },
-  "headers": [
-    {
-      "source": "/api/stream(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS, HEAD" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Range" }
-      ]
-    }
-  ]
+  "version": 2
 }
