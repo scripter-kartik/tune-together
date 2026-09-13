@@ -7,14 +7,14 @@ import http from "http";
 
 const execFileAsync = promisify(execFile);
 
-// In-memory URL cache: videoId → { url, mime, expiresAt }
-const cache = new Map();
-const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
-const EXPIRE_MARGIN_MS = 5 * 60 * 1000;   // evict 5 min before URL expiry
 
-// Resolve yt-dlp binary — check common locations, then fall back to
-// running it as a Python module (available on Vercel since the Python
-// runtime installs yt-dlp via api/requirements.txt).
+const cache = new Map();
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; 
+const EXPIRE_MARGIN_MS = 5 * 60 * 1000;   
+
+
+
+
 const YTDLP_CANDIDATES = [
   "yt-dlp",
   path.join(process.env.HOME || "/root", ".local/bin/yt-dlp"),
@@ -22,8 +22,8 @@ const YTDLP_CANDIDATES = [
   "/usr/bin/yt-dlp",
 ];
 
-// Module-style invocations: ["python", "-m", "yt_dlp"] etc.
-// Used as a final fallback when no standalone binary is found.
+
+
 const YTDLP_MODULE_CANDIDATES = [
   ["python", "-m", "yt_dlp"],
   ["python3", "-m", "yt_dlp"],
@@ -39,18 +39,18 @@ async function findYtdlp() {
       return bin;
     } catch {}
   }
-  // Fall back to python module invocation (available on Vercel)
+  
   for (const moduleCmd of YTDLP_MODULE_CANDIDATES) {
     try {
       await execFileAsync(moduleCmd[0], [...moduleCmd.slice(1), "--version"], { timeout: 8000 });
-      _ytdlpBin = moduleCmd; // store as array to distinguish from binary path
+      _ytdlpBin = moduleCmd; 
       return moduleCmd;
     } catch {}
   }
   return null;
 }
 
-// Extract URL expiry from a googlevideo URL's `expire` query param
+
 function getUrlExpiry(url) {
   try {
     const exp = new URL(url).searchParams.get("expire");
@@ -66,7 +66,7 @@ function cacheExpiresAt(url) {
   return now + CACHE_TTL_MS;
 }
 
-// yt-dlp client strategies to try in order (bypasses bot-detection on some videos)
+
 const CLIENTS = [
   [],
   ["--extractor-args", "youtube:player_client=web_embedded"],
@@ -82,7 +82,7 @@ async function extractAudioUrl(videoId) {
   const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
   let lastErr = null;
 
-  // bin is either a string (binary path) or an array (module invocation prefix)
+  
   const isModule = Array.isArray(bin);
   const execBin = isModule ? bin[0] : bin;
 
@@ -96,7 +96,7 @@ async function extractAudioUrl(videoId) {
       ...extra,
       watchUrl,
     ];
-    // For module invocation: python ["-m", "yt_dlp", ...args]
+    
     const args = isModule ? [...bin.slice(1), ...ytdlpArgs] : ytdlpArgs;
 
     try {
@@ -113,7 +113,7 @@ async function extractAudioUrl(videoId) {
   throw new Error(`yt-dlp extraction failed: ${lastErr}`);
 }
 
-// Inflight dedup — avoid running yt-dlp twice for the same video
+
 const inflight = new Map();
 
 async function resolveStream(videoId) {
@@ -137,7 +137,7 @@ async function resolveStream(videoId) {
   return promise;
 }
 
-// Proxy a range request to the upstream googlevideo URL
+
 function proxyRequest(method, upstreamUrl, rangeHeader) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(upstreamUrl);
@@ -159,7 +159,7 @@ function proxyRequest(method, upstreamUrl, rangeHeader) {
   });
 }
 
-// Validate videoId: 11 alphanumeric + dash/underscore chars
+
 function isValidVideoId(id) {
   return typeof id === "string" && /^[A-Za-z0-9_-]{11}$/.test(id);
 }
@@ -167,7 +167,7 @@ function isValidVideoId(id) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   let videoId = searchParams.get("videoId") || "";
-  // ReactPlayer sometimes appends &ext=.m4a — strip it
+
   if (videoId.includes("&")) videoId = videoId.split("&")[0];
 
   if (!isValidVideoId(videoId)) {
@@ -184,7 +184,7 @@ export async function GET(request) {
 
   const rangeHeader = request.headers.get("range") || "bytes=0-";
 
-  // Retry upstream up to 2 times (URL can go stale between extract and proxy)
+  
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const upstream = await proxyRequest("GET", entry.url, rangeHeader);
@@ -192,7 +192,7 @@ export async function GET(request) {
         throw new Error(`upstream HTTP ${upstream.statusCode}`);
       }
 
-      // Stream the response body
+      
       const headers = {
         "Content-Type": upstream.headers["content-type"] || entry.mime,
         "Accept-Ranges": "bytes",
@@ -206,7 +206,7 @@ export async function GET(request) {
 
       const status = upstream.statusCode;
 
-      // Convert Node IncomingMessage to a Web ReadableStream
+      
       const body = new ReadableStream({
         start(controller) {
           upstream.on("data", chunk => controller.enqueue(chunk));
@@ -219,7 +219,7 @@ export async function GET(request) {
       return new Response(body, { status, headers });
     } catch (err) {
       console.warn(`[stream] upstream error attempt ${attempt + 1}:`, videoId, err.message);
-      // Evict stale cache entry and re-extract
+      
       cache.delete(videoId);
       try {
         entry = await resolveStream(videoId);

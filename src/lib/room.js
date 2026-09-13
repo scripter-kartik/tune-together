@@ -39,7 +39,7 @@ export function resolveRoomId() {
   return { roomId: room, isHost: host };
 }
 
-// Switch to a room (e.g. accepting a "listen together" invite) and persist it
+
 
 export function joinRoomId(room) {
   if (typeof window === "undefined" || !room) return;
@@ -55,8 +55,8 @@ export function currentRoomId() {
   return url.searchParams.get("room") || localStorage.getItem(KEY) || "";
 }
 
-// Deterministic shared room for a 1:1 chat: both friends compute the same id
-// from their two clerk ids, so "listen together" needs no link-passing —
+
+
 
 export function dmRoomId(a, b) {
   return `dm-${[a, b].sort().join("_")}`;

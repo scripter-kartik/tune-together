@@ -26,8 +26,8 @@ export async function GET(req) {
 
     const allSongsAndVideos = [...(songResults || []), ...(videoResults || [])];
 
-    // SearchSongs and SearchVideos often return the same video. Keep one copy
-    // so Next/Previous moves through distinct search results.
+    
+    
     const seenVideoIds = new Set();
     const songs = allSongsAndVideos.map(item => ({
       id: item.videoId,

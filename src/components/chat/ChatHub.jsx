@@ -37,7 +37,7 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
   const [blocked, setBlocked] = useState(new Set());
   const [active, setActive] = useState(null); 
   const [filter, setFilter] = useState("");
-  const [unread, setUnread] = useState({}); // key ("dm:<id>") -> count
+  const [unread, setUnread] = useState({}); 
   const [e2eeReady, setE2eeReady] = useState(false);
   const [friendUsername, setFriendUsername] = useState("");
   const [friendRequestState, setFriendRequestState] = useState(null);
@@ -47,17 +47,17 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameState, setUsernameState] = useState(null);
   const [savingUsername, setSavingUsername] = useState(false);
-  // Mobile: the sidebar becomes a Discord-style slide-over drawer when a chat
-  // is open. Opened via the header back button or an edge swipe from the left.
+
+
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const edgeSwipeRef = useRef(null); // { x, y } of a touch that started at the left edge
-  const drawerSwipeRef = useRef(null); // { x, y } of a touch on the open drawer
+  const edgeSwipeRef = useRef(null); 
+  const drawerSwipeRef = useRef(null); 
   const activeRef = useRef(null);
   activeRef.current = active;
-  // DM requested before the friends list finished loading.
+
   const pendingDmRef = useRef(null);
 
-  // ── Bootstrap: E2EE identity, socket registration, data ──────────────────
+
   useEffect(() => {
     if (!isLoaded || !me) return;
 

@@ -40,11 +40,11 @@ function readStored() {
   }
 }
 
-// Track which elements have already been sourced into the Web Audio graph.
-// MediaElementSource can only be created ONCE per element — creating it a second
-// time throws "InvalidStateError". We use a module-level WeakMap so it survives
-// React strict-mode double-mounts and component re-renders.
-const wiredElements = new WeakMap(); // element → AudioNode (the source node)
+
+
+
+
+const wiredElements = new WeakMap(); 
 
 export function useEqualizer({ playerRef }) {
   const [settings, setSettings] = useState({
@@ -63,18 +63,18 @@ export function useEqualizer({ playerRef }) {
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  // Hydrate persisted settings on mount.
+  
   useEffect(() => {
     setSettings(readStored());
   }, []);
 
-  // Lazy-create the audio graph. Called from a user gesture so AudioContext
-  // starts in "running" state (browser autoplay policy).
+  
+  
   const ensureGraph = useCallback(() => {
-    // Reuse existing non-closed context.
+    
     if (ctxRef.current) {
       if (ctxRef.current.state !== "closed") return ctxRef.current;
-      // Closed context (e.g. strict-mode cleanup) — reset so we rebuild.
+      
       ctxRef.current = null;
       filtersRef.current = [];
       masterRef.current = null;
@@ -89,7 +89,7 @@ export function useEqualizer({ playerRef }) {
 
       const ctx = new AudioCtx();
 
-      // Dynamics compressor to prevent clipping when EQ boosts are applied.
+      
       const compressor = ctx.createDynamicsCompressor();
       compressor.threshold.value = -14;
       compressor.knee.value = 20;
@@ -103,7 +103,7 @@ export function useEqualizer({ playerRef }) {
       const master = ctx.createGain();
       master.gain.value = 1;
 
-      // 10-band EQ. First/last bands use shelving for a natural response.
+      
       const filters = BANDS.map((freq, i) => {
         const f = ctx.createBiquadFilter();
         f.frequency.value = freq;
@@ -115,20 +115,20 @@ export function useEqualizer({ playerRef }) {
         return f;
       });
 
-      // Extra bass-boost shelf (separate from the 31 Hz EQ band).
+      
       const bass = ctx.createBiquadFilter();
       bass.type = "lowshelf";
       bass.frequency.value = 120;
       bass.gain.value = settingsRef.current.effects.bassBoost || 0;
 
-      // Optional stereo panner for the "3D / spatial" effect.
+      
       let spatial = null;
       if (typeof ctx.createStereoPanner === "function") {
         spatial = ctx.createStereoPanner();
         spatial.pan.value = 0;
       }
 
-      // Chain: filters → bass → [spatial →] master → compressor → makeup → out
+      
       for (let i = 0; i < filters.length - 1; i++)
         filters[i].connect(filters[i + 1]);
       filters[filters.length - 1].connect(bass);
@@ -151,26 +151,26 @@ export function useEqualizer({ playerRef }) {
     }
   }, []);
 
-  // Wire the player's media element into the graph.
-  // Safe to call repeatedly — already-wired elements are detected via the
-  // module-level WeakMap and reconnected without creating a new source node.
+  
+  
+  
   const wirePlayer = useCallback(() => {
     try {
-      // Unwrap react-player's internal player to the raw HTMLMediaElement.
+      
       let mediaElement = playerRef.current?.getInternalPlayer?.();
       if (mediaElement && typeof mediaElement.getInternalPlayer === "function") {
         mediaElement = mediaElement.getInternalPlayer();
       }
 
       if (!(mediaElement instanceof HTMLMediaElement)) {
-        // YouTube iframes and other non-native sources land here — expected.
+        
         setWired(false);
         return;
       }
 
-      // If this exact element is already in the graph just mark as wired.
+      
       if (wiredElements.has(mediaElement)) {
-        // Re-connect source → graph head in case graph was rebuilt.
+        
         const existingSource = wiredElements.get(mediaElement);
         if (
           existingSource &&
@@ -183,7 +183,7 @@ export function useEqualizer({ playerRef }) {
             existingSource.connect(filtersRef.current[0]);
             sourceRef.current = existingSource;
           } catch {
-            // disconnect can throw if already disconnected — ignore
+            
           }
         }
         setWired(true);
@@ -193,10 +193,10 @@ export function useEqualizer({ playerRef }) {
       const ctx = ensureGraph();
       if (!ctx) return;
 
-      // Resume in case browser suspended due to autoplay policy.
+      
       ctx.resume?.().catch(() => {});
 
-      // Disconnect the previous source node before creating a new one.
+      
       try {
         sourceRef.current?.disconnect?.();
       } catch {}
@@ -213,7 +213,7 @@ export function useEqualizer({ playerRef }) {
     }
   }, [ensureGraph, playerRef]);
 
-  // Apply all gains smoothly whenever settings change.
+  
   useEffect(() => {
     if (!ctxRef.current || ctxRef.current.state === "closed") return;
     try {
@@ -245,7 +245,7 @@ export function useEqualizer({ playerRef }) {
     } catch {}
   }, [settings]);
 
-  // Persist settings.
+  
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -301,8 +301,8 @@ export function useEqualizer({ playerRef }) {
     setSettings({ gains: EQ_PRESETS.Flat, effects: DEFAULT_EFFECTS });
   }, []);
 
-  // Cleanup on unmount — close the AudioContext and null all refs so that
-  // React 18 strict-mode double-mounts don't reuse a closed context.
+  
+  
   useEffect(() => {
     return () => {
       try {

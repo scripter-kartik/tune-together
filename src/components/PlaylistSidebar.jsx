@@ -61,7 +61,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
       setCustomPlaylists([data.playlist, ...customPlaylists]);
       setNewPlaylistName("");
       setIsCreating(false);
-      // Open it right away so the user can start adding songs, like Spotify.
+
       onOpenPlaylist?.({ ...data.playlist, id: data.playlist._id, type: "User Playlist" });
     }
   };

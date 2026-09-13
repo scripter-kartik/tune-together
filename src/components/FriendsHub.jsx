@@ -27,7 +27,7 @@ export default function FriendsHub({ roomId }) {
   const [data, setData] = useState({ friends: [], incoming: [], outgoing: [] });
 
   const [addInput, setAddInput] = useState("");
-  const [addMsg, setAddMsg] = useState(null); // { type, text }
+  const [addMsg, setAddMsg] = useState(null); 
   const [addBusy, setAddBusy] = useState(false);
 
   const [nameInput, setNameInput] = useState("");

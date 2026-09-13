@@ -64,7 +64,7 @@ export async function GET(req) {
       playedAt: doc.playedAt,
     }));
 
-    // Public playlists: owned + collaborative-with-them.
+
     const playlists = await Playlist.find({
       $or: [{ userId: user.clerkId }, { collaborators: user.clerkId }],
     }).sort({ createdAt: -1 });
@@ -77,7 +77,7 @@ export async function GET(req) {
       collaboratorsCount: p.collaborators?.length || 0,
     }));
 
-    // Follower/following (accepted friendships) counts.
+
     const [followerRows, followingRows] = await Promise.all([
       Friendship.find({ recipientId: user.clerkId, status: "accepted" }).countDocuments().catch(() => 0),
       Friendship.find({ requesterId: user.clerkId, status: "accepted" }).countDocuments().catch(() => 0),

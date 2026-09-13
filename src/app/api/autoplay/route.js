@@ -33,8 +33,8 @@ export async function GET(request) {
 
   try {
     const ytmusic = await getYTMusic();
-    // A track query provides close versions/collaborators; an artist query
-    // widens the queue so autoplay doesn't repeat the selected search result.
+
+
     const [trackMatches, artistMatches] = await Promise.all([
       ytmusic.searchSongs(`${title} ${artist}`.trim()).catch(() => []),
       ytmusic.searchSongs(`${artist} songs`.trim()).catch(() => []),

@@ -188,7 +188,7 @@ export default function Page() {
     } else {
       fetchHomeFeed(randomTerms);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [randomTerms]);
 
   const fetchHistory = async () => {

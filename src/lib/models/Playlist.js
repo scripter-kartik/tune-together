@@ -19,7 +19,7 @@ const playlistSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    // Clerk ids of friends who can add/remove songs (but not delete/manage).
+
     collaborators: {
       type: [String],
       default: [],

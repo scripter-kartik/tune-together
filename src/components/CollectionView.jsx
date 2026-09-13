@@ -35,13 +35,13 @@ export default function CollectionView({
 
   const playAll = () => {
     if (!tracks.length) return;
-    // Pass the collection as the playback context so Next/Prev walk it.
+
     onPlay(tracks[0], tracks);
   };
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
-      {/* Header with gradient & back arrow */}
+      {}
       <div className="relative bg-gradient-to-b from-[#3a3a52] to-[#121212] pt-16 pb-8 px-6 md:px-8">
         <button
           onClick={onClose}

@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
-# Vercel Python serverless function: same-origin audio proxy for the equalizer.
-# Extracts a direct audio URL from YouTube using yt-dlp (installed at build time),
-# then proxies the stream with Range support so seeking works.
-# - URLs are cached in-memory (warm starts) with their own upstream expiry.
-# - On upstream failure the bad entry is evicted and a fresh URL is extracted.
+
+
+
+
+
+
 
 import json
 import os
@@ -13,12 +13,12 @@ import asyncio
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
-# Cache: videoId -> { url, mime, expires, attempt }
+
 _stream_cache = {}
-# Dedupe inflight extractions: videoId -> asyncio.Task
+
 _inflight = {}
 
-CACHE_TTL = 2 * 60 * 60  # 2 hours max
+CACHE_TTL = 2 * 60 * 60
 EXPIRE_MARGIN = 5 * 60   # 5 minutes before URL's own expiry
 MAX_EXTRACT_ATTEMPTS = 3
 
@@ -31,7 +31,7 @@ YTDLP_BASE = [
     "-g",
 ]
 
-# Player clients to try in order. Multiple clients bypass bot-blocking on some videos.
+
 YTDLP_CLIENTS = [
     [],
     ["--extractor-args", "youtube:player_client=web_embedded"],
@@ -76,7 +76,7 @@ async def extract_url(video_id: str) -> tuple[str, str]:
             if proc.returncode == 0:
                 url = stdout.decode().strip().split("\n")[-1].strip()
                 if url and url.startswith("http"):
-                    mime = "audio/mp4"  # bestaudio[ext=m4a] preferred
+                    mime = "audio/mp4"
                     return url, mime
             last_err = stderr.decode().strip() or f"exit {proc.returncode}"
         except asyncio.TimeoutError:
@@ -128,7 +128,7 @@ class handler(BaseHTTPRequestHandler):
             self._json(502, {"error": "stream unavailable", "reason": str(e)[:200]})
             return
 
-        # Forward HEAD to upstream to get correct Content-Range/Content-Length
+
         import urllib.request
         req = urllib.request.Request(entry["url"], headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -152,7 +152,7 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"stream: HEAD upstream error {video_id} {e}")
 
-        # Fallback: return basic headers from cache
+
         self.send_response(200)
         self.send_header("Content-Type", entry["mime"])
         self.send_header("Accept-Ranges", "bytes")
@@ -162,33 +162,33 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         qs = parse_qs(urlparse(self.path).query)
         video_id = qs.get("videoId", [""])[0].strip()
-        # Strip any trailing params like '&ext=.m4a' that ReactPlayer appends
+
         if "&" in video_id:
             video_id = video_id.split("&")[0]
         if not video_id or not all(c.isalnum() or c in "-_" for c in video_id) or len(video_id) != 11:
             self._json(400, {"error": "videoId is required"})
             return
 
-        # Get (or create) a cached stream entry
+
         try:
             entry = asyncio.run(resolve_stream(video_id))
         except Exception as e:
             self._json(502, {"error": "stream unavailable", "reason": str(e)[:200]})
             return
 
-        # Range header from the browser (for seeking)
+
         range_header = self.headers.get("Range", "bytes=0-")
 
-        # Upstream URLs are IP-signed and can silently go stale.
-        # On failure, evict and re-extract up to MAX_EXTRACT_ATTEMPTS times.
+
+
         for attempt in range(MAX_EXTRACT_ATTEMPTS):
             try:
                 import urllib.request
                 req = urllib.request.Request(entry["url"], headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                     "Range": range_header,
-                    # Prevent upstream compression: urllib auto-decompresses but would
-                    # forward the compressed Content-Length, breaking <audio> playback.
+
+
                     "Accept-Encoding": "identity",
                 })
                 with urllib.request.urlopen(req, timeout=30) as upstream:
@@ -199,20 +199,20 @@ class handler(BaseHTTPRequestHandler):
                     self.send_header("Accept-Ranges", "bytes")
                     if upstream.headers.get("Content-Range"):
                         self.send_header("Content-Range", upstream.headers.get("Content-Range"))
-                    # Use upstream Content-Length only if no Content-Encoding (identity mode)
+
                     if upstream.headers.get("Content-Length") and not upstream.headers.get("Content-Encoding"):
                         self.send_header("Content-Length", upstream.headers.get("Content-Length"))
                     self.send_header("Cache-Control", "no-store")
                     self.end_headers()
-                    # Stream the body in chunks
+
                     while True:
                         chunk = upstream.read(65536)
                         if not chunk:
                             break
                         self.wfile.write(chunk)
-                    return  # success
+                    return
             except Exception as e:
-                # Upstream failed — drop the bad cached URL and try to re-extract
+
                 print(f"stream: upstream error {video_id} {e} (attempt {attempt+1}/{MAX_EXTRACT_ATTEMPTS})")
                 _stream_cache.pop(video_id, None)
                 try:
@@ -229,6 +229,6 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
-# Vercel expects a `handler` variable or class
-# Export the class for the Python serverless runtime
+
+
 handler = handler

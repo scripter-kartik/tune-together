@@ -133,8 +133,8 @@ export default function GlobalPlayer() {
         autoplayHistoryRef.current = [song];
         if (list && Array.isArray(list) && list.length) {
           playContextRef.current = list;
-          // Preserve the selected result's exact position. ID-only matching
-          // breaks when a search contains duplicate videos or versions.
+          
+          
           const byReference = list.indexOf(song);
           const byIdentity = list.findIndex(
             (candidate) =>
@@ -234,6 +234,19 @@ export default function GlobalPlayer() {
   }, [roomId, isPlaying, queue]);
 
   const handleNext = () => {
+    if (queue.length > 0) {
+      const nextSong = queue[0];
+      const remaining = queue.slice(1);
+      setCurrentSong(nextSong);
+      setQueue(remaining);
+      setIsPlaying(true);
+      window.dispatchEvent(new CustomEvent("tt-global-state", {
+        detail: { currentSong: nextSong, isPlaying: true, queue: remaining },
+      }));
+      socketRef.current?.emit("next-song", { roomId });
+      return;
+    }
+
     if (autoplayRef.current) {
       if (autoplayLoadingRef.current) return;
 
@@ -291,18 +304,7 @@ export default function GlobalPlayer() {
       return;
     }
 
-    if (queue.length > 0) {
-      const nextSong = queue[0];
-      const remaining = queue.slice(1);
-      setCurrentSong(nextSong);
-      setQueue(remaining);
-      setIsPlaying(true);
-      window.dispatchEvent(new CustomEvent("tt-global-state", {
-        detail: { currentSong: nextSong, isPlaying: true, queue: remaining },
-      }));
-      socketRef.current?.emit("next-song", { roomId });
-      return;
-    }
+
     if (!list || list.length === 0) return;
     const cur = currentSongRef.current;
     const curIdx = cur ? list.findIndex((s) => s.id === cur.id) : -1;

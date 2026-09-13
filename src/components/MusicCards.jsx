@@ -237,7 +237,7 @@ export default function MusicCards({ songs, onPlay, onQueue, currentSongId, isPl
                 onError={coverError(song.title || song.id)}
                 className="object-cover w-full h-full transition-transform duration-500 ease-out group-hover:scale-105"
               />
-              {/* Playing indicator badge */}
+              {}
               {isActive && (
                 <div className="absolute top-2 left-2 z-10 bg-black/70 backdrop-blur-sm rounded-md px-1.5 py-1 flex items-center gap-1 shadow-md">
                   {isPlaying ? <Equalizer /> : <Music2 className="w-3 h-3 text-green-400" />}

@@ -11,7 +11,7 @@ export default function BrowsePage() {
   const [query, setQuery] = useState("");
   const router = useRouter();
 
-  // Redirect to home if user starts typing a global search
+
   useEffect(() => {
     if (query.trim() !== "") {
       const timer = setTimeout(() => {

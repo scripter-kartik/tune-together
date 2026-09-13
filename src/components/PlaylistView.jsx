@@ -23,7 +23,7 @@ function formatTime(seconds) {
   return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
 
-// "Find songs" modal — search then tap to add, Spotify style.
+
 function AddSongsModal({ playlistId, existingIds, onClose, onAdded }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -166,7 +166,7 @@ export default function PlaylistView({
   const [draftName, setDraftName] = useState("");
   const { user } = useUser();
 
-  // Live playlist object — starts as the prop, then replaced by a fresh fetch.
+
   const pl = playlistData || playlist;
 
   const ownerId = pl?.userId;
@@ -329,7 +329,7 @@ export default function PlaylistView({
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
-      {/* Header with gradient & back arrow */}
+      {}
       <div className={`relative bg-gradient-to-b ${gradient} to-[#121212] pt-16 pb-8 px-6 md:px-8`}>
         <button
           onClick={onClose}
@@ -545,7 +545,7 @@ export default function PlaylistView({
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-1.5 sm:gap-2">
-                    {/* Expanded action buttons */}
+                    {}
                     {expandedId === track.id && (
                       <div className="flex items-center gap-1.5 sm:gap-2 animate-fade-in">
                         {canEdit && (
@@ -568,7 +568,7 @@ export default function PlaylistView({
                         </button>
                       </div>
                     )}
-                    {/* Expand/Collapse arrow toggle button */}
+                    {}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

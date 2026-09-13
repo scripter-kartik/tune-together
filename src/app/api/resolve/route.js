@@ -28,8 +28,8 @@ export async function GET(req) {
   }
 
   
-  // Cache access is an optimization only. Never let a cold or unavailable
-  // database postpone playback; begin the independent YouTube lookup at once.
+  
+  
   const cachedResolution = within(CACHE_LOOKUP_TIMEOUT_MS, async () => {
     await connectDB();
     return SongResolution.findOne({ deezerId: String(deezerId) }).lean();
@@ -43,8 +43,8 @@ export async function GET(req) {
     return null;
   });
 
-  // Use whichever successful lookup arrives first. This preserves the cache
-  // win on warm requests without adding its timeout to an uncached request.
+  
+  
   const first = await Promise.race([
     cachedResolution.then((value) => ({ source: "cache", value })),
     youtubeResolution.then((value) => ({ source: "youtube", value })),
@@ -60,9 +60,9 @@ export async function GET(req) {
 
   
   if (youtubeId) {
-    // Do not make the user's first playback wait for a cache write. It is safe
-    // if this best-effort write is interrupted by a serverless shutdown: the
-    // next request can simply resolve again.
+    
+    
+    
     void SongResolution.findOneAndUpdate(
       { deezerId: String(deezerId) },
       { deezerId: String(deezerId), youtubeId, title, artist },

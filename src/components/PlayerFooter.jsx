@@ -42,9 +42,9 @@ export default function PlayerFooter({
   
   const [source, setSource] = useState(null); 
   const sourceRef = useRef(null);
-  // Once a track has entered the native-audio EQ path, keep that path until
-  // the track changes. Switching it back and forth recreates the player and
-  // causes the visible loading interruption when a user adjusts a control.
+  
+  
+  
   const eqStreamSongRef = useRef(null);
   const eqStreamRequestedRef = useRef(false);
   
@@ -150,9 +150,9 @@ export default function PlayerFooter({
 
     const setNextSource = (next) => {
       const changed = sourceRef.current?.url !== next.url;
-      // Moving from the YouTube iframe to the native EQ stream is the only
-      // source transition caused by an EQ edit. Preserve its live position so
-      // the replacement player resumes at the same moment, not at 0:00.
+      
+      
+      
       const previousPosition = playerRef.current?.getCurrentTime?.() || 0;
       const keepsPlaybackPosition = !isTrackChange && changed && previousPosition > 0;
       sourceRef.current = next;
@@ -169,18 +169,18 @@ export default function PlayerFooter({
       if (!cancelled) setSource(next);
     };
 
-    // Do not put normal playback behind the server-side yt-dlp proxy. On a
-    // production cold start that proxy has to boot Python, extract a signed
-    // Googlevideo URL, then open a second connection before the browser gets a
-    // single audio byte. The YouTube player connects from the user's browser
-    // instead, which keeps startup independent of serverless cold starts.
+    
+    
+    
+    
+    
     const applySource = (youtubeId) => {
       const useStream = eqStreamRequestedRef.current;
       const streamPath = "/api/stream-local";
       const next = {
-        // Web Audio can only process a native media element. The direct
-        // YouTube player is an iframe, so use our same-origin stream only
-        // while an EQ setting/effect is active.
+        
+        
+        
         kind: useStream ? "stream" : "youtube",
         url: useStream
           ? `${streamPath}?videoId=${youtubeId}&ext=.m4a`
@@ -219,10 +219,10 @@ export default function PlayerFooter({
       .then(({ youtubeId }) => {
         if (cancelled) return;
         if (youtubeId) {
-          // Capture current playback position before switching
+
           const currentPos = playerRef.current?.getCurrentTime?.() || 0;
           applySource(youtubeId);
-          // Restore position after the new source loads
+
           if (currentPos > 0) {
             pendingSeekRef.current = currentPos;
           }
@@ -239,8 +239,8 @@ export default function PlayerFooter({
     };
   }, [song?.id, isEqActive]);
 
-  // A Deezer preview remains a useful fallback when a source rejects an
-  // individual video.
+
+
   const handleSourceError = useCallback((err, data) => {
     const cur = sourceRef.current;
     if (!cur) return;

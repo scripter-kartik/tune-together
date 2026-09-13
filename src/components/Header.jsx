@@ -28,7 +28,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
 
-  // Track currently playing song & state from global events
+
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -274,13 +274,13 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
                             if (externalOnOpenArtist) externalOnOpenArtist(s.id);
                             else handleSearch(s.name);
                           }
-                          // For songs, clicking the row itself does nothing — use play button
+
                         }}
                         className={`flex items-center gap-3 px-3 py-2 cursor-default group transition-colors ${
                           current ? "bg-white/[0.06]" : "hover:bg-white/[0.06]"
                         } ${isArtist ? "cursor-pointer" : ""}`}
                       >
-                        {/* Thumbnail */}
+
                         <div className={`relative w-11 h-11 flex-shrink-0 bg-neutral-800 overflow-hidden shadow-md ${isArtist ? 'rounded-full' : 'rounded-md'}`}>
                           {img && <img referrerPolicy="no-referrer" src={img} alt={s.name || s.title} onError={coverError(s.name || s.title)} className="w-full h-full object-cover" />}
                           {}

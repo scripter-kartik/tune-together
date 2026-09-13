@@ -35,7 +35,7 @@ export default function SidebarLyrics({ song }) {
   const programmaticScrollRef = useRef(false);
   const programmaticScrollTimerRef = useRef(null);
 
-  // Shared per-song timing offset so sidebar + fullscreen stay in sync.
+
   const { offset: lyricsOffset } = useLyricsOffset(song?.id);
 
   useEffect(() => {

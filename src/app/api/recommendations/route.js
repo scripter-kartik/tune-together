@@ -137,8 +137,8 @@ export async function GET() {
       mixes = [];
     }
 
-    // Interleave artist-matched tracks toward the front for relevance, then
-    // cap the payload.
+
+
     const byArtistId = new Set(topArtists.map((a) => a.id).filter(Boolean));
     const byArtistName = new Set(topArtists.map((a) => a.name.toLowerCase()));
     const scored = out.map((s) => ({

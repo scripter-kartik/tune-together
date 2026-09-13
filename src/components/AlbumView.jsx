@@ -73,14 +73,14 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
     }
   });
 
-  // Full album order — passed as the playback context so Next/Prev walk the
-  // album instead of the home feed.
+
+
   const fullTracks = tracks.map(getFullTrack);
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
 
-      {/* Header with gradient & back arrow */}
+      {}
       <div className="relative bg-gradient-to-b from-[#282828] to-[#121212] pt-16 pb-8 px-6 md:px-8">
         <button
           onClick={onClose}

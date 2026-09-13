@@ -112,7 +112,7 @@ export async function GET() {
       });
     }
 
-    // Recent 50 songs overall (for History tab)
+
     const recentRows = await PlayHistory.find({ clerkId })
       .sort({ playedAt: -1 })
       .limit(50)

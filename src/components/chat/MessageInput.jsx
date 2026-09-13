@@ -26,7 +26,7 @@ export default function MessageInput({
   const typingTimeoutRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Entering edit mode prefills the original text; entering reply focuses.
+
   useEffect(() => {
     if (editing) setValue(editing.text || "");
     if (editing || replyTo) {

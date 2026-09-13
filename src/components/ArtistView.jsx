@@ -250,7 +250,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
         <AlbumGrid items={albums} title="Discography" />
         <AlbumGrid items={singles} title="Singles & EPs" />
 
-        {/* Similar Artists */}
+
         {similarArtists.length > 0 && (
           <section className="mt-12">
             <h2 className="text-2xl font-bold text-white mb-6 tracking-tight">Fans also like</h2>

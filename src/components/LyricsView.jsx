@@ -27,8 +27,8 @@ function parseLRC(lrc) {
   return out;
 }
 
-// `lyrics` ({ syncedLyrics, plainLyrics }) and `status` are prefetched by the
-// parent (PlayerFooter) as soon as the song changes, so opening is instant.
+
+
 export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek, lyrics, status = "idle" }) {
   const data = lyrics;
   const [mounted, setMounted] = useState(false);

@@ -27,7 +27,7 @@ export function slimSong(song) {
   };
 }
 
-/** Plaintext to encrypt when sharing `song` with an optional text note. */
+
 export function encodeSongMessage(song, note = "") {
   return SONG_PREFIX + JSON.stringify({ song: slimSong(song), note });
 }
@@ -40,7 +40,7 @@ export function encodeStickerMessage(url) {
   return STICKER_PREFIX + JSON.stringify({ url });
 }
 
-/** Parse a decrypted text; returns { song, note } or null for ordinary text. */
+
 export function parseSongMessage(text) {
   if (typeof text !== "string" || !text.startsWith(SONG_PREFIX)) return null;
   try {

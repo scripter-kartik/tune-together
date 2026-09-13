@@ -376,7 +376,7 @@ function MessageRow({
                     {msg.text}
                   </p>
                 )}
-                {/* Action buttons: Play + Queue + Sync */}
+
                 {(onPlaySong || onQueueSong || onSyncSong) && (
                   <div className="flex gap-2 mt-1">
                     {onPlaySong && (
@@ -429,7 +429,7 @@ function MessageRow({
                     )}
                   </div>
                 )}
-                {/* In-bubble meta: time · ticks */}
+
                 <span
                   className={`self-end flex items-center gap-1 text-[10px] leading-none mt-0.5 ${
                     mine ? "text-white/60" : "text-neutral-500"
@@ -446,7 +446,7 @@ function MessageRow({
                 </span>
               </div>
             ) : msg.gif ? (
-              /* ── GIF Bubble ── */
+              
               <div className="flex flex-col relative min-w-[120px] min-h-[120px]">
                 <img referrerPolicy="no-referrer" src={msg.gif} alt="GIF" className="w-full max-w-[260px] rounded-xl object-contain" />
                 <span

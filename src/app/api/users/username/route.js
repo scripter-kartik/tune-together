@@ -31,7 +31,7 @@ export async function POST(req) {
 
     await connectDB();
 
-    // Taken by someone else?
+
     const existing = await User.findOne({ username }).select("clerkId");
     if (existing && existing.clerkId !== clerkUser.id) {
       return Response.json({ error: "That username is taken." }, { status: 409 });
