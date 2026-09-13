@@ -42,6 +42,11 @@ export default function PlayerFooter({
   
   const [source, setSource] = useState(null); 
   const sourceRef = useRef(null);
+  // Once a track has entered the native-audio EQ path, keep that path until
+  // the track changes. Switching it back and forth recreates the player and
+  // causes the visible loading interruption when a user adjusts a control.
+  const eqStreamSongRef = useRef(null);
+  const eqStreamRequestedRef = useRef(false);
   
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -92,6 +97,18 @@ export default function PlayerFooter({
 
   const { updateNowPlaying } = useUpdateNowPlaying();
 
+  const {
+    settings: eqSettings,
+    wired: eqWired,
+    bands: eqBands,
+    wirePlayer: wireEq,
+    setGain: setEqGain,
+    applyPreset: applyEqPreset,
+    toggleEffect: toggleEqEffect,
+    resetAll: resetEq,
+    isActive: isEqActive,
+  } = useEqualizer({ playerRef });
+
   
   const seekTo = useCallback((t) => {
     const pos = Math.max(0, t || 0);
@@ -121,33 +138,52 @@ export default function PlayerFooter({
     }
 
     let cancelled = false;
-    setIsLoading(true);
-    playerReadyRef.current = false;
-    setCurrentTime(0);
-    setDuration(0);
+    if (eqStreamSongRef.current !== song.id) {
+      eqStreamSongRef.current = song.id;
+      eqStreamRequestedRef.current = isEqActive;
+    } else if (isEqActive) {
+      eqStreamRequestedRef.current = true;
+    }
 
-    // Do not put initial playback behind the server-side yt-dlp proxy. On a
+    const setNextSource = (next) => {
+      const changed = sourceRef.current?.url !== next.url;
+      sourceRef.current = next;
+      if (!changed) return;
+      setIsLoading(true);
+      playerReadyRef.current = false;
+      setCurrentTime(0);
+      setDuration(0);
+      if (!cancelled) setSource(next);
+    };
+
+    // Do not put normal playback behind the server-side yt-dlp proxy. On a
     // production cold start that proxy has to boot Python, extract a signed
     // Googlevideo URL, then open a second connection before the browser gets a
     // single audio byte. The YouTube player connects from the user's browser
     // instead, which keeps startup independent of serverless cold starts.
-    const applyYouTube = (youtubeId) => {
+    const applySource = (youtubeId) => {
+      const useStream = eqStreamRequestedRef.current;
+      const isDev = process.env.NODE_ENV === "development";
+      const streamPath = isDev ? "/api/stream-local" : "/api/stream";
       const next = {
-        kind: "youtube",
-        url: `https://www.youtube.com/watch?v=${youtubeId}`,
+        // Web Audio can only process a native media element. The direct
+        // YouTube player is an iframe, so use our same-origin stream only
+        // while an EQ setting/effect is active.
+        kind: useStream ? "stream" : "youtube",
+        url: useStream
+          ? `${streamPath}?videoId=${youtubeId}&ext=.m4a`
+          : `https://www.youtube.com/watch?v=${youtubeId}`,
       };
-      sourceRef.current = next;
-      if (!cancelled) setSource(next);
+      setNextSource(next);
     };
     const applyPreview = () => {
       const next = { kind: "preview", url: song.preview || null };
-      sourceRef.current = next;
-      if (!cancelled) setSource(next);
+      setNextSource(next);
     };
 
     
     if (song.youtubeId) {
-      applyYouTube(song.youtubeId);
+      applySource(song.youtubeId);
       return () => {
         cancelled = true;
       };
@@ -173,7 +209,7 @@ export default function PlayerFooter({
         if (youtubeId) {
           // Capture current playback position before switching
           const currentPos = playerRef.current?.getCurrentTime?.() || 0;
-          applyYouTube(youtubeId);
+          applySource(youtubeId);
           // Restore position after the new source loads
           if (currentPos > 0) {
             pendingSeekRef.current = currentPos;
@@ -189,11 +225,10 @@ export default function PlayerFooter({
     return () => {
       cancelled = true;
     };
-  }, [song?.id]);
+  }, [song?.id, isEqActive]);
 
-  // The YouTube player is the primary source so a deployment never needs to
-  // extract and proxy audio before playback. A Deezer preview remains a useful
-  // fallback when YouTube rejects an individual video.
+  // A Deezer preview remains a useful fallback when a source rejects an
+  // individual video.
   const handleSourceError = useCallback((err, data) => {
     const cur = sourceRef.current;
     if (!cur) return;
@@ -405,17 +440,6 @@ export default function PlayerFooter({
   });
 
   
-  const {
-    settings: eqSettings,
-    wired: eqWired,
-    bands: eqBands,
-    wirePlayer: wireEq,
-    setGain: setEqGain,
-    applyPreset: applyEqPreset,
-    toggleEffect: toggleEqEffect,
-    resetAll: resetEq,
-  } = useEqualizer({ playerRef });
-
   
   const effectiveVolume = isMuted || volume === 0 ? 0 : volume * fadeFactor;
 
@@ -921,6 +945,7 @@ export default function PlayerFooter({
             onDuration={handleDuration}
             onEnded={onNext}
             onError={handleSourceError}
+            type={source?.kind === "stream" ? "file" : undefined}
             config={{
               youtube: {
                 playerVars: { playsinline: 1, disablekb: 1, modestbranding: 1 },
