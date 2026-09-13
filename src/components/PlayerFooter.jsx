@@ -106,8 +106,10 @@ export default function PlayerFooter({
     applyPreset: applyEqPreset,
     toggleEffect: toggleEqEffect,
     resetAll: resetEq,
-    isActive: isEqActive,
+    isActive: rawIsEqActive,
   } = useEqualizer({ playerRef });
+
+  const isEqActive = process.env.NODE_ENV === "development" && rawIsEqActive;
 
   
   const seekTo = useCallback((t) => {
@@ -812,18 +814,20 @@ export default function PlayerFooter({
                 disabled={!song}
                 onOpen={() => setShowLyrics(false)}
               />
-              <EqualizerPanel
-                settings={eqSettings}
-                wired={eqWired}
-                bands={eqBands}
-                sourceKind={source?.kind}
-                onSetGain={setEqGain}
-                onPreset={applyEqPreset}
-                onToggleEffect={toggleEqEffect}
-                onReset={resetEq}
-                disabled={!song}
-                onOpen={() => setShowLyrics(false)}
-              />
+              {process.env.NODE_ENV === "development" && (
+                <EqualizerPanel
+                  settings={eqSettings}
+                  wired={eqWired}
+                  bands={eqBands}
+                  sourceKind={source?.kind}
+                  onSetGain={setEqGain}
+                  onPreset={applyEqPreset}
+                  onToggleEffect={toggleEqEffect}
+                  onReset={resetEq}
+                  disabled={!song}
+                  onOpen={() => setShowLyrics(false)}
+                />
+              )}
               <button
                 onClick={handleQueueSong}
                 className={`transition-colors ${added ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
