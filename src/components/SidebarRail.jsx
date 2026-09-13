@@ -3,6 +3,7 @@
 import { Home, Disc, MessageCircle, Search, Clock } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import FriendRequestBell from "./FriendRequestBell";
+import AddFriendButton from "./AddFriendButton";
 import ThemeSwitcher from "./ThemeSwitcher";
 
 export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
@@ -63,6 +64,7 @@ export default function SidebarRail({ activeView, onTabChange, onNavigate }) {
 
       {}
       <div className="flex flex-col gap-3 items-center w-full flex-shrink-0 pb-20 lg:pb-2">
+        <AddFriendButton />
         <FriendRequestBell />
         <ThemeSwitcher />
       </div>

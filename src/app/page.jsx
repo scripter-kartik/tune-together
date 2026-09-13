@@ -246,7 +246,9 @@ export default function Page() {
   const handlePlay = (song, list) => {
     recordPlay(song);
     const context = Array.isArray(list) && list.length ? list : songs;
-    window.dispatchEvent(new CustomEvent("tt-play-song", { detail: { song, list: context } }));
+    window.dispatchEvent(new CustomEvent("tt-play-song", {
+      detail: { song, list: context, autoplay: isSearchQuery },
+    }));
   };
 
   const handleAddToQueue = (song) => {

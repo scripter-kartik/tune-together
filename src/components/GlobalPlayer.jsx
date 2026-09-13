@@ -17,6 +17,10 @@ export default function GlobalPlayer() {
   const currentSongRef = useRef(null);
   const playContextRef = useRef([]);
   const playContextIndexRef = useRef(-1);
+  const autoplayRef = useRef(false);
+  const autoplayQueueRef = useRef([]);
+  const autoplayHistoryRef = useRef([]);
+  const autoplayLoadingRef = useRef(false);
 
   useEffect(() => {
     currentSongRef.current = currentSong;
@@ -122,8 +126,11 @@ export default function GlobalPlayer() {
   
   useEffect(() => {
     const handlePlaySong = (e) => {
-      const { song, list } = e.detail;
+      const { song, list, autoplay = false } = e.detail;
       if (song) {
+        autoplayRef.current = autoplay;
+        autoplayQueueRef.current = [];
+        autoplayHistoryRef.current = [song];
         if (list && Array.isArray(list) && list.length) {
           playContextRef.current = list;
           // Preserve the selected result's exact position. ID-only matching
@@ -227,6 +234,48 @@ export default function GlobalPlayer() {
   }, [roomId, isPlaying, queue]);
 
   const handleNext = () => {
+    if (autoplayRef.current) {
+      if (autoplayLoadingRef.current) return;
+
+      const playAutoplaySong = (nextSong) => {
+        if (!nextSong) return;
+        autoplayHistoryRef.current = [...autoplayHistoryRef.current, nextSong];
+        setCurrentSong(nextSong);
+        setIsPlaying(true);
+        window.dispatchEvent(new CustomEvent("tt-global-state", {
+          detail: { currentSong: nextSong, isPlaying: true },
+        }));
+        socketRef.current?.emit("next-song", { roomId, song: nextSong, preferContext: true });
+      };
+
+      const queued = autoplayQueueRef.current.shift();
+      if (queued) {
+        playAutoplaySong(queued);
+        return;
+      }
+
+      const current = currentSongRef.current;
+      if (!current) return;
+      autoplayLoadingRef.current = true;
+      const params = new URLSearchParams({
+        videoId: current.youtubeId || current.id || "",
+        title: current.title || "",
+        artist: current.artist?.name || "",
+      });
+      fetch(`/api/autoplay?${params.toString()}`)
+        .then((response) => (response.ok ? response.json() : { songs: [] }))
+        .then(({ songs = [] }) => {
+          const heard = new Set(autoplayHistoryRef.current.map((song) => song.youtubeId || song.id));
+          const fresh = songs.filter((song) => !heard.has(song.youtubeId || song.id));
+          const [nextSong, ...rest] = fresh;
+          autoplayQueueRef.current = rest;
+          playAutoplaySong(nextSong);
+        })
+        .catch(() => {})
+        .finally(() => { autoplayLoadingRef.current = false; });
+      return;
+    }
+
     const list = playContextRef.current;
     const contextIndex = playContextIndexRef.current;
     if (list.length > 0 && contextIndex >= 0) {
@@ -270,6 +319,20 @@ export default function GlobalPlayer() {
   };
 
   const handlePrev = () => {
+    if (autoplayRef.current) {
+      const history = autoplayHistoryRef.current;
+      if (history.length < 2) return;
+      history.pop();
+      const previousSong = history[history.length - 1];
+      setCurrentSong(previousSong);
+      setIsPlaying(true);
+      window.dispatchEvent(new CustomEvent("tt-global-state", {
+        detail: { currentSong: previousSong, isPlaying: true },
+      }));
+      socketRef.current?.emit("prev-song", { roomId, song: previousSong, preferContext: true });
+      return;
+    }
+
     const list = playContextRef.current;
     if (!list || list.length === 0) return;
     const savedIndex = playContextIndexRef.current;

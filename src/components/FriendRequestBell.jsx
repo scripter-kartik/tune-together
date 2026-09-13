@@ -57,7 +57,7 @@ export default function FriendRequestBell() {
       await fetch("/api/friends/respond", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ senderId, action }),
+        body: JSON.stringify({ requesterId: senderId, action }),
       });
       setTimeout(() => {
         setRequests((prev) => prev.filter((r) => r.clerkId !== senderId));
