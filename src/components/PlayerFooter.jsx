@@ -251,6 +251,13 @@ export default function PlayerFooter({
       data?.message || data?.type || ""
     );
 
+    if (cur.kind === "stream" && song?.youtubeId) {
+      const next = { kind: "youtube", url: `https://www.youtube.com/watch?v=${song.youtubeId}` };
+      sourceRef.current = next;
+      setSource(next);
+      return;
+    }
+
     if (cur.kind === "youtube" && song?.preview) {
       const next = { kind: "preview", url: song.preview };
       sourceRef.current = next;
@@ -259,7 +266,7 @@ export default function PlayerFooter({
     }
 
     setIsLoading(false);
-  }, [song?.preview]);
+  }, [song?.preview, song?.youtubeId]);
 
   const { lyricsData, lyricsStatus } = useLyrics(song);
 
