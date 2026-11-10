@@ -1,8 +1,28 @@
 "use client";
 import { Play, Clock3 } from "lucide-react";
+import { useUser, SignInButton } from "@clerk/nextjs";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
 
 export default function HistoryList({ history = [], onPlay }) {
+  const { isSignedIn, isLoaded } = useUser();
+  if (isLoaded && !isSignedIn) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-6">
+        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+          <Clock3 className="w-8 h-8 text-neutral-500" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-white mb-1">Keep your listening history</h3>
+          <p className="text-neutral-400 text-sm">Log in and everything you play will show up here.</p>
+        </div>
+        <SignInButton mode="modal">
+          <button type="button" className="h-9 px-5 rounded-full bg-white text-black text-sm font-bold hover:scale-[1.04] transition-transform">
+            Log in
+          </button>
+        </SignInButton>
+      </div>
+    );
+  }
   if (history.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-6 animate-fade-in-up">

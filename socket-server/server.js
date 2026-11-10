@@ -88,6 +88,7 @@ const getRoom = async (roomId) => {
       position: 0,
       at: now(),
       playlist: [],
+      playId: 0,
       users: new Set(),
     };
 
@@ -147,6 +148,7 @@ io.on("connection", (socket) => {
       position: room.position,
       at: room.at,
       playlist: room.playlist,
+      playId: room.playId || 0,
       userCount: room.users.size,
     });
 
@@ -277,16 +279,10 @@ io.on("connection", (socket) => {
     room.position = position || 0;
     room.at = now();
     room.isPlaying = true;
-
-    if (song) {
-      const before = room.playlist.length;
-      room.playlist = room.playlist.filter((s) => s.id !== song.id);
-      if (room.playlist.length !== before) {
-        io.to(roomId).emit("sync-queue", { playlist: room.playlist });
-      }
-    }
+    room.playId = (room.playId || 0) + 1;
 
     io.to(roomId).emit("sync-song", {
+      playId: room.playId || 0,
       song: room.currentSong,
       isPlaying: room.isPlaying,
       position: room.position,
@@ -299,7 +295,9 @@ io.on("connection", (socket) => {
     if (!song) return;
     const room = await getRoom(roomId);
 
-    if (!song._uniqueKey) {
+    // Keep the client's key (it already shows this entry) unless it's missing
+    // or taken: re-queueing a song must always make a distinct entry.
+    if (!song._uniqueKey || room.playlist.some((s) => s._uniqueKey === song._uniqueKey)) {
       song._uniqueKey = Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
     room.playlist.push(song);
@@ -351,8 +349,22 @@ io.on("connection", (socket) => {
     schedulePersist(roomId, room);
   });
 
-  socket.on("next-song", async ({ roomId, song, preferContext = false }) => {
+  socket.on("next-song", async ({ roomId, song, preferContext = false, fromPlayId }) => {
     const room = await getRoom(roomId);
+    // Each listener's player fires "ended" and asks to advance. Only the first
+    // request for the current play counts; later ones are resynced instead of
+    // skipping another queued track.
+    if (typeof fromPlayId === "number" && fromPlayId !== (room.playId || 0)) {
+      socket.emit("sync-queue", { playlist: room.playlist });
+      socket.emit("sync-song", {
+        playId: room.playId || 0,
+        song: room.currentSong,
+        isPlaying: room.isPlaying,
+        position: room.position,
+        at: room.at,
+      });
+      return;
+    }
 
     let nextSong = song || null;
     if (!preferContext && room.playlist.length > 0) {
@@ -364,8 +376,10 @@ io.on("connection", (socket) => {
     room.position = 0;
     room.at = now();
     room.isPlaying = true;
+    room.playId = (room.playId || 0) + 1;
 
     io.to(roomId).emit("sync-song", {
+      playId: room.playId || 0,
       song: room.currentSong,
       isPlaying: true,
       position: 0,
@@ -380,8 +394,10 @@ io.on("connection", (socket) => {
     room.position = 0;
     room.at = now();
     room.isPlaying = true;
+    room.playId = (room.playId || 0) + 1;
 
     io.to(roomId).emit("sync-song", {
+      playId: room.playId || 0,
       song: room.currentSong,
       isPlaying: true,
       position: 0,

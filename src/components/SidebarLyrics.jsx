@@ -166,7 +166,7 @@ export default function SidebarLyrics({ song }) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#121212] relative min-h-0">
+    <div className="h-full flex flex-col bg-transparent relative min-h-0">
       <div
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 py-8 relative"
         ref={bodyRef}

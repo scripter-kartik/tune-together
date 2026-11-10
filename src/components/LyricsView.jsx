@@ -173,7 +173,7 @@ export default function LyricsView({ song, currentTime, isOpen, onClose, onSeek,
   const overlay = (
     
     
-    <div className="fixed inset-x-0 top-0 bottom-[70px] md:bottom-[90px] z-[9999] flex flex-col overflow-hidden bg-[#0b0b0b]">
+    <div className="fixed inset-x-0 top-0 bottom-[calc(124px+env(safe-area-inset-bottom))] md:bottom-[90px] z-[9999] flex flex-col overflow-hidden bg-[#0b0b0b]">
       {}
       {cover && (
         <>

@@ -5,6 +5,7 @@ import { Music4, Shuffle } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 import { resolveRoomId, joinRoomId } from "@/lib/room";
 import PlayerFooter from "./PlayerFooter";
+import MobileTabBar from "./MobileTabBar";
 import toast from "react-hot-toast";
 
 export default function GlobalPlayer() {
@@ -21,10 +22,87 @@ export default function GlobalPlayer() {
   const autoplayQueueRef = useRef([]);
   const autoplayHistoryRef = useRef([]);
   const autoplayLoadingRef = useRef(false);
+  // Server-issued token for the current play; sent with auto-advance requests
+  // so the room only advances once when every listener's track ends together.
+  const playIdRef = useRef(0);
+  // Songs played before the current one, for the Previous button.
+  const historyRef = useRef([]);
+  const handleNextRef = useRef(null);
+  // Bumped when the same song plays again back-to-back (e.g. a queued copy of
+  // the current track) so the player remounts and restarts it.
+  const [replayNonce, setReplayNonce] = useState(0);
+
+  // Shuffle / repeat ("off" | "context" | "one"), remembered per browser.
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState("off");
+  const shuffleRef = useRef(false);
+  const repeatRef = useRef("off");
+  // Context indexes already played while shuffling, so shuffle doesn't repeat.
+  const playedIdxRef = useRef(new Set());
+
+  useEffect(() => {
+    try {
+      const sh = localStorage.getItem("tt-shuffle") === "1";
+      const rp = localStorage.getItem("tt-repeat");
+      shuffleRef.current = sh;
+      setShuffle(sh);
+      if (rp === "context" || rp === "one") {
+        repeatRef.current = rp;
+        setRepeat(rp);
+      }
+    } catch {}
+  }, []);
+
+  const toggleShuffle = () => {
+    const next = !shuffleRef.current;
+    shuffleRef.current = next;
+    playedIdxRef.current = new Set();
+    setShuffle(next);
+    try { localStorage.setItem("tt-shuffle", next ? "1" : "0"); } catch {}
+  };
+
+  const cycleRepeat = () => {
+    const next = repeatRef.current === "off" ? "context" : repeatRef.current === "context" ? "one" : "off";
+    repeatRef.current = next;
+    setRepeat(next);
+    try { localStorage.setItem("tt-repeat", next); } catch {}
+  };
 
   useEffect(() => {
     currentSongRef.current = currentSong;
   }, [currentSong]);
+
+  const songKey = (s) => (s ? `${s.id}|${s._uniqueKey || ""}` : "");
+
+  // The queue is updated here first and confirmed by the socket server's
+  // sync-queue echo. Without this the UI waited on the server round trip, so
+  // with an unreachable/sleeping socket server "Add to queue" did nothing.
+  const queueRef = useRef([]);
+  const applyQueue = (next) => {
+    queueRef.current = next;
+    setQueue(next);
+    window.dispatchEvent(new CustomEvent("tt-global-state", { detail: { queue: next } }));
+  };
+  const newQueueKey = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const removeQueued = (key) => {
+    const cur = queueRef.current;
+    const i = cur.findIndex((s) => s._uniqueKey === key || (!s._uniqueKey && s.id === key));
+    if (i !== -1) applyQueue([...cur.slice(0, i), ...cur.slice(i + 1)]);
+  };
+
+  // Single place that switches the current track.
+  const setSong = (next, { remember = true } = {}) => {
+    const prev = currentSongRef.current;
+    const changed = songKey(prev) !== songKey(next);
+    if (changed && next && prev && String(next.id) === String(prev.id)) {
+      setReplayNonce((n) => n + 1);
+    }
+    if (changed && remember && prev && next) {
+      historyRef.current = [...historyRef.current.slice(-49), prev];
+    }
+    currentSongRef.current = next || null;
+    setCurrentSong(next || null);
+  };
 
   useEffect(() => {
     const { roomId: room } = resolveRoomId();
@@ -69,26 +147,22 @@ export default function GlobalPlayer() {
     const socket = getSocket();
     socketRef.current = socket;
 
-    const applySong = (song) => {
-      setCurrentSong(song || null);
-    };
+    const applySong = (song, opts) => setSong(song, opts);
 
     const broadcast = (state) => {
       window.dispatchEvent(new CustomEvent("tt-global-state", { detail: state }));
     };
 
     const onRoomState = (state) => {
-      applySong(state.currentSong);
-      setQueue(state.playlist || []);
+      if (typeof state.playId === "number") playIdRef.current = state.playId;
+      applySong(state.currentSong, { remember: false });
       setIsPlaying(!!state.isPlaying);
-      broadcast({
-        currentSong: state.currentSong,
-        isPlaying: !!state.isPlaying,
-        queue: state.playlist || []
-      });
+      broadcast({ currentSong: state.currentSong, isPlaying: !!state.isPlaying });
+      applyQueue(state.playlist || []);
     };
 
     const onSyncSong = (data) => {
+      if (typeof data.playId === "number") playIdRef.current = data.playId;
       applySong(data.song);
       setIsPlaying(!!data.isPlaying);
       broadcast({ currentSong: data.song, isPlaying: !!data.isPlaying });
@@ -99,10 +173,7 @@ export default function GlobalPlayer() {
       broadcast({ isPlaying: !!data.isPlaying });
     };
 
-    const onSyncQueue = (data) => {
-      setQueue(data.playlist || []);
-      broadcast({ queue: data.playlist || [] });
-    };
+    const onSyncQueue = (data) => applyQueue(data.playlist || []);
 
     const onConnect = () => socket.emit("join-room", roomId);
 
@@ -126,11 +197,25 @@ export default function GlobalPlayer() {
   
   useEffect(() => {
     const handlePlaySong = (e) => {
-      const { song, list, autoplay = false } = e.detail;
+      const { song, list, autoplay = false, fromQueue = false } = e.detail;
+      if (song && fromQueue) {
+        // Jumping to a queued track: drop that entry, keep whatever context
+        // (album, playlist, autoplay) was playing so it resumes afterwards.
+        if (song._uniqueKey) {
+          removeQueued(song._uniqueKey);
+          socketRef.current?.emit("remove-from-queue", { roomId, songId: song._uniqueKey });
+        }
+        setSong(song);
+        setIsPlaying(true);
+        socketRef.current?.emit("change-song", { roomId, song, position: 0 });
+        window.dispatchEvent(new CustomEvent("tt-global-state", { detail: { currentSong: song, isPlaying: true } }));
+        return;
+      }
       if (song) {
         autoplayRef.current = autoplay;
         autoplayQueueRef.current = [];
         autoplayHistoryRef.current = [song];
+        playedIdxRef.current = new Set();
         if (list && Array.isArray(list) && list.length) {
           playContextRef.current = list;
           
@@ -149,14 +234,16 @@ export default function GlobalPlayer() {
           playContextIndexRef.current = -1;
         }
         
-        setCurrentSong(song);
+        setSong(song);
+        // A new album/list/search starts a fresh "previous" history.
+        historyRef.current = [];
         setIsPlaying(true);
         socketRef.current?.emit("change-song", { roomId, song, position: 0 });
         window.dispatchEvent(new CustomEvent("tt-global-state", { detail: { currentSong: song, isPlaying: true } }));
       } else if (e.detail && !e.detail.song && e.detail.id) {
          
          const fallbackSong = e.detail;
-         setCurrentSong(fallbackSong);
+         setSong(fallbackSong);
          setIsPlaying(true);
          socketRef.current?.emit("change-song", { roomId, song: fallbackSong, position: 0 });
          window.dispatchEvent(new CustomEvent("tt-global-state", { detail: { currentSong: fallbackSong, isPlaying: true } }));
@@ -164,8 +251,18 @@ export default function GlobalPlayer() {
     };
 
     const handleQueueSong = (e) => {
-      const song = e.detail;
-      if (!song) return;
+      const raw = e.detail;
+      if (!raw) return;
+      // A song that was queued before (or is playing from the queue) still
+      // carries its old key; re-adding it must create a distinct entry.
+      const { _uniqueKey, ...rest } = raw;
+      if (!currentSongRef.current) {
+        // Nothing playing: queueing a song should just start it.
+        window.dispatchEvent(new CustomEvent("tt-play-song", { detail: { song: rest } }));
+        return;
+      }
+      const song = { ...rest, _uniqueKey: newQueueKey() };
+      applyQueue([...queueRef.current, song]);
       socketRef.current?.emit("add-to-queue", { roomId, song });
       toast(
         `Added "${song.title || 'Song'}" to queue`,
@@ -184,16 +281,24 @@ export default function GlobalPlayer() {
     
     const handleRemoveFromQueue = (e) => {
       const songId = e.detail;
+      removeQueued(songId);
       socketRef.current?.emit("remove-from-queue", { roomId, songId });
     };
     
     const handleClearQueue = () => {
+      applyQueue([]);
       socketRef.current?.emit("clear-queue", { roomId });
     };
 
     const handleReorderQueue = (e) => {
       const { fromIndex, toIndex } = e.detail || {};
       if (typeof fromIndex === "number" && typeof toIndex === "number") {
+        const next = [...queueRef.current];
+        if (fromIndex >= 0 && fromIndex < next.length && toIndex >= 0 && toIndex < next.length) {
+          const [moved] = next.splice(fromIndex, 1);
+          next.splice(toIndex, 0, moved);
+          applyQueue(next);
+        }
         socketRef.current?.emit("reorder-queue", { roomId, fromIndex, toIndex });
       }
     };
@@ -233,17 +338,21 @@ export default function GlobalPlayer() {
     };
   }, [roomId, isPlaying, queue]);
 
-  const handleNext = () => {
-    if (queue.length > 0) {
-      const nextSong = queue[0];
-      const remaining = queue.slice(1);
-      setCurrentSong(nextSong);
-      setQueue(remaining);
+  // `auto` is true when the track ended on its own (not a skip button press).
+  const handleNext = (opts) => {
+    const auto = opts?.auto === true;
+    const emitNext = (payload) =>
+      socketRef.current?.emit("next-song", auto ? { ...payload, fromPlayId: playIdRef.current } : payload);
+    const pending = queueRef.current;
+    if (pending.length > 0) {
+      const nextSong = pending[0];
+      setSong(nextSong);
       setIsPlaying(true);
       window.dispatchEvent(new CustomEvent("tt-global-state", {
-        detail: { currentSong: nextSong, isPlaying: true, queue: remaining },
+        detail: { currentSong: nextSong, isPlaying: true },
       }));
-      socketRef.current?.emit("next-song", { roomId });
+      applyQueue(pending.slice(1));
+      emitNext({ roomId });
       return;
     }
 
@@ -253,12 +362,12 @@ export default function GlobalPlayer() {
       const playAutoplaySong = (nextSong) => {
         if (!nextSong) return;
         autoplayHistoryRef.current = [...autoplayHistoryRef.current, nextSong];
-        setCurrentSong(nextSong);
+        setSong(nextSong);
         setIsPlaying(true);
         window.dispatchEvent(new CustomEvent("tt-global-state", {
           detail: { currentSong: nextSong, isPlaying: true },
         }));
-        socketRef.current?.emit("next-song", { roomId, song: nextSong, preferContext: true });
+        emitNext({ roomId, song: nextSong, preferContext: true });
       };
 
       const queued = autoplayQueueRef.current.shift();
@@ -292,15 +401,39 @@ export default function GlobalPlayer() {
     const list = playContextRef.current;
     const contextIndex = playContextIndexRef.current;
     if (list.length > 0 && contextIndex >= 0) {
-      const nextIndex = (contextIndex + 1) % list.length;
+      let nextIndex;
+      if (shuffleRef.current && list.length > 1) {
+        const played = playedIdxRef.current;
+        played.add(contextIndex);
+        let pool = list.map((_, i) => i).filter((i) => !played.has(i));
+        if (!pool.length && repeatRef.current === "context") {
+          played.clear();
+          played.add(contextIndex);
+          pool = list.map((_, i) => i).filter((i) => i !== contextIndex);
+        }
+        nextIndex = pool.length ? pool[Math.floor(Math.random() * pool.length)] : -1;
+      } else {
+        nextIndex = contextIndex + 1;
+        if (nextIndex >= list.length) nextIndex = repeatRef.current === "context" ? 0 : -1;
+      }
+
+      if (nextIndex === -1) {
+        // End of the album/playlist with repeat off: keep the music going
+        // with similar songs, like Spotify's autoplay.
+        autoplayRef.current = true;
+        autoplayQueueRef.current = [];
+        autoplayHistoryRef.current = [...list];
+        handleNext(opts);
+        return;
+      }
       const nextSong = list[nextIndex];
       playContextIndexRef.current = nextIndex;
-      setCurrentSong(nextSong);
+      setSong(nextSong);
       setIsPlaying(true);
       window.dispatchEvent(new CustomEvent("tt-global-state", {
         detail: { currentSong: nextSong, isPlaying: true },
       }));
-      socketRef.current?.emit("next-song", { roomId, song: nextSong, preferContext: true });
+      emitNext({ roomId, song: nextSong, preferContext: true });
       return;
     }
 
@@ -312,39 +445,70 @@ export default function GlobalPlayer() {
     const nextSong = list[nextIndex];
     playContextIndexRef.current = nextIndex;
 
-    setCurrentSong(nextSong);
+    setSong(nextSong);
     setIsPlaying(true);
     window.dispatchEvent(new CustomEvent("tt-global-state", {
       detail: { currentSong: nextSong, isPlaying: true },
     }));
-    socketRef.current?.emit("next-song", { roomId, song: nextSong });
+    emitNext({ roomId, song: nextSong });
   };
 
+  handleNextRef.current = handleNext;
+
+  // Every listener's player fires "ended". Wait a beat and only advance if
+  // nobody else has moved the room on yet, so a queued track is never
+  // skipped (works even against a socket server without the play-token check).
+  const handleEnded = () => {
+    if (repeatRef.current === "one" && currentSongRef.current) {
+      setReplayNonce((n) => n + 1);
+      window.dispatchEvent(new CustomEvent("tt-sync", { detail: { type: "seek", position: 0, at: Date.now() } }));
+      socketRef.current?.emit("seek-time", { roomId, position: 0 });
+      return;
+    }
+    const endedKey = songKey(currentSongRef.current);
+    const endedPlayId = playIdRef.current;
+    setTimeout(() => {
+      if (songKey(currentSongRef.current) !== endedKey || playIdRef.current !== endedPlayId) return;
+      handleNextRef.current?.({ auto: true });
+    }, Math.floor(Math.random() * 400));
+  };
+
+  const restartCurrent = () => {
+    window.dispatchEvent(new CustomEvent("tt-sync", { detail: { type: "seek", position: 0, at: Date.now() } }));
+    socketRef.current?.emit("seek-time", { roomId, position: 0 });
+  };
+
+  // Like Spotify: more than 3s in restarts the track; otherwise go back to
+  // the song that actually played before (queued, autoplay or context).
   const handlePrev = () => {
-    if (autoplayRef.current) {
-      const history = autoplayHistoryRef.current;
-      if (history.length < 2) return;
-      history.pop();
-      const previousSong = history[history.length - 1];
-      setCurrentSong(previousSong);
-      setIsPlaying(true);
-      window.dispatchEvent(new CustomEvent("tt-global-state", {
-        detail: { currentSong: previousSong, isPlaying: true },
-      }));
-      socketRef.current?.emit("prev-song", { roomId, song: previousSong, preferContext: true });
+    const probe = { position: 0 };
+    window.dispatchEvent(new CustomEvent("tt-get-position", { detail: probe }));
+    if (probe.position > 3) {
+      restartCurrent();
       return;
     }
 
     const list = playContextRef.current;
-    if (!list || list.length === 0) return;
-    const savedIndex = playContextIndexRef.current;
-    const cur = currentSongRef.current;
-    const curIdx = savedIndex >= 0 ? savedIndex : (cur ? list.findIndex((s) => s.id === cur.id) : -1);
-    const prevIndex = curIdx === -1 ? 0 : (curIdx - 1 + list.length) % list.length;
-    const prevSong = list[prevIndex];
-    playContextIndexRef.current = prevIndex;
+    let prevSong = historyRef.current.pop() || null;
+    if (!prevSong && list.length > 0 && !autoplayRef.current) {
+      const cur = currentSongRef.current;
+      const saved = playContextIndexRef.current;
+      const curIdx = saved >= 0 ? saved : (cur ? list.findIndex((s) => s.id === cur.id) : -1);
+      if (curIdx > 0) prevSong = list[curIdx - 1];
+    }
+    if (!prevSong) {
+      restartCurrent();
+      return;
+    }
 
-    setCurrentSong(prevSong);
+    const idx = list.findIndex((s) => s.id === prevSong.id);
+    if (idx >= 0) playContextIndexRef.current = idx;
+    if (autoplayRef.current) {
+      const h = autoplayHistoryRef.current;
+      if (h.length > 1 && h[h.length - 1]?.id === currentSongRef.current?.id) h.pop();
+    }
+
+    setSong(prevSong, { remember: false });
     setIsPlaying(true);
     window.dispatchEvent(new CustomEvent("tt-global-state", {
       detail: { currentSong: prevSong, isPlaying: true },
@@ -358,7 +522,8 @@ export default function GlobalPlayer() {
 
   if (!currentSong) {
     return (
-      <div className="flex-shrink-0 z-50 bg-black border-t border-[var(--tt-divider)] relative overflow-hidden">
+      <>
+      <div className="hidden md:block flex-shrink-0 z-50 bg-black border-t border-[var(--tt-divider)] relative overflow-hidden">
         {}
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--tt-accent)]/40 to-transparent" />
 
@@ -419,22 +584,35 @@ export default function GlobalPlayer() {
           </div>
 
           {}
-          <div className="hidden sm:flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-[var(--tt-border)] text-neutral-500 hover:bg-white/[0.07] hover:text-neutral-300 transition-all cursor-default">
-            <Shuffle className="w-3 h-3" />
-            <span className="text-[10px] font-medium tracking-wide uppercase">Shuffle</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("tt-shuffle-play"))}
+            className="hidden sm:flex items-center gap-1.5 ml-2 px-3.5 h-8 rounded-full bg-white text-black hover:scale-[1.04] active:scale-100 transition-transform"
+          >
+            <Shuffle className="w-3.5 h-3.5" />
+            <span className="text-xs font-bold">Shuffle play</span>
+          </button>
         </div>
       </div>
+      <MobileTabBar />
+      </>
     );
   }
 
   return (
+    <>
     <div className="flex-shrink-0 z-50 bg-black border-t border-[var(--tt-divider)]">
       <PlayerFooter
         song={currentSong}
         isPlaying={isPlaying}
         onPlayPause={handleTogglePlayPause}
         onNext={handleNext}
+        onEnded={handleEnded}
+        replayNonce={replayNonce}
+        shuffle={shuffle}
+        repeat={repeat}
+        onToggleShuffle={toggleShuffle}
+        onCycleRepeat={cycleRepeat}
         onPrev={handlePrev}
         roomId={roomId}
         socketRef={socketRef}
@@ -442,5 +620,7 @@ export default function GlobalPlayer() {
         queueLength={queue.length}
       />
     </div>
+    <MobileTabBar />
+    </>
   );
 }

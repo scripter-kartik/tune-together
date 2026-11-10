@@ -1,23 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, X, ArrowLeft, Circle, Music, Plus, Library, Home, Trash2, Pencil, Users } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { Music, Plus, Library, Trash2, Pencil, Users, Heart, Pin } from "lucide-react";
+import { useUser, SignInButton } from "@clerk/nextjs";
+import { useLibrary } from "../lib/library";
 import { useConfirm } from "./ConfirmDialog";
 
 import { PLAYLISTS } from "../lib/constants";
 
-function getInitials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(' ');
-  if (parts.length >= 2) return parts[0][0] + parts[1][0];
-  return parts[0][0];
-}
+const LIBRARY_FILTERS = [
+  { id: "playlists", label: "Playlists" },
+  { id: "artists", label: "Artists" },
+];
 
-const AVATAR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-red-500'];
-
-export default function PlaylistSidebar({ onOpenPlaylist }) {
-  const { isSignedIn, isLoaded, user } = useUser();
+export default function PlaylistSidebar({ onOpenPlaylist, onOpenCollection, onOpenArtist }) {
+  const { isSignedIn, user } = useUser();
+  const liked = useLibrary("liked");
+  const followed = useLibrary("followed");
+  const [libFilter, setLibFilter] = useState(null);
+  const showPlaylists = libFilter !== "artists";
+  const showArtists = libFilter !== "playlists";
   const confirmAction = useConfirm();
   const [customPlaylists, setCustomPlaylists] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -109,15 +111,34 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
             <span className="font-bold text-white">Your Library</span>
           </div>
           {isSignedIn && (
-            <button 
+            <button
               onClick={() => setIsCreating(!isCreating)}
-              className="text-neutral-400 transition-colors hover:text-white hover:bg-white/10 p-1.5 rounded-full"
-              title="Create Playlist"
+              className="text-neutral-400 transition-colors hover:text-white hover:bg-white/10 w-8 h-8 flex items-center justify-center rounded-full"
+              title="Create playlist"
+              aria-label="Create playlist"
             >
               <Plus className="w-5 h-5" />
             </button>
           )}
         </div>
+        {followed.length > 0 && (
+          <div className="flex gap-2">
+            {LIBRARY_FILTERS.map((f) => {
+              const on = libFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setLibFilter(on ? null : f.id)}
+                  className={`h-8 px-3 rounded-full text-[13px] font-medium transition-colors ${on ? "bg-white text-black" : "bg-white/[0.07] text-white hover:bg-white/[0.12]"}`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {}
@@ -141,7 +162,42 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
             </div>
           )}
 
-          {customPlaylists.map((pl, idx) => {
+          {!isSignedIn && showPlaylists && (
+            <div className="mx-1 mb-2 rounded-lg bg-[#242424] p-4">
+              <p className="text-white font-bold text-[15px]">Create your first playlist</p>
+              <p className="text-neutral-300 text-[13px] mt-1">It&apos;s easy, we&apos;ll help you.</p>
+              <SignInButton mode="modal">
+                <button type="button" className="mt-4 h-8 px-4 rounded-full bg-white text-black text-sm font-bold hover:scale-[1.04] transition-transform">
+                  Log in
+                </button>
+              </SignInButton>
+            </div>
+          )}
+
+          {showPlaylists && (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpenCollection?.({ id: "liked", kind: "liked", title: "Liked Songs" })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onOpenCollection?.({ id: "liked", kind: "liked", title: "Liked Songs" });
+              }}
+              className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-white/5 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            >
+              <div className="w-12 h-12 flex-shrink-0 rounded bg-gradient-to-br from-[#450af5] to-[#c4efd9] flex items-center justify-center">
+                <Heart className="w-5 h-5 text-white fill-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium truncate">Liked Songs</p>
+                <p className="text-neutral-400 text-xs truncate flex items-center gap-1">
+                  <Pin className="w-3 h-3 text-green-400 fill-green-400 rotate-45" />
+                  Playlist • {liked.length} {liked.length === 1 ? "song" : "songs"}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {showPlaylists && customPlaylists.map((pl, idx) => {
             const isOwner = pl.userId && user?.id && String(pl.userId) === String(user.id);
             const isRenaming = renamingId === pl._id;
             return (
@@ -175,7 +231,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
                     />
                   ) : (
                     <>
-                      <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{pl.name}</p>
+                      <p className="text-white text-sm font-medium truncate">{pl.name}</p>
                       <p className="text-neutral-400 text-xs truncate flex items-center gap-1">
                         {pl.collaborators?.length > 0 && (
                           <Users className="w-3 h-3 text-green-400 flex-shrink-0 inline" />
@@ -213,7 +269,30 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
             );
           })}
 
-          {PLAYLISTS.map((pl, idx) => (
+          {showArtists && followed.map((a) => (
+            <div
+              key={`artist-${a.id}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpenArtist?.(a.id)}
+              onKeyDown={(e) => { if (e.key === "Enter") onOpenArtist?.(a.id); }}
+              className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-white/5 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            >
+              <div className="w-12 h-12 flex-shrink-0 rounded-full overflow-hidden bg-neutral-800">
+                {a.image ? (
+                  <img referrerPolicy="no-referrer" src={a.image} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white font-bold">{a.name?.[0] || "?"}</div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium truncate">{a.name}</p>
+                <p className="text-neutral-400 text-xs truncate">Artist</p>
+              </div>
+            </div>
+          ))}
+
+          {showPlaylists && PLAYLISTS.map((pl, idx) => (
               <div
                 key={pl.id || `preset-${idx}`}
                 onClick={() => onOpenPlaylist?.(pl)}
@@ -229,7 +308,7 @@ export default function PlaylistSidebar({ onOpenPlaylist }) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate group-hover:text-green-400 transition-colors">{pl.name}</p>
+                  <p className="text-white text-sm font-medium truncate">{pl.name}</p>
                   <p className="text-neutral-400 text-xs truncate">{pl.type} • {pl.artist}</p>
                 </div>
               </div>

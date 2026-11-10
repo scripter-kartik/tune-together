@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, MicVocal, ListMusic, Heart } from "lucide-react";
+import { ChevronDown, MicVocal, ListMusic, Shuffle, Repeat, Repeat1 } from "lucide-react";
+import LikeButton from "./LikeButton";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 import CrossfadeMenu from "./CrossfadeMenu";
@@ -36,12 +37,14 @@ export default function NowPlayingView({
   crossfade,
   sleepTimer,
   equalizer,
+  shuffle = false,
+  repeat = "off",
+  onToggleShuffle,
+  onCycleRepeat,
 }) {
   const [mounted, setMounted] = useState(false);
-  const [liked, setLiked] = useState(false);
 
   useEffect(() => setMounted(true), []);
-  useEffect(() => setLiked(false), [song?.id]);
 
   
   useEffect(() => {
@@ -65,7 +68,7 @@ export default function NowPlayingView({
   const pct = (currentTime / (duration || 30)) * 100;
 
   const overlay = (
-    <div className="fixed inset-0 z-[9990] flex flex-col overflow-hidden animate-slide-up">
+    <div className="fixed inset-0 z-[9990] flex flex-col overflow-hidden animate-slide-up bg-[#121212]">
       {}
       <img referrerPolicy="no-referrer"
         src={cover}
@@ -129,16 +132,7 @@ export default function NowPlayingView({
               {song.artist?.name}
             </p>
           </div>
-          <button
-            onClick={() => setLiked((v) => !v)}
-            aria-label={liked ? "Unlike" : "Like"}
-            className="p-1 flex-shrink-0 active:scale-90 transition-transform touch-manipulation"
-          >
-            <Heart
-              size={24}
-              className={`sm:w-[26px] sm:h-[26px] ${liked ? "fill-green-500 text-green-500" : "text-white/80 hover:text-white"}`}
-            />
-          </button>
+          <LikeButton song={song} size={26} className="p-1" />
         </div>
 
         {}
@@ -163,7 +157,16 @@ export default function NowPlayingView({
         </div>
 
         {}
-        <div className="flex items-center justify-center gap-7 sm:gap-9 flex-shrink-0 mb-5 sm:mb-6">
+        <div className="flex items-center justify-between sm:justify-center sm:gap-9 flex-shrink-0 mb-5 sm:mb-6 px-1">
+          <button
+            onClick={onToggleShuffle}
+            aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"}
+            aria-pressed={shuffle}
+            className={`relative p-1 active:scale-90 transition touch-manipulation ${shuffle ? "text-green-400" : "text-white/70 hover:text-white"}`}
+          >
+            <Shuffle size={22} />
+            {shuffle && <span className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-1 h-1 rounded-full bg-green-400" />}
+          </button>
           <button
             onClick={onPrev}
             aria-label="Previous"
@@ -193,6 +196,15 @@ export default function NowPlayingView({
             className="text-white/90 hover:text-white active:scale-90 transition-transform touch-manipulation"
           >
             <FaForward size={26} className="sm:w-7 sm:h-7" />
+          </button>
+          <button
+            onClick={onCycleRepeat}
+            aria-label={repeat === "off" ? "Enable repeat" : repeat === "context" ? "Enable repeat one" : "Disable repeat"}
+            aria-pressed={repeat !== "off"}
+            className={`relative p-1 active:scale-90 transition touch-manipulation ${repeat !== "off" ? "text-green-400" : "text-white/70 hover:text-white"}`}
+          >
+            {repeat === "one" ? <Repeat1 size={22} /> : <Repeat size={22} />}
+            {repeat !== "off" && <span className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-1 h-1 rounded-full bg-green-400" />}
           </button>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignInButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
   MessageCircle,
@@ -285,8 +285,13 @@ export default function ChatHub({ initialDm = null, embedded = false, onExit, on
     return (
       <div className={`${rootClass} flex flex-col items-center justify-center gap-3 px-6 text-center`}>
         <MessageCircle className="w-10 h-10 text-green-400" />
-        <p className="text-neutral-300 font-medium">Sign in to chat with your friends</p>
-        <p className="text-sm text-neutral-500">Your music keeps playing either way.</p>
+        <p className="text-white text-lg font-bold">Chat with your friends</p>
+        <p className="text-sm text-neutral-400 max-w-xs">Log in to message friends, share songs and listen together. Your music keeps playing either way.</p>
+        <SignInButton mode="modal">
+          <button type="button" className="mt-2 h-10 px-6 rounded-full bg-white text-black text-sm font-bold hover:scale-[1.04] active:scale-100 transition-transform">
+            Log in
+          </button>
+        </SignInButton>
       </div>
     );
   }

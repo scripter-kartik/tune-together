@@ -9,6 +9,7 @@ import { useUser } from "@clerk/nextjs";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
 import CollaboratorsModal from "./CollaboratorsModal";
 import { useConfirm } from "./ConfirmDialog";
+import BigPlayButton, { ShuffleListButton } from "./BigPlayButton";
 
 function getInitials(name) {
   if (!name) return "?";
@@ -225,7 +226,7 @@ export default function PlaylistView({
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(playlist.artist)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(playlist.query || playlist.artist)}`);
         if (!res.ok) throw new Error("Failed to load playlist");
         const data = await res.json();
         if (cancelled) return;
@@ -242,7 +243,7 @@ export default function PlaylistView({
     fetchSongs();
     return () => { cancelled = true; };
     
-  }, [playlist?.id, playlist?._id, playlist?.artist]);
+  }, [playlist?.id, playlist?._id, playlist?.artist, playlist?.query]);
 
   const handleQueue = (song) => {
     onQueue?.(song);
@@ -454,13 +455,8 @@ export default function PlaylistView({
       <div className="px-6 md:px-8 py-4 flex flex-col gap-6 pb-12">
         {songs.length > 0 && (
           <div className="flex items-center gap-4 flex-wrap">
-            <button
-              onClick={playAll}
-              className="w-14 h-14 bg-green-500 hover:bg-green-400 hover:scale-105 text-black rounded-full flex items-center justify-center transition-all duration-200 shadow-xl shadow-green-500/25"
-              title="Play all"
-            >
-              <Play className="w-6 h-6 fill-black ml-0.5" />
-            </button>
+            <BigPlayButton tracks={songs} currentSongId={currentSongId} isPlaying={isPlaying} onPlay={onPlay} label={(pl?.name || "playlist")} />
+            <ShuffleListButton tracks={songs} onPlay={onPlay} label={(pl?.name || "playlist")} />
             {canEdit && pl?._id && (
               <button
                 onClick={() => setShowAddSongs(true)}

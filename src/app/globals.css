@@ -229,6 +229,82 @@ input[type="range"]::-webkit-slider-thumb {
   animation: fadeInUp 0.3s ease-out;
 }
 
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-panel-in {
+  animation: panelIn 0.22s ease-out;
+}
+
+/* While a sidebar is being resized: keep the resize cursor everywhere and stop
+   text selection / iframe pointer capture (the YouTube player is an iframe). */
+body.tt-resizing,
+body.tt-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+body.tt-resizing iframe { pointer-events: none; }
+
+/* Home shelves on phones: one swipeable row with the next card peeking in. */
+.tt-swipe-row {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  margin-inline: -4px;
+}
+.tt-swipe-row::-webkit-scrollbar { display: none; }
+.tt-swipe-row > * {
+  flex: 0 0 auto;
+  width: clamp(132px, 40vw, 180px);
+  scroll-snap-align: start;
+}
+
+/* "Show all" pages: as many columns as fit. */
+.tt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 45%), 1fr));
+}
+@media (min-width: 640px) {
+  .tt-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+
+/* Shortcut grid at the top of Home: 2 columns, 4 once the middle column is
+   wide enough (container query on .tt-main). */
+.tt-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@container main (min-width: 860px) {
+  .tt-shortcuts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 12px; }
+}
+
+/* The middle column is a size container, so Home lays out by the space it
+   actually has (which changes as the sidebars are resized), not the window. */
+.tt-main { container-type: inline-size; container-name: main; }
+/* Card play button: slides up on hover with a mouse, always shown on touch
+   and on the card that is currently playing. */
+.tt-card-play { transition: opacity 0.2s ease, transform 0.2s ease, scale 0.15s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .tt-card-play { opacity: 0; transform: translateY(8px); }
+  .group:hover .tt-card-play,
+  .group:focus-within .tt-card-play,
+  .tt-card-play.is-on { opacity: 1; transform: translateY(0); }
+}
+
+/* Row controls: always visible on touch, revealed on hover/focus with a mouse. */
+@media (hover: hover) and (pointer: fine) {
+  .tt-reveal { opacity: 0; transition: opacity 0.15s ease; }
+  .group:hover .tt-reveal,
+  .group:focus-within .tt-reveal { opacity: 1; }
+}
+
 @keyframes equalize {
   0%, 100% { height: 4px; }
   50% { height: 14px; }

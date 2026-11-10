@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Play, Pause, Plus, Check, Music2, ListMusic } from "lucide-react";
+import { ArrowLeft, Play, Pause, Plus, Check, Music2, ListMusic, Heart } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
+import BigPlayButton, { ShuffleListButton } from "./BigPlayButton";
+import { useLibrary } from "../lib/library";
 
 function formatTime(seconds) {
   if (!seconds) return "";
@@ -22,9 +24,11 @@ export default function CollectionView({
 }) {
   const [addedId, setAddedId] = useState(null);
 
+  const liked = useLibrary("liked");
   if (!collection) return null;
 
-  const tracks = collection.songs || [];
+  const isLikedSongs = collection.kind === "liked";
+  const tracks = isLikedSongs ? liked : collection.songs || [];
   const coverUrl = resolveCover(collection.cover, collection.title || collection.id);
 
   const handleQueue = (song) => {
@@ -42,7 +46,7 @@ export default function CollectionView({
   return (
     <div className="flex-1 overflow-y-auto scrollbar bg-[#121212] relative h-full">
       {}
-      <div className="relative bg-gradient-to-b from-[#3a3a52] to-[#121212] pt-16 pb-8 px-6 md:px-8">
+      <div className={`relative bg-gradient-to-b ${isLikedSongs ? "from-[#5038a0]" : "from-[#3a3a52]"} to-[#121212] pt-16 pb-8 px-6 md:px-8`}>
         <button
           onClick={onClose}
           className="absolute top-4 left-4 sm:top-5 sm:left-5 w-9 h-9 sm:w-10 sm:h-10 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all shadow-md active:scale-95 z-20"
@@ -54,12 +58,18 @@ export default function CollectionView({
 
         <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
           <div className="flex-shrink-0 shadow-2xl shadow-black/60">
-            <img referrerPolicy="no-referrer"
-              src={coverUrl}
-              alt={collection.title}
-              className="w-44 h-44 md:w-56 md:h-56 rounded shadow-2xl object-cover"
-              onError={coverError(collection.title || collection.id)}
-            />
+            {isLikedSongs ? (
+              <div className="w-44 h-44 md:w-56 md:h-56 rounded shadow-2xl bg-gradient-to-br from-[#450af5] to-[#c4efd9] flex items-center justify-center">
+                <Heart className="w-16 h-16 md:w-20 md:h-20 text-white fill-white" />
+              </div>
+            ) : (
+              <img referrerPolicy="no-referrer"
+                src={coverUrl}
+                alt={collection.title}
+                className="w-44 h-44 md:w-56 md:h-56 rounded shadow-2xl object-cover"
+                onError={coverError(collection.title || collection.id)}
+              />
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <p className="text-white/70 text-xs font-bold tracking-widest uppercase">Playlist</p>
@@ -67,7 +77,7 @@ export default function CollectionView({
               {collection.title}
             </h1>
             <div className="flex items-center gap-2 text-neutral-300 text-sm mt-2 flex-wrap">
-              <span className="font-bold text-white">tune-together</span>
+              <span className="font-bold text-white">{isLikedSongs ? "You" : "Tune Together"}</span>
               <span className="text-neutral-500">•</span>
               <span>{tracks.length} songs</span>
             </div>
@@ -79,13 +89,8 @@ export default function CollectionView({
       <div className="px-6 md:px-8 py-4 flex flex-col gap-6 pb-12">
         {tracks.length > 0 && (
           <div className="flex items-center gap-4">
-            <button
-              onClick={playAll}
-              className="w-14 h-14 bg-green-500 hover:bg-green-400 hover:scale-105 text-black rounded-full flex items-center justify-center transition-all duration-200 shadow-xl shadow-green-500/25"
-              title="Play all"
-            >
-              <Play className="w-6 h-6 fill-black ml-0.5" />
-            </button>
+            <BigPlayButton tracks={tracks} currentSongId={currentSongId} isPlaying={isPlaying} onPlay={onPlay} label={collection.title} />
+            <ShuffleListButton tracks={tracks} onPlay={onPlay} label={collection.title} />
           </div>
         )}
 
@@ -164,10 +169,18 @@ export default function CollectionView({
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-neutral-500">
-            <ListMusic className="w-10 h-10" />
-            <p className="text-sm">No songs in this collection yet.</p>
-          </div>
+          isLikedSongs ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <Heart className="w-10 h-10 text-neutral-500" />
+              <p className="text-white font-bold text-lg">Songs you like will appear here</p>
+              <p className="text-sm text-neutral-400">Save songs by tapping the heart icon.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-neutral-500">
+              <ListMusic className="w-10 h-10" />
+              <p className="text-sm">No songs in this collection yet.</p>
+            </div>
+          )
         )}
       </div>
     </div>

@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import { FaPlay, FaPause, FaForward, FaBackward } from "react-icons/fa";
 import { BsFillVolumeUpFill, BsFillVolumeMuteFill } from "react-icons/bs";
-import { MicVocal, ListMusic, Layers } from "lucide-react";
+import { MicVocal, ListMusic, Layers, Shuffle, Repeat, Repeat1 } from "lucide-react";
+import LikeButton from "./LikeButton";
 import toast from "react-hot-toast";
 import { useUpdateNowPlaying } from "@/hooks/useActivityTracker";
 import { useLyrics } from "@/hooks/useLyrics";
@@ -28,6 +29,12 @@ export default function PlayerFooter({
   isPlaying,
   onPlayPause,
   onNext,
+  onEnded,
+  replayNonce = 0,
+  shuffle = false,
+  repeat = "off",
+  onToggleShuffle,
+  onCycleRepeat,
   onPrev,
   roomId,
   socketRef,
@@ -339,6 +346,19 @@ export default function PlayerFooter({
     };
   }, [socketRef, song?.id]);
 
+  // Going Home closes the full-screen lyrics / now-playing views.
+  useEffect(() => {
+    const goHome = () => {
+      setShowLyrics(false);
+      setShowNowPlaying(false);
+    };
+    window.addEventListener("tt-go-home", goHome);
+    return () => window.removeEventListener("tt-go-home", goHome);
+  }, []);
+
+  // A remount (same song played again) starts with a fresh, not-ready player.
+  useEffect(() => { playerReadyRef.current = false; }, [replayNonce]);
+
   const handleReady = () => {
     playerReadyRef.current = true;
     setIsLoading(false);
@@ -412,7 +432,7 @@ export default function PlayerFooter({
     onNext: () => { if (song && !isLoading) onNext?.(); },
     onMuteToggle: toggleMute,
     onFocusSearch: () => document.querySelector('[data-search-input]')?.focus(),
-    onToggleQueue: () => window.dispatchEvent(new CustomEvent("tt-open-queue")),
+    onToggleQueue: () => window.dispatchEvent(new CustomEvent("tt-open-queue", { detail: { toggle: true } })),
     onToggleLyrics: toggleLyricsShortcut,
     onShowHelp: () => setShowShortcutsHelp(true),
     onCloseModal: closeOverlays,
@@ -523,12 +543,44 @@ export default function PlayerFooter({
     }
   };
 
+  // Spotify-style m:ss (h:mm:ss for long mixes).
   const formatTime = (time) => {
-    if (isNaN(time)) return "00:00";
-    const minutes = Math.floor(time / 60).toString().padStart(2, "0");
-    const seconds = Math.floor(time % 60).toString().padStart(2, "0");
-    return `${minutes}:${seconds}`;
+    if (!Number.isFinite(time) || time < 0) return "0:00";
+    const t = Math.floor(time);
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
+    const s = String(t % 60).padStart(2, "0");
+    return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
   };
+
+  const shuffleBtn = (
+    <button
+      onClick={onToggleShuffle}
+      className={`relative transition-colors ${shuffle ? "text-green-400 hover:brightness-110" : "text-[#b3b3b3] hover:text-white"} ${!song ? "opacity-30 cursor-not-allowed" : ""}`}
+      aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"}
+      aria-pressed={shuffle}
+      title={shuffle ? "Disable shuffle" : "Enable shuffle"}
+      disabled={!song}
+    >
+      <Shuffle size={16} className="lg:w-[18px] lg:h-[18px]" />
+      {shuffle && <span className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-1 h-1 rounded-full bg-green-400" />}
+    </button>
+  );
+
+  const repeatLabel = repeat === "off" ? "Enable repeat" : repeat === "context" ? "Enable repeat one" : "Disable repeat";
+  const repeatBtn = (
+    <button
+      onClick={onCycleRepeat}
+      className={`relative transition-colors ${repeat !== "off" ? "text-green-400 hover:brightness-110" : "text-[#b3b3b3] hover:text-white"} ${!song ? "opacity-30 cursor-not-allowed" : ""}`}
+      aria-label={repeatLabel}
+      aria-pressed={repeat !== "off"}
+      title={repeatLabel}
+      disabled={!song}
+    >
+      {repeat === "one" ? <Repeat1 size={16} className="lg:w-[18px] lg:h-[18px]" /> : <Repeat size={16} className="lg:w-[18px] lg:h-[18px]" />}
+      {repeat !== "off" && <span className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-1 h-1 rounded-full bg-green-400" />}
+    </button>
+  );
 
   return (
     <div className="relative w-full bg-[#121212]/80 backdrop-blur-xl border-t border-[var(--tt-border)] text-white px-2 sm:px-3 md:px-4 flex flex-col md:flex-row items-center justify-between h-[68px] sm:h-[70px] md:h-[90px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)]">
@@ -603,9 +655,10 @@ export default function PlayerFooter({
                       ))}
                     </div>
                   )}
-                  <span className="text-[10px] sm:text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer hover:text-white transition-colors">{song.artist.name}</span>
+                  <span className="text-[10px] sm:text-[11px] md:text-[12px] text-[#b3b3b3] truncate md:hover:underline cursor-pointer hover:text-white transition-colors">{song.artist?.name}</span>
                 </div>
               </div>
+              <LikeButton song={song} size={17} className="hidden md:inline-flex ml-1 p-1" />
             </div>
           ) : (
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
@@ -632,6 +685,7 @@ export default function PlayerFooter({
         {}
         <div className="hidden md:flex flex-col items-center justify-center w-[40%] max-w-[722px] gap-2">
           <div className="flex items-center gap-4 lg:gap-6">
+            {shuffleBtn}
             <button
               onClick={onPrev}
               className={`text-[#b3b3b3] transition-colors hover:text-white ${!song ? 'opacity-30 cursor-not-allowed' : ''}`}
@@ -664,6 +718,7 @@ export default function PlayerFooter({
             >
               <FaForward size={15} className="lg:w-4 lg:h-4" />
             </button>
+            {repeatBtn}
           </div>
 
           <div className={`flex items-center gap-2 w-full group ${!song ? 'opacity-30' : ''}`}>
@@ -714,43 +769,7 @@ export default function PlayerFooter({
                   <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-500 rounded-full animate-pulse" />
                 </button>
               )}
-              <button
-                onClick={() => setShowLyrics(true)}
-                className={`p-1.5 sm:p-2 ${showLyrics ? 'text-green-500' : 'text-neutral-300 hover:text-white'} transition-colors touch-manipulation`}
-                aria-label="Lyrics"
-              >
-                <MicVocal size={17} className="sm:w-[18px] sm:h-[18px]" />
-              </button>
-              <SleepTimerMenu
-                timer={sleepTimer}
-                remainingMs={sleepRemainingMs}
-                onSetTimer={setSleepTimer}
-                onEndOfTrack={setEndOfTrack}
-                onEndOfQueue={setEndOfQueue}
-                onClear={clearSleepTimer}
-                disabled={!song}
-                hasTrack={!!song}
-                onOpen={() => setShowLyrics(false)}
-              />
-              <button
-                onClick={handleQueueSong}
-                className={`p-1.5 sm:p-2 transition-colors ${added ? 'text-green-500' : 'text-neutral-300 hover:text-white'} touch-manipulation`}
-                aria-label="Add to Queue"
-                title="Add to Queue"
-              >
-                <ListMusic size={18} className="sm:w-5 sm:h-5" />
-              </button>
-              <button
-                onClick={() => {
-                  setShowLyrics(false);
-                  window.dispatchEvent(new CustomEvent("tt-open-queue"));
-                }}
-                className="p-1.5 sm:p-2 text-neutral-300 hover:text-white transition-colors touch-manipulation"
-                aria-label="View Queue"
-                title="View Queue"
-              >
-                <Layers size={17} className="sm:w-[18px] sm:h-[18px]" />
-              </button>
+              <LikeButton song={song} size={22} className="w-10 h-10" />
               <button
                 onClick={handlePlayPauseClick}
                 className={`bg-white text-black w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform touch-manipulation ${isLoading ? 'opacity-70' : ''}`}
@@ -764,13 +783,6 @@ export default function PlayerFooter({
                 ) : (
                   <FaPlay size={14} className="ml-0.5 sm:w-[15px] sm:h-[15px]" />
                 )}
-              </button>
-              <button
-                onClick={onNext}
-                className="text-neutral-300 hover:text-white transition-colors p-1.5 sm:p-2 touch-manipulation"
-                aria-label="Next"
-              >
-                <FaForward size={17} className="sm:w-[18px] sm:h-[18px]" />
               </button>
             </>
           )}
@@ -839,7 +851,7 @@ export default function PlayerFooter({
             </>
           ) : (
                         <button
-              onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue"))}
+              onClick={() => window.dispatchEvent(new CustomEvent("tt-open-queue", { detail: { toggle: true } }))}
               className="text-neutral-500 hover:text-white transition-colors"
               aria-label="View Queue"
               title="View Queue"
@@ -886,6 +898,10 @@ export default function PlayerFooter({
       <NowPlayingView
         song={song}
         isOpen={showNowPlaying}
+        shuffle={shuffle}
+        repeat={repeat}
+        onToggleShuffle={onToggleShuffle}
+        onCycleRepeat={onCycleRepeat}
         onClose={() => setShowNowPlaying(false)}
         isPlaying={isPlaying}
         isLoading={isLoading}
@@ -949,6 +965,7 @@ export default function PlayerFooter({
       >
         {mounted && (
           <ReactPlayer
+            key={replayNonce}
             ref={playerRef}
             url={source?.url || null}
             playing={isPlaying}
@@ -964,7 +981,7 @@ export default function PlayerFooter({
             onBufferEnd={() => setIsLoading(false)}
             onProgress={handleProgress}
             onDuration={handleDuration}
-            onEnded={onNext}
+            onEnded={onEnded || onNext}
             onError={handleSourceError}
             type={source?.kind === "stream" ? "file" : undefined}
             config={{

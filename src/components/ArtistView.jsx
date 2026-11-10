@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Play, Pause, Plus, Music2, Users, Check, BadgeCheck } from "lucide-react";
 import { resolveCover, coverError } from "../lib/coverPlaceholder";
+import { toggleFollow, useIsFollowing } from "../lib/library";
 
 export default function ArtistView({ artistId, onClose, onPlay, onQueue, currentSongId, isPlaying, onOpenAlbum, onOpenArtist }) {
   const [artist, setArtist] = useState(null);
@@ -13,7 +14,7 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imgError, setImgError] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const isFollowing = useIsFollowing(artistId);
 
   useEffect(() => {
     if (!artistId) return;
@@ -163,17 +164,33 @@ export default function ArtistView({ artistId, onClose, onPlay, onQueue, current
         
         {}
         <div className="py-6 flex items-center gap-6">
-          {topTracks.length > 0 && (
-            <button
-              onClick={() => onPlay(topTracks[0], topTracks)}
-              className="w-14 h-14 md:w-16 md:h-16 bg-green-500 hover:bg-green-400 hover:scale-105 text-black rounded-full flex items-center justify-center transition-all duration-200 shadow-xl shadow-green-900/30"
-            >
-              <Play className="w-6 h-6 md:w-7 md:h-7 fill-black ml-1" />
-            </button>
-          )}
-          <button 
-            onClick={() => setIsFollowing(!isFollowing)}
-            className={`px-4 py-1.5 md:px-5 md:py-2 rounded-full border border-neutral-400 text-white font-bold text-sm tracking-widest uppercase hover:border-white hover:scale-105 transition-all duration-200 ${isFollowing ? 'border-white text-white' : ''}`}
+          {topTracks.length > 0 && (() => {
+            // Big play button reflects (and toggles) this artist's tracks.
+            const playingHere = topTracks.some((t) => String(t.id) === String(currentSongId));
+            return (
+              <button
+                onClick={() => {
+                  if (playingHere) {
+                    window.dispatchEvent(new CustomEvent("tt-player-command", { detail: { action: isPlaying ? "pause" : "play" } }));
+                  } else {
+                    onPlay(topTracks[0], topTracks);
+                  }
+                }}
+                aria-label={playingHere && isPlaying ? `Pause ${artist.name}` : `Play ${artist.name}`}
+                className="w-14 h-14 md:w-16 md:h-16 bg-green-500 hover:bg-green-400 hover:scale-105 active:scale-95 text-black rounded-full flex items-center justify-center transition-all duration-200 shadow-xl shadow-green-900/30"
+              >
+                {playingHere && isPlaying ? (
+                  <Pause className="w-6 h-6 md:w-7 md:h-7 fill-black" />
+                ) : (
+                  <Play className="w-6 h-6 md:w-7 md:h-7 fill-black ml-1" />
+                )}
+              </button>
+            );
+          })()}
+          <button
+            onClick={() => toggleFollow({ id: artistId, name: artist.name, image: artistImg })}
+            aria-pressed={isFollowing}
+            className={`h-8 px-4 rounded-full border text-white font-bold text-sm hover:scale-105 active:scale-100 transition-all duration-200 ${isFollowing ? 'border-white' : 'border-neutral-500 hover:border-white'}`}
           >
             {isFollowing ? 'Following' : 'Follow'}
           </button>

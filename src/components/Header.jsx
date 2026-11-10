@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   SignedIn,
   SignedOut,
@@ -12,9 +12,11 @@ import {
 } from "@clerk/nextjs";
 import { Search, Home, LayoutGrid, Clock, X, Play, Pause, ChevronRight } from "lucide-react";
 import { resolveCover, coverError } from "@/lib/coverPlaceholder";
+import { currentRoomId } from "@/lib/room";
 
 function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, externalRoomId, externalOnPlay, externalOnOpenArtist }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const roomId = externalRoomId || searchParams?.get("room") || null;
 
@@ -156,8 +158,47 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 
   
   
+  // On "/" every view (artist, album, playlist, search, chat, "Show all"…)
+  // is client state, so a link to "/" changes nothing. Broadcast instead and
+  // let each part reset itself. On other pages, navigate home (keeping the room).
+  const homeHref = roomId ? `/?room=${encodeURIComponent(roomId)}` : "/";
+  const goHome = (e) => {
+    setFocused(false);
+    if (typeof document !== "undefined") document.activeElement?.blur?.();
+    e.preventDefault();
+    if (pathname === "/") {
+      setQuery("");
+      window.dispatchEvent(new CustomEvent("tt-go-home"));
+      return;
+    }
+    // From another page: go home and stay in the same listening room (other
+    // pages' URLs often don't carry ?room=, so fall back to the saved one).
+    const room = roomId || currentRoomId();
+    router.push(room ? `/?room=${encodeURIComponent(room)}` : "/");
+  };
+
+  const homeButton = (
+    <Link href={homeHref} onClick={goHome} className="flex-shrink-0" aria-label="Home" title="Home">
+      <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] active:scale-95 rounded-full flex items-center justify-center cursor-pointer">
+        <Home className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+      </div>
+    </Link>
+  );
+
+  const openBrowse = (e) => {
+    e.preventDefault();
+    setFocused(false);
+    if (pathname === "/") {
+      window.dispatchEvent(new CustomEvent("tt-open-browse"));
+      return;
+    }
+    try { sessionStorage.setItem("tt-open-browse", "1"); } catch {}
+    const room = roomId || currentRoomId();
+    router.push(room ? `/?room=${encodeURIComponent(room)}` : "/");
+  };
+
   const browseButton = (
-    <Link href="/browse" className="flex-shrink-0" aria-label="Browse" title="Browse">
+    <Link href="/browse" onClick={openBrowse} className="flex-shrink-0" aria-label="Browse" title="Browse">
       <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
         <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
       </div>
@@ -370,7 +411,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
         {}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
           {}
-          <Link href="/" className="flex items-center min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
+          <Link href={homeHref} onClick={goHome} className="flex items-center min-w-0 hover:opacity-80 transition-opacity" aria-label="Home">
             <span className="font-black text-sm sm:text-base md:text-lg tracking-tight text-white truncate drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
               tune<span className="text-green-500">together</span>
             </span>
@@ -379,11 +420,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 
         {}
         <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2 w-full max-w-[560px] xl:max-w-2xl 2xl:max-w-3xl px-2">
-          <Link href="/" className="flex-shrink-0">
-            <div className="w-12 h-12 bg-[#242424] transition-colors hover:bg-[#2a2a2a] rounded-full flex items-center justify-center cursor-pointer">
-              <Home className="w-5 h-5 text-white" />
-            </div>
-          </Link>
+          {homeButton}
           {searchBar}
           {browseButton}
         </div>
@@ -418,6 +455,7 @@ function HeaderContent({ externalQuery, externalSetQuery, externalHandleSearch, 
 
       {}
       <div className="flex lg:hidden items-center gap-2 sm:gap-3 mt-2 sm:mt-2.5">
+        {homeButton}
         {searchBar}
         {browseButton}
       </div>

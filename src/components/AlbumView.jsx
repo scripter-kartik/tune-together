@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Play, Pause, Plus, Music2, Disc } from "lucide-react";
 import { resolveCover } from "../lib/coverPlaceholder";
+import BigPlayButton, { ShuffleListButton } from "./BigPlayButton";
 
 export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSongId, isPlaying, onOpenArtist }) {
   const [album, setAlbum] = useState(null);
@@ -138,13 +139,8 @@ export default function AlbumView({ albumId, onClose, onPlay, onQueue, currentSo
 
         {tracks.length > 0 && (
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => onPlay(fullTracks[0], fullTracks)}
-              className="w-14 h-14 bg-green-500 hover:bg-green-400 hover:scale-105 text-black rounded-full flex items-center justify-center transition-all duration-200 shadow-xl shadow-green-500/25"
-              title="Play all"
-            >
-              <Play className="w-6 h-6 fill-black ml-0.5" />
-            </button>
+            <BigPlayButton tracks={fullTracks} currentSongId={currentSongId} isPlaying={isPlaying} onPlay={onPlay} label={album.title} />
+            <ShuffleListButton tracks={fullTracks} onPlay={onPlay} label={album.title} />
           </div>
         )}
 

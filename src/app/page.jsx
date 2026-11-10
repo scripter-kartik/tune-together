@@ -94,10 +94,28 @@ export default function Page() {
     }
   };
 
+  // Home stays the same for the browser session (like Spotify) instead of
+  // reshuffling every time you come back to it.
+  const HOME_CACHE_KEY = "tt-home-feed";
+  const HOME_CACHE_MS = 30 * 60 * 1000;
+
   const fetchHomeFeed = async (searchTerms) => {
-    setIsLoading(true);
     setError(null);
     setIsSearchQuery(false);
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(HOME_CACHE_KEY) || "null");
+      if (cached && Date.now() - cached.at < HOME_CACHE_MS && cached.songs?.length) {
+        setSongs(cached.songs);
+        setArtists(cached.artists || []);
+        setAlbums(cached.albums || []);
+        setVisibleCount(20);
+        setIsLoading(false);
+        return;
+      }
+    } catch {
+      /* no cache */
+    }
+    setIsLoading(true);
     try {
       const results = await Promise.all(
         searchTerms.map((t) =>
@@ -134,6 +152,14 @@ export default function Page() {
         setArtists(artists);
         setAlbums(albums);
         setVisibleCount(20);
+        try {
+          sessionStorage.setItem(
+            HOME_CACHE_KEY,
+            JSON.stringify({ at: Date.now(), songs: mixedSongs, artists, albums })
+          );
+        } catch {
+          /* storage full: just don't cache */
+        }
       }
     } catch (err) {
       console.error("Error fetching home feed:", err);
@@ -159,12 +185,56 @@ export default function Page() {
     setSelectedArtistId(null);
     setSelectedAlbumId(null);
     setSelectedPlaylist(null);
+    // Drop a ?q= search from the URL so a refresh doesn't reopen it.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("q")) {
+      url.searchParams.delete("q");
+      window.history.replaceState({}, "", url);
+    }
     if (isSearchQuery || query) {
       setQuery("");
+      setDebouncedQuery("");
       setIsSearchQuery(false);
       fetchHomeFeed(randomTerms);
     }
   };
+
+  // Browse tiles (and other in-app links) search in place: no page reload,
+  // so whatever is playing keeps playing.
+  useEffect(() => {
+    const onSearch = (e) => {
+      const q = e.detail?.q?.trim();
+      if (!q) return;
+      setSelectedArtistId(null);
+      setSelectedAlbumId(null);
+      setSelectedPlaylist(null);
+      setQuery(q);
+      fetchSongs(q, true);
+    };
+    window.addEventListener("tt-search", onSearch);
+    return () => window.removeEventListener("tt-search", onSearch);
+  });
+
+  // "Shuffle play" in the empty player bar: shuffle whatever the feed shows.
+  useEffect(() => {
+    const onShufflePlay = () => {
+      if (!songs.length) return;
+      const shuffled = [...songs];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      handlePlay(shuffled[0], shuffled);
+    };
+    window.addEventListener("tt-shuffle-play", onShufflePlay);
+    return () => window.removeEventListener("tt-shuffle-play", onShufflePlay);
+  });
+
+  // Header Home button / sidebar Home (see Header.jsx goHome).
+  useEffect(() => {
+    window.addEventListener("tt-go-home", handleGoHome);
+    return () => window.removeEventListener("tt-go-home", handleGoHome);
+  });
 
   useEffect(() => {
     if (!query.trim() && isSearchQuery) {
@@ -274,6 +344,7 @@ export default function Page() {
       <main className="flex-1 overflow-hidden">
         <Home
           songs={getVisibleSongs()}
+          allSongs={songs}
           artists={artists}
           albums={albums}
           topArtists={topArtists}

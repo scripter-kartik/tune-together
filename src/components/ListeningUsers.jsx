@@ -96,140 +96,123 @@ const ListeningUsers = () => {
 
   if (!isLoaded || loading) {
     return (
-      <div className="w-full h-full bg-[#121212] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-400"></div>
+      <div className="flex-1 flex flex-col gap-1 px-2 sm:px-3 pt-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3 p-2">
+            <div className="w-11 h-11 rounded-full bg-white/[0.06] animate-pulse" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-1/2 rounded bg-white/[0.06] animate-pulse" />
+              <div className="h-2.5 w-3/4 rounded bg-white/[0.06] animate-pulse" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   if (!isSignedIn) {
     return (
-      <div className="w-full h-full bg-[#121212] text-white flex flex-col">
-        <div className="flex items-center px-4 py-3 gap-3 border-b border-[var(--tt-divider)]/50">
-          <Users className="w-5 h-5" />
-          <h1 className="font-semibold text-base">What they're listening to</h1>
-        </div>
-
-        <div className="flex flex-col gap-10 justify-center items-center text-center flex-1 px-8">
-          <div className="relative">
-            <div
-              className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-sky-500 
-              rounded-full blur-lg opacity-75 animate-pulse"
-              aria-hidden="true"
-            ></div>
-
-            <div className="relative bg-zinc-900 rounded-full p-4">
-              <Headphones className="w-8 h-8 text-emerald-400" />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <h1 className="font-bold text-lg">See What Friends Are Playing</h1>
-            <p className="text-sm text-gray-400">
-              Login to discover what music your friends are enjoying right now
-            </p>
-            <SignInButton mode="modal">
-              <span className="inline-block text-emerald-400 text-sm hover:underline cursor-pointer font-medium mt-2">
-                Log in
-              </span>
-            </SignInButton>
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-8 pb-10 gap-5">
+        <div className="relative">
+          <div className="absolute -inset-1 bg-green-500 rounded-full blur-lg opacity-30" aria-hidden="true" />
+          <div className="relative w-16 h-16 rounded-full bg-[#181818] flex items-center justify-center">
+            <Headphones className="w-7 h-7 text-green-400" />
           </div>
         </div>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-white font-bold text-base">See what friends are playing</p>
+          <p className="text-sm text-neutral-400 max-w-[240px]">
+            Log in to follow your friends&apos; listening in real time.
+          </p>
+        </div>
+        <SignInButton mode="modal">
+          <button type="button" className="h-10 px-6 rounded-full bg-white text-black text-sm font-bold hover:scale-[1.03] active:scale-100 transition">
+            Log in
+          </button>
+        </SignInButton>
       </div>
     );
   }
 
   const onlineCount = users.filter(u => u.onlineStatus === 'online').length;
   const idleCount = users.filter(u => u.onlineStatus === 'idle').length;
-  const offlineCount = users.filter(u => u.onlineStatus === 'offline').length;
+
+  const filters = [
+    { id: 'all', label: 'All', count: users.length },
+    { id: 'online', label: 'Online', count: onlineCount },
+    { id: 'recent', label: 'Recent', count: onlineCount + idleCount },
+  ];
 
   return (
-    <div className="w-full h-full bg-[#121212] text-white overflow-hidden flex flex-col">
-      <div className="flex-shrink-0 border-b border-[var(--tt-divider)]/50">
-        <div className="flex items-center px-4 py-3 gap-3">
-          <Users className="w-5 h-5" />
-          <h1 className="font-semibold text-base">Friends</h1>
-        </div>
-
-        <div className="flex gap-1 px-4 pb-3">
+    <div className="flex-1 min-h-0 text-white overflow-hidden flex flex-col">
+      <div className="flex-shrink-0 flex gap-1.5 px-4 sm:px-5 pb-2">
+        {filters.map((f) => (
           <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
-              filter === 'all'
-                ? 'bg-emerald-500 text-white'
-                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+            key={f.id}
+            type="button"
+            onClick={() => setFilter(f.id)}
+            className={`h-7 px-3 rounded-full text-xs font-semibold transition-colors touch-manipulation ${
+              filter === f.id
+                ? 'bg-green-500 text-black'
+                : 'text-neutral-300 hover:text-white bg-white/[0.05] hover:bg-white/[0.1]'
             }`}
           >
-            All ({users.length})
+            {f.label} <span className="tabular-nums opacity-70">{f.count}</span>
           </button>
-          <button
-            onClick={() => setFilter('online')}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
-              filter === 'online'
-                ? 'bg-emerald-500 text-white'
-                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
-            }`}
-          >
-            Online ({onlineCount})
-          </button>
-          <button
-            onClick={() => setFilter('recent')}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
-              filter === 'recent'
-                ? 'bg-emerald-500 text-white'
-                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
-            }`}
-          >
-            Recent ({onlineCount + idleCount})
-          </button>
-        </div>
+        ))}
       </div>
 
       {error && (
-        <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/20">
-          <p className="text-sm text-red-400">{error}</p>
+        <div className="mx-4 mb-2 px-3 py-2 rounded-md bg-red-500/10">
+          <p className="text-xs text-red-400">{error}</p>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-2 sm:px-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         {users.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full px-4 text-center">
-            <Users className="w-12 h-12 text-gray-600 mb-3" />
-            <p className="text-gray-400 text-sm">
-              {filter === 'online' ? 'No friends online right now' : 'No friends found'}
+          <div className="flex flex-col items-center justify-center h-full px-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
+              <Users className="w-7 h-7 text-neutral-400" />
+            </div>
+            <p className="text-white font-bold text-base">
+              {filter === 'online' ? 'No one online right now' : 'No friends yet'}
             </p>
+            <p className="text-sm text-neutral-400 mt-1.5">Add friends to see what they&apos;re listening to.</p>
           </div>
         ) : (
           users.map((user, idx) => {
             const status = getUserStatus(user);
+            const playing = !!user.currentlyPlaying?.songTitle;
             return (
               <div
                 key={user.clerkId}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer"
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-white/[0.07] transition-colors cursor-pointer"
               >
                 <div className="relative flex-shrink-0">
                   {user.imageUrl ? (
                     <img referrerPolicy="no-referrer"
                       src={user.imageUrl}
-                      alt={user.name}
-                      className="w-12 h-12 rounded-full object-cover"
+                      alt=""
+                      className="w-11 h-11 rounded-full object-cover"
                     />
                   ) : (
-                    <div
-                      className={`w-12 h-12 rounded-full ${getAvatarColor(idx)} flex items-center justify-center text-sm font-semibold`}
-                    >
+                    <div className={`w-11 h-11 rounded-full ${getAvatarColor(idx)} flex items-center justify-center text-sm font-semibold uppercase`}>
                       {getInitials(user.name)}
                     </div>
                   )}
-                  <div className={`absolute bottom-0 right-0 w-3 h-3 ${status.indicator} rounded-full border-2 border-[#121212]`}></div>
+                  <span className={`absolute bottom-0 right-0 w-3 h-3 ${status.indicator} rounded-full ring-2 ring-[color:var(--tt-bg)]`} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[15px] truncate">{user.name}</p>
-                  <div className="flex items-center gap-1">
-                    {status.icon}
-                    <p className={`text-xs ${status.color} truncate`}>{status.text}</p>
-                  </div>
+                  <p className="font-semibold text-[15px] truncate">{user.name}</p>
+                  {playing ? (
+                    <p className="flex items-center gap-1.5 text-[13px] text-neutral-400 min-w-0">
+                      <Music className="w-3.5 h-3.5 flex-shrink-0 text-green-400" />
+                      <span className="truncate">{user.currentlyPlaying.songTitle}</span>
+                    </p>
+                  ) : (
+                    <p className={`text-[13px] truncate ${status.color}`}>{status.text}</p>
+                  )}
                 </div>
               </div>
             );
